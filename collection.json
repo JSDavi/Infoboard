@@ -1,0 +1,1722 @@
+{
+  "info": {
+    "_postman_id": "8e548925-049f-448d-a05f-97fb84a3eaa6",
+    "name": "API Beatrix",
+    "description": "<html><head></head><body><h3 id=\"🔎-o-que-é-o-beatrix\">🔎 O que é o Beatrix?</h3>\n<p>O <strong>Beatrix</strong> é uma plataforma completa para <strong>monitoramento, controle e gestão de chamadas telefônicas</strong> corporativas, ideal para ambientes de alta demanda em atendimento ao cliente.</p>\n<p>Projetado especialmente para <strong>call centers, SACs, áreas comerciais e centrais de atendimento</strong>, o Beatrix oferece uma visão em tempo real de tudo o que acontece nas filas, ramais e agentes — possibilitando <strong>mais eficiência, transparência e controle</strong> das operações de voz.</p>\n<hr>\n<h3 id=\"🧠por-que-utilizar\">🧠Por que utilizar?</h3>\n<ul>\n<li><p>📞 <strong>Acompanhe chamadas em tempo real</strong>: veja quem está em ligação, em pausa ou disponível.</p>\n</li>\n<li><p>👨‍💼 <strong>Gerencie agentes e ramais</strong>: pausas, filas, login/logout e muito mais.</p>\n</li>\n<li><p>📊 <strong>Extraia relatórios detalhados</strong> de performance, tempo de atendimento e chamadas perdidas.</p>\n</li>\n<li><p>🎧 <strong>Grave e escute chamadas</strong> para fins de qualidade e compliance.</p>\n</li>\n<li><p>⚙️ <strong>Integre com bots, CRMs ou sistemas internos</strong> via API para automatizar processos.</p>\n</li>\n</ul>\n</body></html>",
+    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+    "toc": [],
+    "owner": "47894186",
+    "collectionId": "8e548925-049f-448d-a05f-97fb84a3eaa6",
+    "publishedId": "2sB3HjLgWE",
+    "public": true,
+    "customColor": {
+      "top-bar": "FFFFFF",
+      "right-sidebar": "303030",
+      "highlight": "FF6C37"
+    },
+    "publishDate": "2025-09-22T18:26:43.000Z"
+  },
+  "item": [
+    {
+      "name": "🔹Agents",
+      "item": [
+        {
+          "name": "Colocar um agente em pausa",
+          "id": "cf19b5b0-0900-4ab5-b3cf-4e2b3f07f02f",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "noauth",
+              "isInherited": false
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"pause_type_code\":\"XXX\" // coloque um código de agente \r\n\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "https://app.npxtech.com.br/api/v2/agents/{agent_code}/pause",
+            "description": "<p>👤O campo agent_code é código do agente dentro do Beatrix.</p>\n",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "v2",
+                "agents",
+                "{agent_code}",
+                "pause"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [
+            {
+              "id": "bba42534-5050-469f-a98f-fd331612c061",
+              "name": "Retorno de sucesso",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \r\n    \"pause_type_code\":\"XXX\" // Informar qual código do motivo da pausa\r\n\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://app.npxtech.com.br/api/v2/agents/{agent_code}/pause"
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Access-token",
+                  "value": "{{token-beatrix}}",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "responseTime": null,
+              "body": "{\r\n    \"message\": \"Sucesso\",\r\n    \"status\": 1\r\n}"
+            }
+          ],
+          "_postman_id": "cf19b5b0-0900-4ab5-b3cf-4e2b3f07f02f"
+        },
+        {
+          "name": "Retira um agente em pausa",
+          "id": "984a0627-f8fc-4d28-9925-25157b1fe1e3",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/v2/agents/{agent_code}/unpause",
+            "description": "<p>👤O campo agent_code é código do agente dentro do Beatrix</p>\n",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "v2",
+                "agents",
+                "{agent_code}",
+                "unpause"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [
+            {
+              "id": "dbc4b5ee-658c-4770-99ab-86dfe155dfb3",
+              "name": "Retorno de sucesso",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}",
+                    "type": "text"
+                  }
+                ],
+                "url": "https://app.npxtech.com.br/api/v2/agents/{agent_code}/unpause"
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Access-token",
+                  "value": "{{token-beatrix}}",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "responseTime": null,
+              "body": "{\r\n    \"message\": \"Sucesso\",\r\n    \"status\": 1\r\n}"
+            }
+          ],
+          "_postman_id": "984a0627-f8fc-4d28-9925-25157b1fe1e3"
+        },
+        {
+          "name": "Inserir agente na fila",
+          "id": "2266f463-c814-4ab8-a751-41028ea0d2ad",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"queue_id\":\"XXX\", // Coloque um código de um agente da NPX\n    \"extension\":\"XXXXX\", // Coloque o ramal do agente \n    \"penalty\":\"X\" // Digite o nível de prioridade \n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "https://app.npxtech.com.br/api/v2/agents/{agent_code}/add_to_queue",
+            "description": "<p>👤O campo agent_code é código do agente dentro do Beatrix</p>\n",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "v2",
+                "agents",
+                "{agent_code}",
+                "add_to_queue"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [
+            {
+              "id": "8be23cbc-570d-4089-a3f9-12f5e6269507",
+              "name": "Retorno com sucesso",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"queue_id\":\"XXX\", // Coloque um código de um agente da NPX\n    \"extension\":\"XXXXX\", // Coloque o ramal do agente \n    \"penalty\":\"X\" // Digite o nível de prioridade \n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://app.npxtech.com.br/api/v2/agents/{agent_code}/add_to_queue"
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Acess-token",
+                  "value": "{{token-beatrix}}",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "responseTime": null,
+              "body": "{\r\n    \"message\": \"Sucesso\",\r\n    \"status\": 1\r\n}"
+            }
+          ],
+          "_postman_id": "2266f463-c814-4ab8-a751-41028ea0d2ad"
+        },
+        {
+          "name": "Remover agente da fila",
+          "id": "0585f963-5c87-4217-a776-dfa7a1e20f58",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"queue_id\":\"XXX\" //Coloque um código de agente\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "https://app.npxtech.com.br/api/v2/agents/{agent_code}/remove_to_queue",
+            "description": "<p>👤O campo agent_code é código do agente dentro do Beatrix</p>\n",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "v2",
+                "agents",
+                "{agent_code}",
+                "remove_to_queue"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [],
+          "_postman_id": "0585f963-5c87-4217-a776-dfa7a1e20f58"
+        }
+      ],
+      "id": "9144744d-5fd0-4939-93ad-660179aa3ef6",
+      "description": "<p>Essa seção da API permite <strong>controlar os operadores</strong> que estão conectados ao sistema.</p>\n<p>🧠 <strong>Por que usar?</strong></p>\n<p>Ideal para sistemas de RH, supervisão ou bots de gestão automática que controlam pausas e acessos sem precisar do usuário interagir diretamente com o sistema Beatrix.</p>\n<p><strong>⚠️Em todas as requisições da API da Beatrix necessitam do:</strong></p>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-bash\">access-token: {{token-beatrix}} \n\n</code></pre>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-css\">token-beatrix:XXXXXXXXXXXXXXXXXXX\n\n</code></pre>\n<p>✅ Esse token é gerado pela equipe de suporte da NPX</p>\n<p><strong>❎ Possíveis erros:</strong></p>\n<p><code>401 Unauthorized</code></p>\n<p>→ A requisição não tem credenciais válidas. Geralmente significa que precisa enviar um token ou login.</p>\n<p><code>403 Forbidden</code></p>\n<p>→ As credenciais até podem estar corretas, mas o usuário não tem permissão para acessar o recurso.</p>\n<p><code>404 Not Found</code></p>\n<p>→ O recurso solicitado não existe ou o endpoint está incorreto.<br /><code>400 Bad Request</code></p>\n<p>→ O cliente fez uma requisição inválida. Pode ser erro de sintaxe no corpo da requisição, parâmetros faltando ou malformados.</p>\n<p><code>500 Internal Server Error</code></p>\n<p>→ Erros do lado do servidor.</p>\n",
+      "_postman_id": "9144744d-5fd0-4939-93ad-660179aa3ef6"
+    },
+    {
+      "name": "🔉Audios",
+      "item": [
+        {
+          "name": "Solicita um download de uma chamada",
+          "id": "a4ecfa2f-fc5b-4f7a-b531-451134a21668",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "noauth",
+              "isInherited": false
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/v2/audios/download?callid={callerid}",
+            "description": "<p>O campo callerid é código da chamada do Beatrix</p>\n<p><strong>Exemplo de sucesso:</strong></p>\n<img src=\"https://content.pstmn.io/3d7ab55d-a6b4-4e03-a20f-4f0f7c03ab4a/V2hhdHNBcHAgSW1hZ2UgMjAyNS0wOS0xNiBhdCAxNi4zOS41NS5qcGVn\" />\n\n<p>A requisição puxa um documento de chamada de acordo com o ID da chamada.</p>\n",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "v2",
+                "audios",
+                "download"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [
+                {
+                  "key": "callid",
+                  "value": "{callerid}"
+                }
+              ],
+              "variable": []
+            }
+          },
+          "response": [],
+          "_postman_id": "a4ecfa2f-fc5b-4f7a-b531-451134a21668"
+        }
+      ],
+      "id": "8d435c24-9072-41bf-a187-8bb46442a4e2",
+      "description": "<p>Aqui você pode <strong>acessar as gravações das chamadas</strong> realizadas no sistema.</p>\n<p>🧠 <strong>Por que usar?</strong></p>\n<p>Ótimo para equipes de qualidade ou setores jurídicos que precisam ouvir chamadas específicas. Também útil para integrar com sistemas de CRM ou plataformas de análise de voz.</p>\n<p><strong>⚠️Em todas as requisições da API da Beatrix necessitam do:</strong></p>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-bash\">access-token: {{token-beatrix}} \n\n</code></pre>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-css\">token-beatrix:token-beatrix:XXXXXXXXXXXXXXXXXX\n\n</code></pre>\n<p>✅ Esse token é gerado pela equipe de suporte da NPX</p>\n",
+      "_postman_id": "8d435c24-9072-41bf-a187-8bb46442a4e2"
+    },
+    {
+      "name": "☎️Call center reports",
+      "item": [
+        {
+          "name": "Detalhes de pontos de registro de agentes",
+          "id": "4d3daba1-c97f-45f5-b1d5-844f60f2de84",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/call_center_reports/report_register_points_details",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "call_center_reports",
+                "report_register_points_details"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [
+            {
+              "id": "5761ec3c-f7cc-4015-bea7-bdb1b8a3a77b",
+              "name": "Exemplo de retorno com sucesso",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}",
+                    "type": "text"
+                  }
+                ],
+                "url": "https://app.npxtech.com.br/api/call_center_reports/report_register_points_details"
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "responseTime": null,
+              "body": "{\n    \"current_page\": 1, //Página atual do relátorio\n    \"per_page\": 3, //Quantidade de registros exibidos por página \n    \"total_count\": 3, //Número total de registros exibidos\n    \"total_pages\": 1, //Quantidade total de páginas \n    \"report_data\": [\n        {\n            \"ramal\": \"123456\", //Ramal do agente\n            \"code\": \"01234\", //Código de identificação do agente\n            \"agent_name\": \"Fernando\", //Nome do agente\n            \"queue\": \"npx_teste\", //Fila em que o agente estava\n            \"logon_date\": \"2025-09-17T16:00:17.716-03:00\", //data e hora em que o agente fez login no sistema.\n            \"logoff_date\": null //data e hora em que o agente saiu do sistema.\n        },\n       {\n            \"ramal\": \"123457\", //Ramal do agente\n            \"code\": \"01235\", //Código de identificação do agente\n        \"agent_name\": \"Chiquinho\", //Nome do agente\n            \"queue\": \"npx_teste\", //Fila em que o agente estava\n            \"logon_date\": \"2025-09-17T16:00:17.716-03:00\", //data e hora em que o agente fez login no sistema.\n            \"logoff_date\": null //data e hora em que o agente saiu do sistema.\n        },\n        {\n            \"ramal\": \"123458\", //Ramal do agente\n            \"code\": \"01236\", //Código de identificação do agente\n            \"agent_name\": \"Raul\", //Nome do agente\n            \"queue\": \"npx_teste\", //Fila em que o agente estava\n            \"logon_date\": \"2025-09-17T16:00:17.716-03:00\", //data e hora em que o agente fez login no sistema.\n            \"logoff_date\": null //data e hora em que o agente saiu do sistema.\n        }\n    ]\n}\n        "
+            }
+          ],
+          "_postman_id": "4d3daba1-c97f-45f5-b1d5-844f60f2de84"
+        },
+        {
+          "name": "Detalhes de pausas de agentes",
+          "id": "eb7765e3-07bc-4fad-b203-456f1698c6b1",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/call_center_reports/report_pause_details",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "call_center_reports",
+                "report_pause_details"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [
+            {
+              "id": "299a02a3-a843-4b12-b0c0-712105121262",
+              "name": "Exemplo de retorno com sucesso",
+              "originalRequest": {
+                "method": "GET",
+                "header": []
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "responseTime": null,
+              "body": "{\n    \"current_page\": 1, //Página atual do relátorio\n    \"per_page\": 3, //Quantidade de registros exibidos por página \n    \"total_count\": 3, //Número total de registros exibidos\n    \"total_pages\": 1, //Quantidade total de páginas \n    \"report_data\": [\n        {\n            \"ramal\": \"123654\", //Ramal usado pelo agente\n            \"code\": \"1234\", //Código de indentificação do agente\n            \"agent_name\": \"Fran\", //Nome do agente \n            \"queue\": \"npx_suporte\", //Fila de atendimento em que o agente estava \n            \"pause\": \"Ativação\", //Motivo ou tipo de pausa\n            \"pause_start\": \"2025-09-17T07:59:37.275-03:00\", //Data e hora em que a pausa começou \n            \"pause_finish\": \"2025-09-17T08:06:14.998-03:00\", //Data e hora em que a pausa terminou\n            \"max_minutes\": null, //Limite de minutos permitido por pausa \n            \"pause_duration_minutes\": \"6.6287025166666667\", //Duração total da pausa em minutos\n            \"approved_by_supervisor\": \"NÃO\" //Se a pausa foi aprovada ou não pelo supervisor\n        },\n         {\n            \"ramal\": \"123654\", //Ramal usado pelo agente\n            \"code\": \"1234\", //Código de indentificação do agente\n            \"agent_name\": \"João\", //Nome do agente \n            \"queue\": \"npx_suporte\", //Fila de atendimento em que o agente estava \n            \"pause\": \"Ativação\", //Motivo ou tipo de pausa\n            \"pause_start\": \"2025-09-17T07:59:37.275-03:00\", //Data e hora em que a pausa começou \n            \"pause_finish\": \"2025-09-17T08:06:14.998-03:00\", //Data e hora em que a pausa terminou\n            \"max_minutes\": null, //Limite de minutos permitido por pausa \n            \"pause_duration_minutes\": \"6.6287025166666667\", //Duração total da pausa em minutos\n            \"approved_by_supervisor\": \"NÃO\" //Se a pausa foi aprovada ou não pelo supervisor\n        },\n         {\n            \"ramal\": \"123654\", //Ramal usado pelo agente\n            \"code\": \"1234\", //Código de indentificação do agente\n            \"agent_name\": \"Ronaldo\", //Nome do agente \n            \"queue\": \"npx_suporte\", //Fila de atendimento em que o agente estava \n            \"pause\": \"Ativação\", //Motivo ou tipo de pausa\n            \"pause_start\": \"2025-09-17T07:59:37.275-03:00\", //Data e hora em que a pausa começou \n            \"pause_finish\": \"2025-09-17T08:06:14.998-03:00\", //Data e hora em que a pausa terminou\n            \"max_minutes\": null, //Limite de minutos permitido por pausa \n            \"pause_duration_minutes\": \"6.6287025166666667\", //Duração total da pausa em minutos\n            \"approved_by_supervisor\": \"NÃO\" //Se a pausa foi aprovada ou não pelo supervisor\n        }\n    ]\n}\n        "
+            }
+          ],
+          "_postman_id": "eb7765e3-07bc-4fad-b203-456f1698c6b1"
+        }
+      ],
+      "id": "b5570b3a-0645-462b-9116-774277d01d9a",
+      "_postman_id": "b5570b3a-0645-462b-9116-774277d01d9a",
+      "description": ""
+    },
+    {
+      "name": "📞Callcenter",
+      "item": [
+        {
+          "name": "Retorna o status de uma chamada",
+          "id": "e0ec7f7b-1a66-443e-aafc-3d7a178758b9",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/callcenter/:id",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "callcenter",
+                ":id"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "description": {
+                    "content": "<p>Colocar o ID da chamada </p>\n",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "ex: XXXXX",
+                  "key": "id"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "3c70e5f1-e9ef-488a-91db-34b9451b572f",
+              "name": "Retorna o status de uma chamada",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "https://app.npxtech.com.br/api/callcenter/:id",
+                  "protocol": "https",
+                  "host": [
+                    "app",
+                    "npxtech",
+                    "com",
+                    "br"
+                  ],
+                  "path": [
+                    "api",
+                    "callcenter",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Acess-token",
+                  "value": "{{token-beatrix}}",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "responseTime": null,
+              "body": "{\r\n    \"status\": -1,\r\n    \"message\": \"undefined method `status' for nil:NilClass\"\r\n}"
+            }
+          ],
+          "_postman_id": "e0ec7f7b-1a66-443e-aafc-3d7a178758b9"
+        },
+        {
+          "name": "Faz o login do agente na fila",
+          "id": "40c222f8-fc04-4959-b702-88ee4ec4dfe7",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"code\": \"XXXXXX\", // coloque o código do agente\r\n  \"password\": \"XXXXXX\", // coloque a senha do agente\r\n  \"queue\": \"XXXX\", // coloque a fila em que o agente será colocado \r\n  \"extension\": \"XXXXXX\" // coloque o ramal do agente\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "https://app.npxtech.com.br/api/callcenter/logon",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "callcenter",
+                "logon"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [
+            {
+              "id": "dfe970e7-d9ea-4979-98b0-20576b5c38a0",
+              "name": "Faz o login do agente na fila",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"code\": \"XXXXXX\", // coloque o código do agente\r\n  \"password\": \"XXXXXX\", // coloque a senha do agente\r\n  \"queue\": \"XXXX\", // coloque a fila em que o agente será colocado \r\n  \"extension\": \"XXXXXX\" // coloque o ramal do agente\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://app.npxtech.com.br/api/callcenter/logon"
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Acess-token",
+                  "value": "{{token-beatrix}}",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "responseTime": null,
+              "body": "{\r\n    \"status\": -1,\r\n    \"message\": \"undefined method `real_password' for nil:NilClass\"\r\n}"
+            }
+          ],
+          "_postman_id": "40c222f8-fc04-4959-b702-88ee4ec4dfe7"
+        },
+        {
+          "name": "Faz o logoff do agente na fila",
+          "id": "c84da64f-5b6f-4029-838a-356b4132722b",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/callcenter/:id/logoff",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "callcenter",
+                ":id",
+                "logoff"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "description": {
+                    "content": "<p>Insira o valor do agente na fila </p>\n",
+                    "type": "text/plain"
+                  },
+                  "type": "string",
+                  "value": " ex: 1234",
+                  "key": "id"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "_postman_id": "c84da64f-5b6f-4029-838a-356b4132722b"
+        },
+        {
+          "name": "Retorna os dados da chamada (Atendimento)",
+          "id": "d0bc0610-59f2-47cd-9dcf-62e1b8f0d5ab",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/callcenter/:id/info",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "callcenter",
+                ":id",
+                "info"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "description": {
+                    "content": "<p>Coloque o id da chamada </p>\n",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "Ex: XXXXX",
+                  "key": "id"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "618ca09d-240c-4584-a209-e86e5910dfe9",
+              "name": "Como deve retornar com sucesso",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "https://app.npxtech.com.br/api/callcenter/:id/info",
+                  "protocol": "https",
+                  "host": [
+                    "app",
+                    "npxtech",
+                    "com",
+                    "br"
+                  ],
+                  "path": [
+                    "api",
+                    "callcenter",
+                    ":id",
+                    "info"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Acess-token",
+                  "value": "{{token-beatrix}}",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "responseTime": null,
+              "body": "{\r\n  \"id\": 9876, // identificador único da chamadado no banco de dados\r\n  \"agent_code\": \"1223456\", // Código interno do agente \r\n  \"queue\": \"npxti_suporte\", // Fila em que a chamada foi atendida\r\n  \"linkedid\": \"169999999999\", // ID de vinculação da chamada\r\n  \"call_datetime\": \"2025-09-03T13:25:12.000-03:00\", // Data e hora em que a chamada ocorreu\r\n  \"client_name\": \"João da Silva\", // Nome do cliente associado a chamada\r\n  \"client_extra_info\": \"99999999999\", // Informação adicional do CLiente\r\n  \"call_motive\": \"Dúvida técnica sobre o sistema\", // Mótivo da ligação informado no atendimento\r\n  \"call_obs\": \"Cliente solicitou retorno por e-mail\", // Observação registrada pelo agente\r\n  \"protocol\": \"202509031325129876\", // Número de protocolo da chamada (Gerada automaticamente)\r\n  \"cpf_cnpj\": \"12345678900\", // Documento do cliente (CPF ou CNPJ)\r\n  \"call_status\": \"Finalizada com sucesso\" // Situação Final da chamada\r\n  //Exemplos: (finalizada com sucesso, cancelada, cliente desligou, não atendida).\r\n}"
+            }
+          ],
+          "_postman_id": "d0bc0610-59f2-47cd-9dcf-62e1b8f0d5ab"
+        },
+        {
+          "name": "Retorna os dados do relatório de chamada do CallCenter",
+          "id": "d2f5785a-9114-4b8b-b3ff-6a82ff4b7171",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "\r\n{\r\n    \"interval\": \"yes\", //Intervalo do agente. Pode ser \"Yes\" ou \"No\"\r\n    \"report_type\": \"synthetic\", \r\n    \"queues\": \"fila\", //Fila de atendimento em que o agente estava\r\n    \"date_started_at\": \"2019-01-01\",\r\n    \"time_started_at\": \"00:00:00\",\r\n    \"date_ended_at\": \"2019-06-06\",\r\n    \"time_ended_at\": \"23:59:59\",\r\n    \"status\":\"ANSWERED\",// Lista de status selecionados\r\n    \"call_type\": \"OUTBOUND\",// Tipo(s) de chamada\r\n    \"hangupcause\": \"NORMAL_CLEARING\",// Causa(s) de desligamento\r\n    \"agent_code\": \"11033\",// Código(s) do agente\r\n    \"agent_name\":\"Francisco\" ,// Nome(s) do agente\r\n    \"src\": \"8539246770\",// Origem da chamada\r\n    \"dst\": \"85999998888\",// Destino da chamada\r\n    \"call\": \"voice\",// Tipo de chamada (in/out/etc.)\r\n    \"ddd_src\": \"85\",// DDD de origem\r\n    \"ddd_dst\": \"85\",// DDD de destino\r\n    \"operator_id\": \"\",// Empresa/operadora\r\n    \"queue\": \"MPX\",// Fila(s) selecionadas\r\n    \"group_by\": \"npx_sup\",// Agrupamento\r\n    \"billsec\": \"30\",// Chamadas acima de X segundos\r\n    \"wait\": \"10\"// Espera acima de X segundos\r\n\r\n}\r\n\r\n\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "https://app.npxtech.com.br/api/v2/callcenter/report",
+            "description": "<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code>  Como a ligação foi finalizada:\n  -1 Abandono\n   0 Fila\n   1 Cliente\n   2 Transferido.\n\n</code></pre><p>⚠️Campos obrigratórios: report_type, queues, date_started_at, time_started_at, date_ended_at, time_ended_at</p>\n",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "v2",
+                "callcenter",
+                "report"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [
+            {
+              "id": "7d802ff3-abcd-4c89-84cd-23dcbef05ba2",
+              "name": "Dados Sinteticos",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "\r\n{\r\n    \"interval\": \"yes\", //Intervalo do agente. Pode ser \"Yes\" ou \"No\"\r\n    \"report_type\": \"synthetic\", \r\n    \"queues\": \"fila\", //Fila de atendimento em que o agente estava\r\n    \"date_started_at\": \"2019-01-01\",\r\n    \"time_started_at\": \"00:00:00\",\r\n    \"date_ended_at\": \"2019-06-06\",\r\n    \"time_ended_at\": \"23:59:59\",\r\n    \"status\":\"ANSWERED\",// Lista de status selecionados\r\n    \"call_type\": \"OUTBOUND\",// Tipo(s) de chamada\r\n    \"hangupcause\": \"NORMAL_CLEARING\",// Causa(s) de desligamento\r\n    \"agent_code\": \"11033\",// Código(s) do agente\r\n    \"agent_name\":\"Francisco\" ,// Nome(s) do agente\r\n    \"src\": \"8539246770\",// Origem da chamada\r\n    \"dst\": \"85999998888\",// Destino da chamada\r\n    \"call\": \"voice\",// Tipo de chamada (in/out/etc.)\r\n    \"ddd_src\": \"85\",// DDD de origem\r\n    \"ddd_dst\": \"85\",// DDD de destino\r\n    \"operator_id\": \"\",// Empresa/operadora\r\n    \"queue\": \"MPX\",// Fila(s) selecionadas\r\n    \"group_by\": \"npx_sup\",// Agrupamento\r\n    \"billsec\": \"30\",// Chamadas acima de X segundos\r\n    \"wait\": \"10\"// Espera acima de X segundos\r\n\r\n}\r\n\r\n\r\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://app.npxtech.com.br/api/v2/callcenter/report"
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "responseTime": null,
+              "body": "{\r\n          \"queue_name\": \"npx\", //Nome da fila\r\n          \"agent_code\": \"001005\", //Código do agente\r\n          \"agent_name\": \"Ihago Oliveira\", //Nome do agente\r\n          \"total_answered\": 69, //Total de chadamas atendidas\r\n          \"total_time_answered\": 7197, //Tempo total das chamadas atendidas em segundos\r\n          \"total_not_answered\": 54, //Total de chadamas não atendidas\r\n          \"total_time_not_answered\": 448, //Tempo total das chamadas não atendidas em segundos\r\n          \"total_not_answered_agent\": 0, //Total das chamadas não atendidas pelo agente\r\n          \"total_time_not_answered_agent\": 0, //Tempo total das chamadas não atendidas pelo agente em segundos\r\n          \"total_time_wait\": 1330, //Tempo total de espera\r\n          \"total_busy\": 0, //Total de chamadas ocupadas\r\n          \"total\": 123, //Total de chamadas\r\n          \"total_complete_agent\": 60, //Total de chamadas encerradas pelo agente\r\n          \"total_complete_caller\": 63, //Total de chamadas encerradas pelo cliente\r\n          \"total_transfer\": 0 //Total de chamadas encerradas transferidas\r\n      }"
+            },
+            {
+              "id": "4b356d70-484e-4c29-b784-aae0cf7e5104",
+              "name": "Dados Analíticos",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "\r\n{\r\n    \"interval\": \"yes\", //Intervalo do agente. Pode ser \"Yes\" ou \"No\"\r\n    \"report_type\": \"analythic\", \r\n    \"queues\": \"fila\", //Fila de atendimento em que o agente estava\r\n    \"date_started_at\": \"2019-01-01\",\r\n    \"time_started_at\": \"00:00:00\",\r\n    \"date_ended_at\": \"2019-06-06\",\r\n    \"time_ended_at\": \"23:59:59\",\r\n    \"status\":\"ANSWERED\",// Lista de status selecionados\r\n    \"call_type\": \"OUTBOUND\",// Tipo(s) de chamada\r\n    \"hangupcause\": \"NORMAL_CLEARING\",// Causa(s) de desligamento\r\n    \"agent_code\": \"11033\",// Código(s) do agente\r\n    \"agent_name\":\"Francisco\" ,// Nome(s) do agente\r\n    \"src\": \"8539246770\",// Origem da chamada\r\n    \"dst\": \"85999998888\",// Destino da chamada\r\n    \"call\": \"voice\",// Tipo de chamada (in/out/etc.)\r\n    \"ddd_src\": \"85\",// DDD de origem\r\n    \"ddd_dst\": \"85\",// DDD de destino\r\n    \"operator_id\": \"\",// Empresa/operadora\r\n    \"queue\": \"MPX\",// Fila(s) selecionadas\r\n    \"group_by\": \"npx_sup\",// Agrupamento\r\n    \"billsec\": \"30\",// Chamadas acima de X segundos\r\n    \"wait\": \"10\"// Espera acima de X segundos\r\n\r\n}\r\n\r\n\r\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://app.npxtech.com.br/api/v2/callcenter/report"
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "responseTime": null,
+              "body": "{\r\n        \"calldatetime\": \"2022-06-06T08:05:16.000-03:00\", //Data e hora da chamada\r\n        \"billsec\": 20, //Duração da chamada em segundos\r\n        \"wait\": 20,// Tempo de espera em segundos\r\n        \"agent_code\": \"001026\", //Código do agente\r\n        \"src\": \"Danyel Ribeiro\", //Nome do agente\r\n        \"dst\": \"999999999\",// Número do cliente\r\n        \"queue_name\": \"npx_suporte\", //Nome da fila em que a chamada foi feita\r\n        \"operator_name\": \"npx\", //Nome da empresa do agente\r\n        \"trunk\": 1, //Código da empresa\r\n        \"bound\": 4, //Código do tipo da chamsda\r\n        \"call_type_name\": \"Celular Local\", //Tipo da chamada\r\n        \"status\": \"NOT ANSWERED\", //Status da chamada\r\n        \"linkedid\": \"3-1654513516.1737\", //ID da chamada\r\n        \"file\": \"3-1654513516.1737.ogg\", //Arquivo da chamada\r\n        \"record\": \"1\",// Gravou audio\r\n        \"hangupcause\": 1, // Código de encerramento da chamada\r\n        \"event\": \"CDR\", //evento LOG -> chamada iniciada pelo cliente CDR -> chamada iniciada pelo agente\r\n        \"campaign_name\": null, //campanha\r\n        \"protocol\": \"202206068051637371700\"// Protocolo da chamada \r\n            }"
+            }
+          ],
+          "_postman_id": "d2f5785a-9114-4b8b-b3ff-6a82ff4b7171"
+        }
+      ],
+      "id": "354320d4-50ea-4197-9d65-fffe3a5f5c5d",
+      "description": "<p>Permite um <strong>controle completo sobre chamadas atendidas por agentes humanos</strong>, além de login e logout nas filas.</p>\n<p>🧠 <strong>Por que usar?</strong><br />Fundamental para <strong>integrações com sistemas de atendimento</strong> ou CRMs, onde as chamadas são iniciadas e controladas por interfaces próprias.</p>\n<p><strong>⚠️Em todas as requisições da API da Beatrix necessitam do:</strong></p>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-bash\">access-token: {{token-beatrix}} \n\n</code></pre>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-css\">token-beatrix:token-beatrix:XXXXXXXXXXXXXXXXXX\n\n</code></pre>\n<p>✅ Esse token é gerado pela equipe de suporte da NPX</p>\n",
+      "_postman_id": "354320d4-50ea-4197-9d65-fffe3a5f5c5d"
+    },
+    {
+      "name": "📣Campaings",
+      "item": [
+        {
+          "name": "Envio de SMS",
+          "id": "8585c47d-200d-45a3-a414-0f324d2afa80",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"campaign_id\": 2, //ID único da campanha \r\n  \"messages\": [ //Lista de mensagens enviados dentro dessa campanha \r\n      {\"number\": \"85999999999\", \"message\":\"Ola\"}, //Number: Número do destinatário da mensagem \r\n      {\"number\": \"85999999999\", \"message\":\"Ola\"} // Message: Texto da mensagem a ser enviado \r\n    ]\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "https://app.npxtech.com.br/api/campaigns/sms",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "campaigns",
+                "sms"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [
+            {
+              "id": "24ec5413-cf1f-4365-b142-141bac161fc4",
+              "name": "Envio de SMS",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"campaign_id\": 2, //ID único da campanha \r\n  \"messages\": [ //Lista de mensagens enviados dentro dessa campanha \r\n      {\"number\": \"85999999999\", \"message\":\"Ola\"}, //Number: Número do destinatário da mensagem \r\n      {\"number\": \"85999999999\", \"message\":\"Ola\"} // Message: Texto da mensagem a ser enviado \r\n    ]\r\n}\r\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://app.npxtech.com.br/api/campaigns/sms"
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "responseTime": null,
+              "body": "{\r\n      \"status\": 1, //O status da Chamada \r\n      \"messages_returns\": [ // Lista de objetos, onde cada objeto contém detalhes sobre uma mensagem específica \r\n          {\r\n              \"number\": \"85999999999\", //Número do destinatário\r\n              \"message_id\": \"1244\" //ID único para essa mensagem\r\n          },\r\n          {\r\n              \"number\": \"85999999999\",//Número do destinatário\r\n              \"message_id\": \"1854\",//ID único para essa mensagem\r\n              \"send\": \"false\"//Indica se a chave foi enviada com sucesso\r\n              // pode colocar \"False\" para sem sucesso ou \"True\" para sucesso\r\n          }\r\n      ]\r\n  }\r\n"
+            }
+          ],
+          "_postman_id": "8585c47d-200d-45a3-a414-0f324d2afa80"
+        },
+        {
+          "name": "Envio para URA (Desenvol.)",
+          "id": "bb000400-5ff9-4620-971e-fa6f653a2e8f",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "urlObject": {
+              "query": [],
+              "variable": []
+            },
+            "url": ""
+          },
+          "response": [],
+          "_postman_id": "bb000400-5ff9-4620-971e-fa6f653a2e8f"
+        }
+      ],
+      "id": "80f852fd-2116-4846-9602-75e8ee218446",
+      "description": "<p>Este módulo é voltado para o <strong>envio automatizado de comunicações em massa</strong>, seja por <strong>SMS</strong>, <strong>URA (atendimento automático por voz)</strong> ou <strong>discador automático</strong>.</p>\n<p>🧠 <strong>Por que usar?</strong><br />Ideal para equipes de marketing, cobrança ou SAC que precisam fazer <strong>campanhas ativas</strong> e querem automatizar o processo.</p>\n<p>⚠️Em todas as requisições da API da Beatrix necessitam do:</p>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-bash\">access-token: {{token-beatrix}} \n\n</code></pre>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-css\">token-beatrix:token-beatrix:XXXXXXXXXXXXXXXXXX\n\n</code></pre>\n<p>✅ Esse token é gerado pela equipe de suporte da NPX</p>\n",
+      "_postman_id": "80f852fd-2116-4846-9602-75e8ee218446"
+    },
+    {
+      "name": "🔧Extensions",
+      "item": [
+        {
+          "name": "Listar ramais",
+          "id": "02ec5252-db8f-4f82-a00b-01b03e19ada0",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/extensions",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "extensions"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [
+            {
+              "id": "4637ff0a-0770-4ede-8f7b-1c437ba17e6f",
+              "name": "Retorno com sucesso",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}",
+                    "type": "text"
+                  }
+                ],
+                "url": "https://app.npxtech.com.br/api/extensions"
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "responseTime": null,
+              "body": "{\n    \"current_page\": 1, //Página atual da consulta\n    \"per_page\": 3,//quantidade de registro retornados por pagina\n    \"total_count\": 125,//Número total de registros existentes\n    \"total_pages\": 3,//Total de páginas possíveis \n    \"extensions\": [\n        {\n            \"category\": \"1234\", // Tipo de extensão \n            \"callerid\": \"\\\"1234\\\" <1234>\", // Id que aparece quando u ciente liga a partir da extensão \n            \"ddr\": \"8599999999\", //Número direto de ramal \n            \"secret\": \"monkeyHAJSKD\",//Senha usada para autenticar a extensão \n            \"context_name\": \"DDD_CEL_EXT\",//contexto no PBX que define regras de chamada\n            \"cost_center_name\": \"joao_lima\",//Centro de custo associado á extensão \n            \"company_name\": \"NPX\",//Nome da empresa á qual a extensão pertence\n            \"operator_name\": \"npx\"//Operadora/Usuario responsável pela extensão\n        },\n        {\n           \"category\": \"1235\", // Tipo de extensão \n            \"callerid\": \"\\\"1235\\\" <1235>\", // Id que aparece quando u ciente liga a partir da extensão \n            \"ddr\": \"8599999999\", //Número direto de ramal \n            \"secret\": \"monoHAJSKD\",//Senha usada para autenticar a extensão \n            \"context_name\": \"DDD_CEL_EXT\",//contexto no PBX que define regras de chamada\n            \"cost_center_name\": \"jorge_lima\",//Centro de custo associado á extensão \n            \"company_name\": \"NPX\",//Nome da empresa á qual a extensão pertence\n            \"operator_name\": \"npx\"//Operadora/Usuario responsável pela extensão\n        },\n        {\n           \"category\": \"1236\", // Tipo de extensão \n            \"callerid\": \"\\\"1236\\\" <1236>\", // Id que aparece quando u ciente liga a partir da extensão \n            \"ddr\": \"8599999999\", //Número direto de ramal \n            \"secret\": \"meneHAJSKD\",//Senha usada para autenticar a extensão \n            \"context_name\": \"DDD_CEL_EXT\",//contexto no PBX que define regras de chamada\n            \"cost_center_name\": \"jose_lima\",//Centro de custo associado á extensão \n            \"company_name\": \"NPX\",//Nome da empresa á qual a extensão pertence\n            \"operator_name\": \"npx\"//Operadora/Usuario responsável pela extensão\n        }\n    ]\n}\n"
+            }
+          ],
+          "_postman_id": "02ec5252-db8f-4f82-a00b-01b03e19ada0"
+        }
+      ],
+      "id": "ea7358f5-75af-4a05-a3ce-5d8af4346b21",
+      "description": "<p>Aqui você consegue <strong>monitorar todos os ramais cadastrados no sistema</strong></p>\n<p>🧠 <strong>Por que usar?</strong><br />Muito útil para <strong>painéis de supervisão</strong>, integrações com plataformas de BI, ou dashboards internos.</p>\n<p><strong>⚠️Em todas as requisições da API da Beatrix necessitam do:</strong></p>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-bash\">access-token: {{token-beatrix}} \n\n</code></pre>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-css\">token-beatrix:token-beatrix:XXXXXXXXXXXXXXXXXX\n\n</code></pre>\n<p>✅ Esse token é gerado pela equipe de suporte da NPX</p>\n",
+      "_postman_id": "ea7358f5-75af-4a05-a3ce-5d8af4346b21"
+    },
+    {
+      "name": "🏢PABX",
+      "item": [
+        {
+          "name": "Iniciar uma chamada",
+          "id": "1b43cd43-823c-488f-8289-36a1fdd3dc5e",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \t\"extension\": \"14356\", //É o ramal.\r\n    \"number\": \"xxxxxxxxxxx\" //Número do ramal (telefone).\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "https://app.npxtech.com.br/api/pabx",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "pabx"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [
+            {
+              "id": "514b62d1-b451-4da3-9488-389264789169",
+              "name": "Iniciar uma chamada (Desabilitado)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://app.npxtech.com.br/api/pabx"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Access-Control-Allow-Headers",
+                  "value": "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+                },
+                {
+                  "key": "Access-Control-Allow-Methods",
+                  "value": "POST, PUT, DELETE, GET"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Access-Control-Request-Method",
+                  "value": "*"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-cache"
+                },
+                {
+                  "key": "Referrer-Policy",
+                  "value": "strict-origin-when-cross-origin"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "_npx_session=vURF3XpxvtM%2Fe3YV2%2BOYeFp5mNTdOLB0gIT%2BJch3b9Tr6lYSLEhvnc2xnUBIPzcF5yR2Cuv0sncn%2BDeALiib0McychRc%2F%2BlKBl3Iqq5kdj2F7jvpGJA3b0cEaPLtVGP2%2FUdyB0cEgAwozPDoyovufZEz2uIQixu9QrMbgp5FjJCwXIFQusGCXQGxHW39hr9JtLCGkvwCduBJBp6NXx8OhtdpyZmZlyCm--ili31SVrHc96CqGO--ZuqALPO6jk2JqnH0nsKlHg%3D%3D; path=/; HttpOnly"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "X-Content-Type-Options",
+                  "value": "nosniff"
+                },
+                {
+                  "key": "X-Download-Options",
+                  "value": "noopen"
+                },
+                {
+                  "key": "X-Frame-Options",
+                  "value": "SAMEORIGIN"
+                },
+                {
+                  "key": "X-Permitted-Cross-Domain-Policies",
+                  "value": "none"
+                },
+                {
+                  "key": "X-Request-Id",
+                  "value": "6a6d07f3-85b1-4e6d-9dd8-759d8c143224"
+                },
+                {
+                  "key": "X-Runtime",
+                  "value": "0.831126"
+                },
+                {
+                  "key": "X-Xss-Protection",
+                  "value": "1; mode=block"
+                },
+                {
+                  "key": "Date",
+                  "value": "Wed, 22 Oct 2025 18:40:59 GMT"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "responseTime": null,
+              "body": "{\n    \"callid\": \"206053421421984\", //ID único da chamada.\n    \"status\": 5 // Representa um estado da ligação (ex: 5 = encerrada, atendida, em andamento, etc.)\n}"
+            }
+          ],
+          "_postman_id": "1b43cd43-823c-488f-8289-36a1fdd3dc5e"
+        },
+        {
+          "name": "Retorna o status de uma chamada",
+          "id": "d0c4e810-6f7a-4a4f-9d8d-1bd0c7d44dca",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/pabx/:id",
+            "description": "<p>no Header da chamada. Substituir o :id pelo “callid” que foi retornado.</p>\n<p>Status:</p>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code>2 - Chamada em andamento\n5 - Chamando\n7 - Atendida (Chamada já finalizada)\n8 - Não atendida (Chamada já finalizada)\n9 - Ocupado (Chamada já finalizada)\n\n</code></pre>",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "pabx",
+                ":id"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "description": {
+                    "content": "<p>Coloque o ID da chamada </p>\n",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "ex: XXXX",
+                  "key": "id"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "_postman_id": "d0c4e810-6f7a-4a4f-9d8d-1bd0c7d44dca"
+        },
+        {
+          "name": "Encerra uma chamada",
+          "id": "93c6738c-1944-4833-8ea4-de193e353021",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/pabx/:id/close",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "pabx",
+                ":id",
+                "close"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "description": {
+                    "content": "<p>Coloque o ID da chamada</p>\n",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "ex:XXXX",
+                  "key": "id"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "_postman_id": "93c6738c-1944-4833-8ea4-de193e353021"
+        },
+        {
+          "name": "Retorna o status do agente",
+          "id": "ca7a27bc-8ba8-4884-9bb7-15878137a87f",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/pabx/:id/agent_status",
+            "description": "<p><strong>Substituir o :id pelo código do agente na NPX</strong></p>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code>Principais campos:\n  paused -&gt; indica se o agente está em pausa (0 - não / 1 - sim)\n  status -&gt; indica o status o agente\n    * 0 - Offline\n    * 1 - Livre\n    * 2 - Ocupado\n    * 5 - Ramal chamando\n    * -1 - Em pausa\n  current_call -&gt; Chamada atual com as informações enviada para o discador.\n\n</code></pre>",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "pabx",
+                ":id",
+                "agent_status"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "description": {
+                    "content": "<p>Coloque o ID do agente </p>\n",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "ex: XXXX",
+                  "key": "id"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "_postman_id": "ca7a27bc-8ba8-4884-9bb7-15878137a87f"
+        },
+        {
+          "name": "Remove o agente da pause",
+          "id": "e38e23e6-5016-45e7-a438-79af39f4a254",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \t\"id\": \"1234567\",// Identificador único do agente\r\n\t  \"campaign_id\": \"XXXX\"// ID da empresa\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "https://app.npxtech.com.br/api/pabx/unpause",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "pabx",
+                "unpause"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [],
+          "_postman_id": "e38e23e6-5016-45e7-a438-79af39f4a254"
+        },
+        {
+          "name": "Coloca o agente da pause",
+          "id": "e1a4fe01-7369-4392-b9e2-4e901954d46f",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \t\"id\": \"1234567\",// Identificador único do agente\r\n\t  \"campaign_id\": \"XXXX\"// ID da empresa\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "https://app.npxtech.com.br/api/pabx/pause",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "pabx",
+                "pause"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [],
+          "_postman_id": "e1a4fe01-7369-4392-b9e2-4e901954d46f"
+        },
+        {
+          "name": "Retorna os status dos extensions (Pendente de teste)",
+          "id": "7fde7f14-67c2-4672-9c49-a25c72db2574",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/v2/pabx/extensions",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "v2",
+                "pabx",
+                "extensions"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [
+            {
+              "id": "ed5107f9-3e6c-4dc6-ab06-b2093326a310",
+              "name": "Como deve retornar",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Access-token",
+                    "value": "{{token-beatrix}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "   {\r\n      \"extensions\": [ //Lista de extensões \r\n        {\r\n          \"extension\": \"99999\", //Número do ramal\r\n          \"status\": \"OFFLINE\" // Status do ramal\r\n        },\r\n        {\r\n          \"extension\": \"77777\",\r\n          \"status\": \"ONLINE\"\r\n        }\r\n     ]\r\n   }",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://app.npxtech.com.br/api/v2/pabx/extensions"
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "responseTime": null,
+              "body": "   {\r\n      \"extensions\": [ //Lista de extensões \r\n        {\r\n          \"extension\": \"99999\", //Número do ramal\r\n          \"status\": \"OFFLINE\" // Status do ramal\r\n        },\r\n        {\r\n          \"extension\": \"77777\",\r\n          \"status\": \"ONLINE\"\r\n        }\r\n     ]\r\n   }"
+            }
+          ],
+          "_postman_id": "7fde7f14-67c2-4672-9c49-a25c72db2574"
+        }
+      ],
+      "id": "c70b33fa-38e8-4f5e-a9b6-7af8d136eca3",
+      "description": "<p>Este módulo permite interagir diretamente com a <strong>central telefônica interna da empresa</strong>.</p>\n<p>🧠 <strong>Por que usar?</strong><br />Ideal para <strong>setores internos ou administrativos</strong>, onde as chamadas são feitas entre departamentos e não passam por call center.</p>\n<p><strong>⚠️Em todas as requisições da API da Beatrix necessitam do:</strong></p>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-bash\">access-token: {{token-beatrix}} \n\n</code></pre>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-css\">token-beatrix:token-beatrix:XXXXXXXXXXXXXXXXXX\n\n</code></pre>\n<p>✅ Esse token é gerado pela equipe de suporte da NPX</p>\n",
+      "_postman_id": "c70b33fa-38e8-4f5e-a9b6-7af8d136eca3"
+    },
+    {
+      "name": "⏳Queues",
+      "item": [
+        {
+          "name": "Retorna as chamadas em espera de uma fila",
+          "id": "04154a8d-a4ee-4b3d-bcf6-2c29857da8a5",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Access-token",
+                "value": "{{token-beatrix}}",
+                "type": "text"
+              }
+            ],
+            "url": "https://app.npxtech.com.br/api/v2/queues/{queue_id}/wait_calls",
+            "urlObject": {
+              "protocol": "https",
+              "path": [
+                "api",
+                "v2",
+                "queues",
+                "{queue_id}",
+                "wait_calls"
+              ],
+              "host": [
+                "app",
+                "npxtech",
+                "com",
+                "br"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "response": [],
+          "_postman_id": "04154a8d-a4ee-4b3d-bcf6-2c29857da8a5"
+        }
+      ],
+      "id": "b86f585e-d176-402d-b68b-cefef033195c",
+      "description": "<p>A API de filas permite <strong>monitorar em tempo real</strong></p>\n<p>🧠 <strong>Por que usar?</strong><br />Perfeito para <strong>tomada de decisão rápida</strong> em momentos de pico e para automatizar o redirecionamento de agentes ou notificações a supervisores.</p>\n<p><strong>⚠️Em todas as requisições da API da Beatrix necessitam do:</strong></p>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-bash\">access-token: {{token-beatrix}} \n\n</code></pre>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-css\">token-beatrix:token-beatrix:XXXXXXXXXXXXXXXXXX\n\n</code></pre>\n<p>✅ Esse token é gerado pela equipe de suporte da NPX</p>\n",
+      "_postman_id": "b86f585e-d176-402d-b68b-cefef033195c"
+    },
+    {
+      "name": "🔍 Satisfaction Survey",
+      "item": [],
+      "id": "c44d23e0-ff65-4f5e-a4f3-ff341268dcf8",
+      "description": "<p><strong>A API das pequisas de satisfação em tempo real.</strong></p>\n<p>A pesquisa de satisfação permite entender a experiência do cliente e melhorar os serviços de forma contínua. Assim como no monitoramento em tempo real mostrado na imagem, ela possibilita decisões rápidas e mais assertivas.</p>\n<p>Com automação, é possível coletar feedbacks de forma padronizada após atendimentos, gerando indicadores como NPS e CSAT. Esses dados ajudam a identificar melhorias e fortalecer o relacionamento com o cliente, aumentando a qualidade e a fidelização.</p>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-bash\">access-token: {{token-beatrix}} \n\n</code></pre>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-css\">token-beatrix:token-beatrix:XXXXXXXXXXXXXXXXXX \n\n</code></pre>\n<p>✅ Esse token é gerado pela equipe de suporte da NPX</p>\n",
+      "_postman_id": "c44d23e0-ff65-4f5e-a4f3-ff341268dcf8"
+    },
+    {
+      "name": "New Request",
+      "id": "31024fe9-d5cd-4863-8894-e37f7b7857d2",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "urlObject": {
+          "query": [],
+          "variable": []
+        },
+        "url": ""
+      },
+      "response": [],
+      "_postman_id": "31024fe9-d5cd-4863-8894-e37f7b7857d2"
+    }
+  ]
+}

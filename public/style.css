@@ -1,0 +1,1681 @@
+/* ========================================================
+   NPX Live Wallboard - Light Theme & Vertical Columns Style
+   ======================================================== */
+
+:root {
+  --bg-color: #f1f5f9; /* Slate 100 - fundo geral claro e limpo */
+  --card-bg: #ffffff; /* Fundo dos painéis e colunas em branco puro */
+  --border-color: #cbd5e1; /* Slate 300 - bordas discretas */
+  --text-main: #0f172a; /* Slate 900 - texto escuro de alta leitura */
+  --text-muted: #475569; /* Slate 600 - rótulos secundários */
+  --text-light: #64748b; /* Slate 500 */
+  
+  /* Temas de cores por setor */
+  --comercial-color: #2563eb;
+  --comercial-bg: #eff6ff;
+  --financeiro-color: #059669;
+  --financeiro-bg: #ecfdf5;
+  --sped-color: #d97706;
+  --sped-bg: #fffbeb;
+  --suporte-color: #7c3aed;
+  --suporte-bg: #f5f3ff;
+  --ponto-color: #0891b2;
+  --ponto-bg: #ecfeff;
+
+  /* Status de Atendimento */
+  --status-free: #2e7d32; /* Verde NPX */
+  --status-free-bg: #d1fae5;
+  --status-busy: #d32f2f; /* Vermelho NPX */
+  --status-busy-bg: #fee2e2;
+  --status-paused: #0288d1; /* Azul NPX */
+  --status-paused-bg: #fef3c7;
+  --status-offline: #546e7a; /* Cinza NPX */
+  --status-offline-bg: #f1f5f9;
+
+  /* Cores dos canais */
+  --chat-color: #16a34a;   /* Verde WhatsApp */
+  --voice-color: #2563eb;  /* Azul Telefonia */
+}
+
+/* Reset Geral e Fontes */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  overflow: hidden; /* Otimizado para TV (sem barras de rolagem) */
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Container de Layout */
+.wallboard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 1.5vh 1.5vw;
+}
+
+/* --- CABEÇALHO --- */
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 8vh;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1vh;
+  margin-bottom: 2vh;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-text {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  background: linear-gradient(90deg, var(--comercial-color), var(--suporte-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.logo-highlight {
+  font-weight: 400;
+  color: var(--text-main);
+  -webkit-text-fill-color: var(--text-main);
+}
+
+.badge-live {
+  background-color: #ef4444;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  animation: blink 1.5s infinite;
+}
+
+.header-title {
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  border-left: 1px solid var(--border-color);
+  padding-left: 15px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Indicador de Conexão */
+.status-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #fff;
+  border: 1px solid var(--border-color);
+  padding: 5px 12px;
+  border-radius: 30px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-indicator.online .status-dot,
+.status-indicator.connected .status-dot {
+  background-color: var(--status-free);
+  box-shadow: 0 0 6px var(--status-free);
+}
+.status-indicator.simulated .status-dot {
+  background-color: var(--comercial-color);
+  box-shadow: 0 0 6px var(--comercial-color);
+}
+.status-indicator.offline .status-dot {
+  background-color: var(--status-busy);
+  box-shadow: 0 0 6px var(--status-busy);
+  animation: blink 1s infinite;
+}
+
+.status-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Widget do Relógio */
+.clock-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  background-color: #fff;
+  border: 1px solid var(--border-color);
+  padding: 5px 14px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+#live-clock {
+  font-variant-numeric: tabular-nums; /* Evita trepidação visual */
+}
+
+.clock-widget i {
+  color: var(--comercial-color);
+}
+
+.date-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-light);
+  border-left: 1px solid var(--border-color);
+  padding-left: 8px;
+  margin-left: 3px;
+}
+
+/* --- CONTEINER SPLIT OMNICHANNEL (50% Voz / 50% Chat) --- */
+.omnichannel-split-container {
+  display: grid;
+  grid-template-columns: 55fr 45fr; /* Voz 55% / Chat 45% — mais espaço para os cards de analistas */
+  gap: 15px;
+  height: 80vh;
+  width: 100%;
+}
+
+/* Canais da esquerda e direita */
+.channel-half {
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.5vh 1vw;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.channel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 6px;
+}
+
+.channel-header h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.channel-header.voice-theme h2 { color: #2563eb; }
+.channel-header.chat-theme h2  { color: #16a34a; }
+
+.channel-summary-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 6px;
+  color: #fff;
+}
+.channel-header.voice-theme .channel-summary-badge { background-color: #2563eb; color: #fff; }
+.channel-header.chat-theme  .channel-summary-badge { background-color: #16a34a; color: #fff; }
+
+/* --- SUBGRADE DE COLUNAS DE VOZ (Esquerda - 2 Colunas de 25%) --- */
+.voice-columns-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); /* Impede que colunas ultrapassem a largura do container */
+  gap: 12px;
+  height: calc(100% - 40px);
+}
+
+/* Zona de encaixe vertical de Voz */
+.voice-zone {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 150px;
+  border: 2px dashed transparent;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.voice-zone.drag-over {
+  background-color: rgba(37, 99, 235, 0.04);
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+/* --- COLUNA DE SETOR --- */
+.dept-column {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.2vh 0.8vw;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Estica até o fim da zona vertical */
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.dept-column.dragging {
+  opacity: 0.4;
+  border: 2px dashed var(--voice-color);
+  background-color: #f8fafc;
+  transform: scale(0.98);
+}
+
+/* --- BLOCO UNIFICADO DE OUTROS SETORES --- */
+.sub-sectors-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-y: auto;
+  overflow-x: hidden; /* Evita barra de rolagem horizontal acidental */
+  flex-grow: 1;
+  padding-right: 2px;
+}
+
+/* Ocultar barra de rolagem mas permitir funcionalidade */
+.sub-sectors-container::-webkit-scrollbar { width: 4px; }
+.sub-sectors-container::-webkit-scrollbar-track { background: transparent; }
+.sub-sectors-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+.sub-sector-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.sub-sector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #cbd5e1;
+  padding-bottom: 4px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  user-select: none;
+  margin-bottom: 2px;
+}
+
+.sub-sector-header.comercial-theme { color: var(--comercial-color); border-bottom-color: var(--comercial-color); }
+.sub-sector-header.financeiro-theme { color: var(--financeiro-color); border-bottom-color: var(--financeiro-color); }
+.sub-sector-header.sped-theme { color: var(--sped-color); border-bottom-color: var(--sped-color); }
+.sub-sector-header.ponto-theme { color: var(--ponto-color); border-bottom-color: var(--ponto-color); }
+
+.sub-sector-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sub-sector-kpis {
+  font-size: 0.7rem;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+.sub-sector-kpis strong {
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+.sub-online {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background-color: #e2e8f0;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #475569;
+}
+
+/* --- KANBAN DO PRIXCHAT --- */
+.chat-metrics-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.chat-metric-card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+}
+
+.chat-metric-card .val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--chat-color);
+}
+
+.chat-metric-card.alert {
+  border-color: #fca5a5;
+  background-color: #fee2e2;
+  animation: pulse-bg-red 2s infinite;
+}
+
+.chat-metric-card.alert .val {
+  color: #dc2626;
+}
+
+.chat-metric-card .lbl {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+}
+
+/* Kanban Board de WhatsApp */
+.chat-kanban-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 colunas de chat */
+  gap: 10px;
+  height: calc(100% - 70px);
+  overflow: hidden; /* Trava o transbordamento para exibição simétrica */
+}
+
+.chat-column {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%; /* Estica até a base do quadro, alinhando com a coluna Pendentes */
+}
+
+.chat-column-header {
+  background: #15803d;
+  color: white;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-column-header.pending {
+  background: #dc2626; /* Cabeçalho vermelho para destacar clientes pendentes */
+}
+
+.chat-cards-container {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  overflow-x: hidden; /* Evita barra de rolagem horizontal acidental */
+  flex-grow: 1;
+}
+
+/* Ocultar barra de rolagem */
+.chat-cards-container::-webkit-scrollbar { width: 4px; }
+.chat-cards-container::-webkit-scrollbar-track { background: transparent; }
+.chat-cards-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+/* Cartão do Kanban de Chat */
+.chat-kanban-card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  transition: border-color 0.2s ease;
+}
+
+.chat-kanban-card:hover {
+  border-color: #cbd5e1;
+}
+
+.chat-kanban-client {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-kanban-snippet {
+  font-size: 0.7rem;
+  color: var(--text-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-kanban-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 3px;
+}
+
+.chat-kanban-time {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.72rem;
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #047857;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.chat-kanban-time.alert {
+  background-color: #fee2e2;
+  color: #991b1b;
+  animation: pulse-time-red 1.5s infinite;
+}
+
+.chat-kanban-sector {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.chat-kanban-sector.comercial { background-color: var(--status-free-bg); color: #065f46; }
+.chat-kanban-sector.financeiro { background-color: var(--status-busy-bg); color: #991b1b; }
+.chat-kanban-sector.sped { background-color: var(--status-paused-bg); color: #92400e; }
+.chat-kanban-sector.suporte { background-color: #e0f2fe; color: #0369a1; }
+
+@keyframes pulse-time-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2); }
+  70% { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Indicadores de tema colorido no topo da coluna */
+.dept-column::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+}
+#InfoBrasil_Comercial::before { background-color: var(--comercial-color); }
+#Infobrasil_finan::before { background-color: var(--financeiro-color); }
+#InfoBrasil_SPED_Fiscal::before { background-color: var(--sped-color); }
+#InfoBrasil_Suporte::before { background-color: var(--suporte-color); }
+#InfoBrasil_Outros_Setores::before { background-color: #6366f1; }
+
+.dept-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2vh;
+  padding-bottom: 0.8vh;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: grab;
+  user-select: none;
+}
+.dept-header:active {
+  cursor: grabbing;
+}
+
+.dept-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Cores específicas das fontes de título */
+.comercial-theme { color: var(--comercial-color); }
+.financeiro-theme { color: var(--financeiro-color); }
+.sped-theme { color: var(--sped-color); }
+.suporte-theme { color: var(--suporte-color); }
+.ponto-theme { color: var(--ponto-color); }
+.outros-theme { color: #6366f1; }
+
+.online-badge {
+  background-color: #f1f5f9;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* --- BARRA DE KPI DE FILA (Horizontal) --- */
+.queue-kpi-bar {
+  display: flex;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 0.8vh; /* Reduzido de 1.5vh para economia de espaço */
+  transition: all 0.3s ease;
+}
+
+.kpi-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 5px; /* Reduzido de 8px para 3px */
+}
+
+.kpi-fila {
+  border-right: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+}
+
+.kpi-tempo {
+  background-color: #ffffff;
+}
+
+.kpi-val {
+  font-size: 1.5rem; /* Reduzido de 2.2rem */
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-main);
+  letter-spacing: -1px;
+}
+
+.kpi-val-time {
+  font-size: 1.15rem; /* Reduzido de 1.4rem */
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-main);
+}
+
+.kpi-lbl {
+  font-size: 0.58rem; /* Reduzido de 0.7rem */
+  text-transform: uppercase;
+  color: var(--text-light);
+  font-weight: 700;
+  margin-top: 1px; /* Reduzido de 3px */
+}
+
+/* Estados de Alerta da Fila */
+.queue-alert-warning {
+  background-color: #fef3c7 !important;
+  border-color: #f59e0b;
+}
+.queue-alert-warning .kpi-fila {
+  background-color: #fef3c7 !important;
+  border-right-color: rgba(245, 158, 11, 0.2);
+}
+.queue-alert-warning .kpi-val {
+  color: #d97706;
+}
+
+.queue-alert-critical {
+  background-color: #fee2e2 !important;
+  border-color: #ef4444;
+  animation: pulse-border-red 2s infinite;
+}
+.queue-alert-critical .kpi-fila {
+  background-color: #fee2e2 !important;
+  border-right-color: rgba(239, 68, 68, 0.2);
+}
+.queue-alert-critical .kpi-val {
+  color: #dc2626;
+  animation: text-scale 1s infinite alternate;
+}
+
+/* --- SEÇÃO DE CLIENTES EM ESPERA --- */
+.waiting-list-section {
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 1.5vh;
+  animation: pulse-bg-red 2s infinite;
+}
+
+.section-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-light);
+  font-weight: 700;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.waiting-list-section .section-title {
+  color: #b91c1c;
+}
+
+.waiting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wait-client-item {
+  background-color: #ffffff;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #7f1d1d;
+}
+
+.wait-duration-badge {
+  background-color: #ef4444;
+  color: #ffffff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  animation: blink 1s infinite;
+}
+
+/* --- SEÇÃO DE LISTA DE ANALISTAS --- */
+.analysts-section {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.analysts-section .section-title {
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+}
+
+.analysts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto; /* Permite scroll se houver muitos analistas */
+  overflow-x: hidden; /* Evita barra de rolagem horizontal acidental */
+  padding-right: 2px;
+  flex-grow: 1;
+}
+
+/* Ocultar barra de rolagem mas permitir funcionalidade */
+.analysts-list::-webkit-scrollbar {
+  width: 4px;
+}
+.analysts-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.analysts-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* CARD DE ANALISTA INDIVIDUAL */
+.analyst-card {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 4px 8px; /* Reduzido para deixar o card mais fino */
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease-in-out;
+  cursor: pointer;
+}
+
+.analyst-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.03);
+  background-color: #ffffff;
+}
+
+/* Cores de fundo para o cartão inteiro do analista (novo indicador visual) */
+.analyst-card.status-1 { background-color: var(--status-free); border-color: var(--status-free); color: white; }
+.analyst-card.status-2 { background-color: var(--status-busy); border-color: var(--status-busy); color: white; }
+.analyst-card.status-5 { background-color: var(--status-paused); border-color: var(--status-paused); color: white; }
+.analyst-card.status-offline { background-color: var(--status-offline); border-color: var(--status-offline); color: white; }
+
+.analyst-card.status-1 .analyst-name,
+.analyst-card.status-2 .analyst-name,
+.analyst-card.status-5 .analyst-name,
+.analyst-card.status-offline .analyst-name {
+  color: white;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.analyst-card.status-1 .metric-lbl, .analyst-card.status-1 .metric-val,
+.analyst-card.status-2 .metric-lbl, .analyst-card.status-2 .metric-val,
+.analyst-card.status-5 .metric-lbl, .analyst-card.status-5 .metric-val,
+.analyst-card.status-offline .metric-lbl, .analyst-card.status-offline .metric-val {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.analyst-card.status-1:hover { background-color: var(--status-free); filter: brightness(1.05); }
+.analyst-card.status-2:hover { background-color: var(--status-busy); filter: brightness(1.05); }
+.analyst-card.status-5:hover { background-color: var(--status-paused); filter: brightness(1.05); }
+.analyst-card.status-offline:hover { background-color: var(--status-offline); filter: brightness(1.05); }
+
+/* Estilo para analistas offline (desativados) */
+.analyst-card.offline-card {
+  opacity: 0.9; 
+  background-color: #cbd5e1; /* Fundo do card nitidamente CINZA */
+  border-color: #94a3b8;
+  color: #334155; 
+  box-shadow: none;
+  transition: opacity 0.25s ease, background-color 0.25s ease;
+}
+
+.analyst-card.offline-card .analyst-name {
+  color: #334155; /* Nome em cinza escuro para dar contraste com o card cinza */
+  font-weight: 800; 
+  text-shadow: none;
+}
+
+.analyst-card.offline-card .metric-lbl, .analyst-card.offline-card .metric-val {
+  color: #475569;
+}
+
+.analyst-card.offline-card:hover {
+  opacity: 1;
+  background-color: #94a3b8; /* Fica um cinza um pouco mais escuro no hover */
+}
+
+@keyframes blink-warning {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; filter: brightness(1.1); box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+  100% { opacity: 1; }
+}
+
+.analyst-card.alert-blink {
+  animation: blink-warning 1s infinite ease-in-out;
+  border: 2px solid #ef4444 !important; /* Borda vermelha para destaque extra */
+}
+
+/* Gaveta de Métricas Oculta por padrão */
+.analyst-metrics-drawer {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  border-top: 1px dashed transparent;
+  margin-top: 0;
+  padding-top: 0;
+  transition: all 0.25s ease-in-out;
+}
+
+/* Expande a gaveta ao passar o mouse ou ao clicar (.active) */
+.analyst-card:hover .analyst-metrics-drawer,
+.analyst-card.active .analyst-metrics-drawer {
+  max-height: 80px; /* Altura suficiente para o grid 2x2 */
+  opacity: 1;
+  border-top-color: #e2e8f0;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+/* Grade de 2x2 para exibição dos tempos */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+}
+
+.metric-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  color: var(--text-light);
+}
+
+.metric-item i {
+  color: var(--comercial-color);
+  font-size: 0.68rem;
+  margin-right: 3px;
+}
+
+.metric-val {
+  font-weight: 700;
+  color: var(--text-main);
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.analyst-row-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.analyst-name-info {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Ajustado para deixar o P2 e o nome mais próximos */
+  flex-grow: 1;
+}
+
+/* Dot de Status */
+.status-indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-indicator-dot.status-1 { background-color: var(--status-free); box-shadow: 0 0 4px var(--status-free); }
+.status-indicator-dot.status-2 { background-color: var(--status-busy); box-shadow: 0 0 4px var(--status-busy); }
+.status-indicator-dot.status-5 { background-color: var(--status-paused); box-shadow: 0 0 4px var(--status-paused); }
+.status-indicator-dot.status-offline { background-color: var(--status-offline); }
+
+.analyst-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  width: 90px; /* Aumentado 75→90px para não truncar a 150% de zoom na TV */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.analyst-extension {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-light);
+  width: 65px; /* Aumentado 55→65px proporcional ao ganho do split */
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Ramal centralizado no meio do cartão do analista */
+.analyst-ramal-center {
+  flex: 1;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.88rem;
+  font-family: monospace, sans-serif;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+/* Ajuste fino de alto contraste para o cartão de Livre PBX (Fundo Verde Claro) */
+.analyst-card.status-pbx-free .analyst-ramal-center {
+  color: #065f46 !important;
+  text-shadow: none !important;
+}
+
+body.fullscreen-mode .analyst-ramal-center {
+  font-size: 0.95rem;
+}
+
+.penalty-tag {
+  background-color: rgba(255, 255, 255, 0.5); /* Fundo sutil */
+  color: #333;
+  font-size: 0.55rem;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 4px;
+  display: inline-block;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+/* Status Badges no Card */
+.status-text-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.status-text-badge.status-1 { background-color: var(--status-free-bg); color: #065f46; }
+.status-text-badge.status-2 { background-color: var(--status-busy-bg); color: #991b1b; }
+.status-text-badge.status-5 { background-color: var(--status-paused-bg); color: #92400e; }
+
+/* Para os analistas offline, o botão (badge) recebe a MESMA cor do nome */
+.analyst-card.offline-card .status-text-badge.status-offline { 
+  background-color: #334155; 
+  border: none; 
+  color: #ffffff;
+}
+
+.status-text-badge.alert {
+  background-color: #ef4444;
+  color: #ffffff;
+  animation: pulse-bg-badge-red 1.5s infinite;
+}
+
+/* Marcador de tempo dentro do badge de status */
+.badge-time {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.75rem;
+  opacity: 0.9;
+  letter-spacing: 0.5px;
+}
+
+/* Alerta de ligação longa */
+.status-text-badge.status-2.alert {
+  background-color: #ef4444;
+  color: #ffffff;
+  animation: pulse-bg-badge-red 1.5s infinite;
+}
+
+@keyframes pulse-bg-badge-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); background-color: #ef4444; }
+  70% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); background-color: #ef4444; }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); background-color: #ef4444; }
+}
+
+
+/* --- ESTADOS DE LOADING E VAZIO --- */
+.loading-state, .no-analysts {
+  text-align: center;
+  color: var(--text-light);
+  font-style: italic;
+  font-size: 0.8rem;
+  padding: 20px 0;
+}
+
+/* --- FOOTER --- */
+.main-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 5vh;
+  margin-top: 1.5vh;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1vh;
+  color: var(--text-light);
+  font-size: 0.8rem;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 3px;
+}
+.legend-dot.status-1 { background-color: var(--status-free); }
+.legend-dot.status-2 { background-color: var(--status-busy); }
+.legend-dot.status-5 { background-color: var(--status-paused); }
+
+/* Footer-right com status + relógio compactos */
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-status {
+  padding: 2px 8px !important;
+  font-size: 0.7rem !important;
+  gap: 5px !important;
+  box-shadow: none !important;
+  border-radius: 20px !important;
+}
+
+.footer-status .status-label {
+  font-size: 0.7rem !important;
+}
+
+.footer-status .status-dot {
+  width: 7px !important;
+  height: 7px !important;
+}
+
+.footer-clock {
+  font-size: 0.85rem !important;
+  padding: 2px 10px !important;
+  gap: 5px !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+}
+
+.footer-clock .date-label {
+  font-size: 0.7rem !important;
+  padding-left: 6px !important;
+  margin-left: 2px !important;
+}
+
+/* --- ANIMAÇÕES --- */
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulse-border-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); border-color: #ef4444; }
+  70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); border-color: #ef4444; }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); border-color: #ef4444; }
+}
+
+@keyframes pulse-bg-red {
+  0% { background-color: #fee2e2; border-color: #fca5a5; }
+  50% { background-color: #fecaca; border-color: #ef4444; }
+  100% { background-color: #fee2e2; border-color: #fca5a5; }
+}
+
+@keyframes pulse-bg-yellow {
+  0% { background-color: #fef3c7; }
+  50% { background-color: #fde68a; }
+  100% { background-color: #fef3c7; }
+}
+
+@keyframes text-scale {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}
+
+/* --- RESPONSIVIDADE DE TELA --- */
+
+/* Ajustes finos para telas de laptops menores */
+@media (max-width: 1366px) {
+  .kpi-val { font-size: 1.8rem; }
+  .kpi-val-time { font-size: 1.1rem; }
+  .analyst-name { width: 78px; } /* Proporcional ao novo split 55/45 em telas menores */
+  .analyst-extension { width: 54px; }
+  .status-text-badge { font-size: 0.7rem; padding: 2px 6px; }
+}
+
+
+
+/* Smartphones (Visualização rápida pelo celular na empresa) */
+@media (max-width: 768px) {
+  body {
+    overflow-y: auto; /* Permite rolagem total no celular */
+  }
+  .wallboard-container {
+    height: auto;
+    padding: 10px;
+  }
+  .main-header {
+    height: auto;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+    align-items: flex-start;
+  }
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .omnichannel-split-container {
+    grid-template-columns: 1fr; /* Empilha Voz e Chat verticalmente */
+    height: auto;
+    gap: 15px;
+  }
+  .channel-half {
+    height: auto;
+    min-height: auto;
+    padding: 12px;
+  }
+  .voice-columns-grid {
+    grid-template-columns: 1fr; /* Empilha Suporte e Outros Setores verticalmente */
+    height: auto;
+    gap: 15px;
+  }
+  .dept-column {
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    padding: 15px 12px;
+  }
+  .chat-kanban-board {
+    grid-template-columns: 1fr; /* Empilha colunas de chat verticalmente */
+    height: auto;
+    gap: 15px;
+  }
+  .chat-column {
+    height: auto;
+    max-height: none;
+  }
+  .main-footer {
+    height: auto;
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+    padding-top: 15px;
+  }
+}
+
+/* --- ALINHAMENTO DE DIGITOS (EVITA TREPIDAÇÃO) --- */
+#live-clock,
+.chat-kanban-time,
+.time-sec,
+.metric-val,
+.call-time,
+.espera-media-valor,
+.clock-widget span {
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* --- AJUSTES DE EXPANSÃO PARA MODO TELA CHEIA (F11) --- */
+body.fullscreen-mode {
+  padding: 5px;
+}
+
+body.fullscreen-mode .main-header {
+  display: none !important; /* Oculta totalmente o cabeçalho no modo F11 para liberar espaço vertical */
+}
+
+body.fullscreen-mode .main-footer {
+  display: none !important; /* Esconde o rodapé no modo tela cheia */
+}
+
+body.fullscreen-mode .omnichannel-split-container {
+  height: calc(100vh - 58px) !important; /* 100vh menos a barra de ticker de 48px e 10px de padding */
+  gap: 8px;
+  margin-top: 0;
+}
+
+body.fullscreen-mode .channel-header {
+  display: none !important; /* Oculta totalmente os cabeçalhos 'Voz' e 'Chat' no F11 */
+}
+
+body.fullscreen-mode .channel-half {
+  padding: 8px !important; /* Aproveitamento máximo do container no F11 */
+}
+
+body.fullscreen-mode .voice-columns-grid {
+  height: 100% !important; /* Ocultado o channel-header, a grade ocupa 100% da altura */
+}
+
+/* Botão de pausa do carrossel: regra de fullscreen removida pois botão é agora elemento fixo global */
+
+body.fullscreen-mode .chat-column-header {
+  padding: 4px 10px !important; /* Compacta a faixa verde dos nomes dos analistas */
+  font-size: 0.85rem !important;
+}
+
+body.fullscreen-mode .analyst-card {
+  padding: 6px 10px; /* Reduzido para deixar o cartão mais fino mesmo na TV */
+  font-size: 0.98rem;
+}
+
+body.fullscreen-mode .analyst-name {
+  font-size: 1.05rem;
+}
+
+body.fullscreen-mode .chat-kanban-card {
+  padding: 10px 12px;
+  font-size: 0.98rem;
+}
+
+body.fullscreen-mode .chat-kanban-client {
+  font-size: 1.05rem;
+}
+
+/* Customização dos Status e Relógio no Header (F11 e Normal) */
+.header-status {
+  padding: 3px 10px !important;
+  font-size: 0.75rem !important;
+  border-radius: 20px !important;
+  box-shadow: none !important;
+}
+.header-status .status-label {
+  font-size: 0.75rem !important;
+}
+.header-status .status-dot {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.header-clock {
+  font-size: 1.15rem !important;
+  padding: 3px 10px !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+.header-clock .date-label {
+  font-size: 0.75rem !important;
+}
+
+/* Sobrescritas para o Header no F11 (Ultra Compacto) */
+body.fullscreen-mode .main-header .status-indicator {
+  padding: 1px 6px !important;
+  font-size: 0.7rem !important;
+  gap: 4px !important;
+}
+body.fullscreen-mode .main-header .status-indicator .status-label {
+  font-size: 0.7rem !important;
+}
+body.fullscreen-mode .main-header .status-indicator .status-dot {
+  width: 6px !important;
+  height: 6px !important;
+}
+body.fullscreen-mode .main-header .clock-widget {
+  font-size: 0.75rem !important;
+  padding: 1px 8px !important;
+  gap: 4px !important;
+  border-radius: 4px !important;
+}
+body.fullscreen-mode .main-header .clock-widget .date-label {
+  font-size: 0.7rem !important;
+  padding-left: 4px !important;
+}
+
+/* Card de Chat em estado de Alerta de SLA */
+.chat-kanban-card.alert-card-sla {
+  border: 1px solid #ef4444 !important;
+  background-color: #fef2f2 !important;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.25) !important;
+  animation: pulse-border-red 2s infinite !important;
+}
+
+.chat-kanban-card.alert-card-sla .chat-kanban-client {
+  color: #991b1b !important;
+}
+
+.chat-kanban-card.alert-card-sla .chat-kanban-time {
+  background-color: #fee2e2 !important;
+  color: #991b1b !important;
+}
+}
+
+/* Badges de Direção da Ligação (NPX) */
+.dir-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  margin-right: 6px;
+  font-size: 0.65rem;
+  vertical-align: middle;
+}
+
+.dir-badge.inbound {
+  background-color: #d1fae5; /* Verde sólido claro */
+  color: #065f46; /* Verde escuro para contraste */
+  border: 1px solid #10b981; /* Borda verde */
+}
+
+.dir-badge.outbound {
+  background-color: #dbeafe; /* Azul sólido claro */
+  color: #1e40af; /* Azul escuro para contraste */
+  border: 1px solid #3b82f6; /* Borda azul */
+}
+
+/* --- PBX PASTEL OVERRIDES --- */
+.analyst-card.status-pbx-free {
+  background-color: #ecfdf5 !important; /* Verde água muito clarinho */
+  border: 1px solid #10b981 !important; /* Borda verde claro */
+  box-shadow: none !important;
+}
+.analyst-card.status-pbx-free .analyst-name {
+  color: #1e293b !important; /* Nome do analista em cinza escuro */
+  font-weight: 800 !important;
+  text-shadow: none !important;
+}
+.analyst-card.status-pbx-free .metric-lbl, .analyst-card.status-pbx-free .metric-val {
+  color: #475569 !important;
+}
+.status-text-badge.status-pbx-free-badge {
+  background-color: #10b981 !important; /* Verde normal */
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 800 !important;
+}
+
+.analyst-card.status-pbx-busy {
+  background-color: #fef2f2 !important; /* Rosa/Vermelho muito clarinho */
+  border: 1px solid #ef4444 !important; /* Borda vermelha claro */
+  box-shadow: none !important;
+}
+.analyst-card.status-pbx-busy .analyst-name {
+  color: #1e293b !important; /* Nome do analista em cinza escuro */
+  font-weight: 800 !important;
+  text-shadow: none !important;
+}
+.analyst-card.status-pbx-busy .metric-lbl, .analyst-card.status-pbx-busy .metric-val {
+  color: #475569 !important;
+}
+.status-text-badge.status-pbx-busy-badge {
+  background-color: #ef4444 !important; /* Vermelho normal */
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 800 !important;
+}
+
+/* Botão de Fixar / Pausar Coluna de Chat */
+.chat-pin-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-pin-btn:hover {
+  color: #ffffff;
+  transform: scale(1.15);
+}
+
+.chat-pin-btn i.pinned-active {
+  color: #f59e0b !important; /* Amarelo âmbar para indicar fixado */
+  transform: rotate(45deg); /* Dá um efeito de tarraxa fincada */
+  text-shadow: 0 0 4px rgba(245, 158, 11, 0.6);
+}
+
+/* Botão flutuante de Pausar/Retomar Carrossel — sempre visível, modo normal e F11 */
+.chat-channel {
+  position: relative !important;
+}
+
+/* Botão Flutuante do Carrossel no Topo Direito do Setor Chat (Sem sobrepor texto ou rodapé) */
+.carousel-toggle-btn {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  z-index: 99 !important;
+  background: #ffffff;
+  border: 1.5px solid #16a34a;
+  color: #16a34a;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+body.fullscreen-mode .carousel-toggle-btn {
+  top: 6px !important;
+  right: 6px !important;
+  padding: 3px 8px !important;
+  font-size: 0.75rem !important;
+}
+
+.carousel-toggle-btn:hover {
+  background: #16a34a;
+  color: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 4px 14px rgba(22,163,74,0.35);
+}
+
+/* Estado: carrossel pausado — botão âmbar */
+.carousel-toggle-btn.paused {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  color: #d97706;
+  box-shadow: 0 2px 10px rgba(245,158,11,0.25);
+}
+
+.carousel-toggle-btn.paused:hover {
+  background: #fef3c7;
+  box-shadow: 0 4px 14px rgba(245,158,11,0.4);
+}
+
+/* No fullscreen não precisa de override - o botão já é fixed e está fora do channel-header */
+/* Wrapper vertical para colunas fixadas agrupadas - ocupa 1 slot do grid */
+.chat-column-vertical-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  grid-column: span 1;
+}
+
+/* Colunas internas crescem apenas conforme o conteúdo, sem espaço em branco */
+.chat-column-vertical-wrapper .chat-column {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
+}
+
+/* Container de cards das colunas FIXADAS — padrão "peek":
+   Mostra 1 card completo + espia do próximo para sinalizar scroll */
+.pinned-cards-container {
+  max-height: 140px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;                     /* Firefox */
+  scrollbar-color: rgba(0,0,0,0.2) transparent;
+}
+
+/* Scrollbar estilizada para Chrome/Edge */
+.pinned-cards-container::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+}
+
+/* Container de cards dentro do wrapper segue scroll interno seguro */
+.chat-column-vertical-wrapper .chat-column .chat-cards-container {
+  overflow-y: auto;
+  max-height: 180px;
+}
+
+/* Limita a altura do container de cards do chat para permitir scroll interno em colunas longas (ex: 8+ chamados do Darkison) sem espremer o rodapé */
+.chat-column .chat-cards-container {
+  flex: 1 1 0px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  max-height: calc(100vh - 280px);
+}
+
+body.fullscreen-mode .chat-column .chat-cards-container {
+  flex: 1 1 0px !important;
+  min-height: 0 !important;
+  max-height: calc(100vh - 225px) !important;
+}
+
+/* --- BARRA FLUTUANTE DE TICKER / ESCALA DE SÁBADO & SOBREAVISO --- */
+.ticker-bar {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+  color: #f8fafc;
+  height: 42px;
+  border-radius: 10px;
+  margin-top: 6px;
+  padding: 0 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 1.05rem;
+  z-index: 100;
+  position: relative;
+  flex-shrink: 0 !important; /* Impede que colunas longas de chat comprimam o rodapé */
+}
+
+body.fullscreen-mode .ticker-bar {
+  height: 46px;
+  font-size: 1.15rem;
+  flex-shrink: 0 !important;
+}
+
+.ticker-content-wrap {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  white-space: nowrap;
+}
+
+.ticker-text {
+  display: inline-block;
+  white-space: nowrap;
+  padding-left: 100%;
+  animation: marqueeTicker 38s linear infinite;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.ticker-text:hover {
+  animation-play-state: paused;
+}
+
+/* Pílulas de Categoria por Cor */
+.ticker-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  margin-right: 22px;
+  font-size: 0.96rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+body.fullscreen-mode .ticker-pill {
+  font-size: 1.05rem;
+  padding: 6px 16px;
+  margin-right: 28px;
+}
+
+.ticker-pill.pill-escala {
+  background: rgba(30, 58, 138, 0.6);
+  color: #bfdbfe;
+  border: 1px solid #3b82f6;
+}
+
+.ticker-pill.pill-sobreaviso {
+  background: rgba(124, 45, 18, 0.6);
+  color: #fed7aa;
+  border: 1px solid #f97316;
+}
+
+.ticker-pill.pill-apoio {
+  background: rgba(19, 78, 74, 0.6);
+  color: #99f6e4;
+  border: 1px solid #14b8a6;
+}
+
+.ticker-pill.pill-ferias {
+  background: rgba(76, 29, 149, 0.6);
+  color: #e9d5ff;
+  border: 1px solid #a855f7;
+}
+
+/* Relógio Fixo no Lado Direito do Letreiro */
+.ticker-clock-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.95);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: -6px 0 15px rgba(15, 23, 42, 0.95);
+  margin-left: 10px;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+body.fullscreen-mode .ticker-clock-widget {
+  font-size: 1.15rem;
+  padding: 8px 16px;
+}
+
+.ticker-clock-widget i {
+  color: #38bdf8;
+}
+
+#ticker-time, #live-clock {
+  font-variant-numeric: tabular-nums !important;
+  font-feature-settings: "tnum" 1 !important;
+  display: inline-block !important;
+  min-width: 92px !important;
+  text-align: center !important;
+}
+
+body.fullscreen-mode #ticker-time {
+  min-width: 102px !important;
+}
+
+.ticker-date {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  font-weight: 600;
+}
+
+@keyframes marqueeTicker {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+.pinned-cards-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 4px;
+}
+.pinned-cards-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
+}

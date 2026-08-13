@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NPX & PrixChat Omnichannel Wallboard</title>
+  <!-- Google Fonts: Outfit -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome para ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Estilos customizados (Omnichannel Split Screen) -->
+  <link rel="stylesheet" href="style.css?v=3.2.0">
+</head>
+<body>
+  <div class="wallboard-container">
+    <!-- Cabeçalho Principal -->
+    <header class="main-header">
+      <div class="header-left">
+        <div class="logo-wrapper">
+          <span class="logo-text">NPX &amp; PrixChat</span>
+          <span class="badge-live">OMNICHANNEL</span>
+        </div>
+        <h1 class="header-title">Monitoramento Unificado de Atendimento</h1>
+      </div>
+      
+      <div class="header-right">
+        <!-- Status de Conexão -->
+        <div id="connection-status-npx" class="status-indicator simulated header-status">
+          <span class="status-dot"></span>
+          <span id="status-text-npx" class="status-label">NPX</span>
+        </div>
+        <div id="connection-status-prix" class="status-indicator simulated header-status">
+          <span class="status-dot"></span>
+          <span id="status-text-prix" class="status-label">PRIX</span>
+        </div>
+        <!-- Relógio -->
+        <div class="clock-widget header-clock">
+          <i class="fa-regular fa-clock"></i>
+          <span id="live-clock">00:00:00</span>
+          <span id="live-date" class="date-label">01 Jan 2026</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Layout Dividido em Duas Metades de 50% -->
+    <main class="omnichannel-split-container">
+      
+      <!-- METADE ESQUERDA: TELEFONIA NPX (50% da tela, com 2 colunas de 25%) -->
+      <section class="channel-half voice-channel" id="voice-half">
+        <div class="channel-header voice-theme">
+          <h2><i class="fa-solid fa-phone-volume"></i> Voz (NPX Manager)</h2>
+          <span class="channel-summary-badge" id="voice-summary-count">0 Online</span>
+        </div>
+        
+        <!-- Duas Zonas de Arrasto para os Blocos de Voz -->
+        <div class="voice-columns-grid">
+          
+          <!-- Zona 1: Suporte (25% da tela) -->
+          <div class="voice-zone" id="zone-1">
+            <section id="InfoBrasil_Suporte" class="dept-column" draggable="true">
+              <div class="dept-header">
+                <h2 class="suporte-theme"><i class="fa-solid fa-headset"></i> Suporte</h2>
+                <span class="online-badge" id="suporte-online-badge">0 Online</span>
+              </div>
+              
+              <!-- KPI de Fila e Espera -->
+              <div class="queue-kpi-bar" id="suporte-queue-bar">
+                <div class="kpi-block kpi-fila">
+                  <span class="kpi-val" id="suporte-queue">0</span>
+                  <span class="kpi-lbl">Fila</span>
+                </div>
+                <div class="kpi-block kpi-tempo">
+                  <span class="kpi-val-time" id="suporte-wait">00:00</span>
+                  <span class="kpi-lbl">Espera Média</span>
+                </div>
+              </div>
+
+              <!-- Chamadas Atualmente na Fila -->
+              <div class="waiting-list-section" id="suporte-waiting-section" style="display: none;">
+                <h3 class="section-title"><i class="fa-solid fa-hourglass-half"></i> Clientes na Fila</h3>
+                <div class="waiting-list" id="suporte-waiting-list"></div>
+              </div>
+
+              <!-- Lista de Analistas -->
+              <div class="analysts-section">
+                <h3 class="section-title"><i class="fa-solid fa-user-group"></i> Analistas</h3>
+                <div class="analysts-list" id="suporte-analysts-list">
+                  <div class="loading-state">Carregando...</div>
+                </div>
+              </div>
+            </section>
+          </div>
+          
+          <!-- Zona 2: Outros Setores (25% da tela, Bloco Unificado) -->
+          <div class="voice-zone" id="zone-2">
+            <section id="InfoBrasil_Outros_Setores" class="dept-column" draggable="true">
+              <div class="dept-header">
+                <h2 class="outros-theme"><i class="fa-solid fa-network-wired"></i> Outros Setores</h2>
+                <span class="online-badge" id="outros-online-badge">0 Online</span>
+              </div>
+
+              <!-- Área de sub-setores agrupados -->
+              <div class="sub-sectors-container">
+                
+                <!-- Sub-setor: Comercial -->
+                <div class="sub-sector-block" id="sub-comercial-block">
+                  <div class="sub-sector-header comercial-theme">
+                    <span class="sub-sector-title"><i class="fa-solid fa-comments-dollar"></i> Comercial</span>
+                    <span class="sub-sector-kpis">
+                      <span id="comercial-online-badge" class="sub-online">0 ON</span> | 
+                      Fila: <strong id="comercial-queue">0</strong> (<span id="comercial-wait">00:00</span>)
+                    </span>
+                  </div>
+                  <!-- Elementos de fila ocultos/atualizados em background -->
+                  <div id="comercial-waiting-section" style="display:none;"><div id="comercial-waiting-list"></div></div>
+                  
+                  <div class="analysts-list" id="comercial-analysts-list">
+                    <div class="loading-state">Carregando...</div>
+                  </div>
+                </div>
+
+                <!-- Sub-setor: Financeiro -->
+                <div class="sub-sector-block" id="sub-financeiro-block">
+                  <div class="sub-sector-header financeiro-theme">
+                    <span class="sub-sector-title"><i class="fa-solid fa-file-invoice-dollar"></i> Financeiro</span>
+                    <span class="sub-sector-kpis">
+                      <span id="finan-online-badge" class="sub-online">0 ON</span> | 
+                      Fila: <strong id="finan-queue">0</strong> (<span id="finan-wait">00:00</span>)
+                    </span>
+                  </div>
+                  <div id="finan-waiting-section" style="display:none;"><div id="finan-waiting-list"></div></div>
+                  
+                  <div class="analysts-list" id="finan-analysts-list">
+                    <div class="loading-state">Carregando...</div>
+                  </div>
+                </div>
+
+                <!-- Sub-setor: SPED Fiscal -->
+                <div class="sub-sector-block" id="sub-sped-block">
+                  <div class="sub-sector-header sped-theme">
+                    <span class="sub-sector-title"><i class="fa-solid fa-scale-balanced"></i> SPED Fiscal</span>
+                    <span class="sub-sector-kpis">
+                      <span id="sped-online-badge" class="sub-online">0 ON</span> | 
+                      Fila: <strong id="sped-queue">0</strong> (<span id="sped-wait">00:00</span>)
+                    </span>
+                  </div>
+                  <div id="sped-waiting-section" style="display:none;"><div id="sped-waiting-list"></div></div>
+                  
+                  <div class="analysts-list" id="sped-analysts-list">
+                    <div class="loading-state">Carregando...</div>
+                  </div>
+                </div>
+
+                <!-- Sub-setor: Ponto -->
+                <div class="sub-sector-block" id="sub-ponto-block">
+                  <div class="sub-sector-header ponto-theme">
+                    <span class="sub-sector-title"><i class="fa-solid fa-clock"></i> Ponto</span>
+                    <span class="sub-sector-kpis">
+                      <span id="ponto-online-badge" class="sub-online">0 ON</span> | 
+                      Fila: <strong id="ponto-queue">0</strong> (<span id="ponto-wait">00:00</span>)
+                    </span>
+                  </div>
+                  <div id="ponto-waiting-section" style="display:none;"><div id="ponto-waiting-list"></div></div>
+                  
+                  <div class="analysts-list" id="ponto-analysts-list">
+                    <div class="loading-state">Carregando...</div>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- METADE DIREITA: ATENDIMENTOS CHAT PRIXCHAT (50% da tela, Kanban de WhatsApp) -->
+      <section class="channel-half chat-channel" id="chat-half">
+        <!-- Botão flutuante de Pausar/Retomar Carrossel no topo direito do setor de chat -->
+        <button id="carousel-toggle-btn" onclick="toggleCarousel()" title="Pausar/Retomar carrossel" class="carousel-toggle-btn">
+          <i class="fa-solid fa-pause" id="carousel-toggle-icon"></i>
+        </button>
+        
+        <div class="channel-header chat-theme">
+          <h2><i class="fa-brands fa-whatsapp"></i> Chat (PrixChat Atendimentos)</h2>
+          <span class="channel-summary-badge" id="chat-summary-count">0 Ativos</span>
+        </div>
+        
+        <!-- Métricas Rápidas do Chat -->
+        <div class="chat-metrics-bar">
+          <div class="chat-metric-card">
+            <span class="val" id="chat-kpi-pending">0</span>
+            <span class="lbl">Aguardando Fila</span>
+          </div>
+          <div class="chat-metric-card">
+            <span class="val" id="chat-kpi-active">0</span>
+            <span class="lbl">Em Atendimento</span>
+          </div>
+          <div class="chat-metric-card">
+            <span class="val" id="chat-kpi-tmr">00:00</span>
+            <span class="lbl">T.M.R. Médio</span>
+          </div>
+        </div>
+
+        <!-- Grade Kanban do PrixChat (Exatamente o visual do seu print) -->
+        <div class="chat-kanban-board" id="chat-kanban-board">
+          <div class="loading-state">Conectando ao PrixChat...</div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Rodapé com Metadados -->
+    <footer class="main-footer">
+      <div class="footer-left">
+        <span>Próxima atualização em <span id="countdown-label">5</span>s</span>
+      </div>
+      <div class="footer-center">
+        <span>Legenda: <span class="legend-dot status-1"></span> Livre | <span class="legend-dot status-2"></span> Ocupado | <span class="legend-dot status-5"></span> Pausa | <i class="fa-solid fa-up-down-left-right"></i> Arraste os blocos de Voz para inverter posições</span>
+      </div>
+      <div class="footer-right">
+        <!-- Espaço vazio à direita pois os elementos foram para o header -->
+      </div>
+    </footer>
+
+    <!-- Ticker Bar Flutuante para Escala de Sábado, Sobreaviso e Férias -->
+    <div id="ticker-bar" class="ticker-bar">
+      <div class="ticker-content-wrap">
+        <div id="ticker-text" class="ticker-text">Carregando dados da escala de sábados e sobreaviso...</div>
+      </div>
+      <div class="ticker-clock-widget">
+        <i class="fa-regular fa-clock"></i>
+        <span id="ticker-time">00:00:00</span>
+        <span id="ticker-date" class="ticker-date">--/--/----</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script JS -->
+  <script src="app.js?v=3.2.0"></script>
+</body>
+</html>

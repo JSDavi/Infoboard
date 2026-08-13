@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout 1: Painel Dividido (Split Screen)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-color: #f1f5f9;
+      --card-bg: #ffffff;
+      --border-color: #cbd5e1;
+      --text-main: #0f172a;
+      --voice-color: #2563eb;
+      --chat-color: #10b981;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); height: 100vh; padding: 15px; overflow: hidden; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; }
+    .logo { font-size: 1.6rem; font-weight: 800; }
+    .badge { background-color: #3b82f6; color: white; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+    
+    .split-container { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 15px; height: 82vh; }
+    
+    .panel { background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+    .panel-header { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; display: flex; justify-content: space-between; }
+    
+    /* Voz (NPX) - 4 colunas clássicas */
+    .npx-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; height: 100%; }
+    .npx-col { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .npx-col h3 { font-size: 0.8rem; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px; font-size: 0.75rem; font-weight: 600; display: flex; justify-content: space-between; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+    .status-dot.green { background: #10b981; }
+    .status-dot.red { background: #ef4444; }
+    .status-dot.yellow { background: #f59e0b; }
+
+    /* Chats (PrixChat) - Kanban simplificado */
+    .prix-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; height: 100%; }
+    .prix-col { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .prix-col.pending { border-left: 3px solid #64748b; }
+    .prix-col.active-col { border-left: 3px solid var(--chat-color); }
+    .prix-col h3 { font-size: 0.8rem; color: #334155; display: flex; justify-content: space-between; }
+    .chat-card { background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+    .chat-client { font-size: 0.75rem; font-weight: 700; }
+    .chat-meta { font-size: 0.65rem; color: #64748b; display: flex; justify-content: space-between; }
+    .tag-sector { background: #e0f2fe; color: #0369a1; padding: 1px 4px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo"><span style="color: var(--voice-color)">NPX</span> <span style="color: var(--chat-color)">PrixChat</span></div>
+    <div><span class="badge">LAYOUT 1: TELA DIVIDIDA (50/50)</span></div>
+  </div>
+
+  <div class="split-container">
+    <!-- Lado Esquerdo: NPX Voz -->
+    <div class="panel">
+      <div class="panel-header" style="color: var(--voice-color)">
+        <span><i class="fa-solid fa-phone"></i> Telefonia NPX (Modelo Atual Mantido)</span>
+        <span style="font-size: 0.8rem; color: #64748b;">4 Colunas Clássicas</span>
+      </div>
+      <div class="npx-grid">
+        <div class="npx-col">
+          <h3>Comercial</h3>
+          <div class="card"><span class="status-dot green"></span>Ana<span style="color: #64748b">Livre</span></div>
+        </div>
+        <div class="npx-col">
+          <h3>Financeiro</h3>
+          <div class="card"><span class="status-dot yellow"></span>Davi<span style="color: #d97706">Almoço</span></div>
+        </div>
+        <div class="npx-col">
+          <h3>SPED</h3>
+          <div class="card"><span class="status-dot green"></span>Camila<span style="color: #64748b">Livre</span></div>
+        </div>
+        <div class="npx-col">
+          <h3>Suporte</h3>
+          <div class="card"><span class="status-dot red"></span>Igor<span style="color: #dc2626">8598178...</span></div>
+          <div class="card"><span class="status-dot yellow"></span>Murilo<span style="color: #d97706">Feedback</span></div>
+          <div class="card"><span class="status-dot green"></span>Wendel<span style="color: #64748b">Livre</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lado Direito: PrixChat WhatsApp -->
+    <div class="panel">
+      <div class="panel-header" style="color: var(--chat-color)">
+        <span><i class="fa-brands fa-whatsapp"></i> WhatsApp PrixChat (Kanban Atendimentos)</span>
+        <span style="font-size: 0.8rem; color: #64748b;">Fila + Atendentes de Destaque</span>
+      </div>
+      <div class="prix-grid">
+        <!-- Pendentes -->
+        <div class="prix-col pending">
+          <h3>Pendentes <span style="background:#64748b; color:white; padding:1px 5px; border-radius:3px; font-size:0.7rem">2</span></h3>
+          <div class="chat-card">
+            <span class="chat-client">Eva taynara</span>
+            <div class="chat-meta"><span>13:01</span><span class="tag-sector">Suporte</span></div>
+          </div>
+          <div class="chat-card">
+            <span class="chat-client">Marcelo ISA HOME</span>
+            <div class="chat-meta"><span>12:55</span><span class="tag-sector">Comercial</span></div>
+          </div>
+        </div>
+
+        <!-- Alisson Neves -->
+        <div class="prix-col active-col">
+          <h3>Alisson <span style="background:#10b981; color:white; padding:1px 5px; border-radius:3px; font-size:0.7rem">1</span></h3>
+          <div class="chat-card">
+            <span class="chat-client">Jefferson CD</span>
+            <div class="chat-meta"><span>12:00</span><span class="tag-sector">Suporte</span></div>
+          </div>
+        </div>
+
+        <!-- Darkison -->
+        <div class="prix-col active-col">
+          <h3>Darkison <span style="background:#10b981; color:white; padding:1px 5px; border-radius:3px; font-size:0.7rem">9</span></h3>
+          <div class="chat-card">
+            <span class="chat-client">Luanne</span>
+            <div class="chat-meta"><span>08:47</span><span class="tag-sector">Suporte</span></div>
+          </div>
+          <div class="chat-card">
+            <span class="chat-client">Vilcar Financeiro</span>
+            <div class="chat-meta"><span>05/08</span><span class="tag-sector">Financeiro</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
