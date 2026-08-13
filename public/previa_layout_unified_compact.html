@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout 5: Unificado Compacto (Foco + Overflow)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-color: #f1f5f9;
+      --card-bg: #ffffff;
+      --border-color: #cbd5e1;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-light: #64748b;
+      
+      --voice-color: #2563eb;
+      --chat-color: #10b981;
+      
+      --status-free-bg: #d1fae5;
+      --status-busy-bg: #fee2e2;
+      --status-paused-bg: #fef3c7;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); height: 100vh; padding: 15px; overflow: hidden; }
+    
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px; }
+    .logo { font-size: 1.6rem; font-weight: 800; background: linear-gradient(90deg, var(--voice-color), var(--chat-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .badge { background-color: #0d9488; color: white; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+
+    /* Grid principal de 4 colunas */
+    .dashboard-columns {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      height: 82vh;
+    }
+
+    .dept-column {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .dept-header {
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    .dept-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .kpi-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .kpi-box.voice { border-left: 3px solid var(--voice-color); }
+    .kpi-box.chat { border-left: 3px solid var(--chat-color); }
+    .kpi-val { font-size: 1.1rem; font-weight: 800; }
+    .kpi-lbl { font-size: 0.65rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; }
+
+    .analysts-list {
+      flex-grow: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    /* CARD OMNICHANNEL COMPACTO */
+    .analyst-card {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .analyst-card:hover {
+      border-color: #cbd5e1;
+      background-color: #ffffff;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.02);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .analyst-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-dot.green { background: #10b981; }
+    .status-dot.red { background: #ef4444; }
+    .status-dot.yellow { background: #f59e0b; }
+    
+    .extension { font-size: 0.75rem; color: var(--text-light); }
+    .priority-tag { background: #e2e8f0; color: #475569; font-size: 0.62rem; font-weight: 800; padding: 1px 4px; border-radius: 3px; }
+
+    /* Linha de Canais Integrada Compacta */
+    .activity-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 5px;
+    }
+
+    /* Voz */
+    .voice-badge {
+      background: var(--status-busy-bg);
+      color: #991b1b;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 6px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .voice-badge.free {
+      background: var(--status-free-bg);
+      color: #065f46;
+    }
+
+    .voice-badge.pause {
+      background: var(--status-paused-bg);
+      color: #92400e;
+    }
+
+    /* Chat Horizontal */
+    .chat-info-row {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 0.72rem;
+    }
+
+    .main-chat {
+      font-weight: 700;
+      color: #0f766e;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(16, 185, 129, 0.06);
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+
+    .other-chats-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      margin-top: 2px;
+    }
+
+    .chat-pill {
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .chat-pill.more {
+      background: #0d9488;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">NPX &amp; PrixChat Omnichannel</div>
+    <div><span class="badge">LAYOUT 5: UNIFICADO COMPACTO (FOCO + OUTROS COMPACTOS)</span></div>
+  </div>
+
+  <div class="dashboard-columns">
+    <!-- Comercial -->
+    <div class="dept-column">
+      <div class="dept-header">
+        <h2 class="dept-title"><i class="fa-solid fa-comments-dollar" style="color: #059669"></i> Comercial</h2>
+        <div class="kpi-row">
+          <div class="kpi-box voice"><span class="kpi-val">0</span><span class="kpi-lbl">Fila Voz</span></div>
+          <div class="kpi-box chat"><span class="kpi-val">1</span><span class="kpi-lbl">Fila Wpp</span></div>
+        </div>
+      </div>
+      <div class="analysts-list">
+        <!-- Ana -->
+        <div class="analyst-card">
+          <div class="card-top">
+            <div class="analyst-info">
+              <span class="status-dot green"></span>
+              <span>Ana</span>
+              <span class="extension">4422001</span>
+              <span class="priority-tag">P2</span>
+            </div>
+          </div>
+          <div class="activity-container">
+            <div class="voice-badge free"><span>Voz: Livre</span></div>
+            <div class="chat-info-row">
+              <div class="main-chat">
+                <span><i class="fa-brands fa-whatsapp"></i> Sorriso Clínica</span>
+                <span class="badge-time">01:50</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Financeiro -->
+    <div class="dept-column">
+      <div class="dept-header">
+        <h2 class="dept-title"><i class="fa-solid fa-file-invoice-dollar" style="color: #d97706"></i> Financeiro</h2>
+        <div class="kpi-row">
+          <div class="kpi-box voice"><span class="kpi-val">0</span><span class="kpi-lbl">Fila Voz</span></div>
+          <div class="kpi-box chat"><span class="kpi-val">0</span><span class="kpi-lbl">Fila Wpp</span></div>
+        </div>
+      </div>
+      <div class="analysts-list">
+        <!-- Davi -->
+        <div class="analyst-card">
+          <div class="card-top">
+            <div class="analyst-info">
+              <span class="status-dot yellow"></span>
+              <span>Davi</span>
+              <span class="extension">4422002</span>
+              <span class="priority-tag">P2</span>
+            </div>
+          </div>
+          <div class="activity-container">
+            <div class="voice-badge pause">
+              <span><i class="fa-solid fa-circle-pause"></i> Almoço</span>
+              <span class="badge-time">01:09:32</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPED Fiscal -->
+    <div class="dept-column">
+      <div class="dept-header">
+        <h2 class="dept-title"><i class="fa-solid fa-scale-balanced" style="color: #7c3aed"></i> SPED Fiscal</h2>
+        <div class="kpi-row">
+          <div class="kpi-box voice"><span class="kpi-val">0</span><span class="kpi-lbl">Fila Voz</span></div>
+          <div class="kpi-box chat"><span class="kpi-val">0</span><span class="kpi-lbl">Fila Wpp</span></div>
+        </div>
+      </div>
+      <div class="analysts-list">
+        <!-- Camila -->
+        <div class="analyst-card">
+          <div class="card-top">
+            <div class="analyst-info">
+              <span class="status-dot green"></span>
+              <span>Camila</span>
+              <span class="extension">4422010</span>
+              <span class="priority-tag">P2</span>
+            </div>
+          </div>
+          <div class="activity-container">
+            <div class="voice-badge free"><span>Voz: Livre</span></div>
+            <div class="chat-info-row">
+              <!-- Mostra o chat mais antigo e lista os outros como pills menores -->
+              <div class="main-chat">
+                <span><i class="fa-brands fa-whatsapp"></i> Gessica Maria</span>
+                <span class="badge-time">12:07</span>
+              </div>
+              <div class="other-chats-list">
+                <span class="chat-pill" title="Escritório Nosso Pão"><i class="fa-brands fa-whatsapp"></i> Esc. Pão</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Suporte -->
+    <div class="dept-column">
+      <div class="dept-header">
+        <h2 class="dept-title"><i class="fa-solid fa-headset" style="color: #2563eb"></i> Suporte</h2>
+        <div class="kpi-row">
+          <div class="kpi-box voice"><span class="kpi-val">1</span><span class="kpi-lbl">Fila Voz</span></div>
+          <div class="kpi-box chat"><span class="kpi-val">2</span><span class="kpi-lbl">Fila Wpp</span></div>
+        </div>
+      </div>
+      <div class="analysts-list">
+        <!-- Igor -->
+        <div class="analyst-card">
+          <div class="card-top">
+            <div class="analyst-info">
+              <span class="status-dot red"></span>
+              <span>Igor</span>
+              <span class="extension">4422004</span>
+              <span class="priority-tag">P2</span>
+            </div>
+          </div>
+          <div class="activity-container">
+            <div class="voice-badge">
+              <span><i class="fa-solid fa-phone"></i> 85981780797</span>
+              <span class="badge-time">02:01</span>
+            </div>
+            <div class="chat-info-row">
+              <div class="main-chat">
+                <span><i class="fa-brands fa-whatsapp"></i> Jefferson CD</span>
+                <span class="badge-time">12:00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Darkison (MUITOS CHATS - 9 Chats!) -->
+        <div class="analyst-card">
+          <div class="card-top">
+            <div class="analyst-info">
+              <span class="status-dot green"></span>
+              <span>Darkison</span>
+              <span class="extension">4422009</span>
+              <span class="priority-tag">P2</span>
+            </div>
+          </div>
+          <div class="activity-container">
+            <div class="voice-badge free"><span>Voz: Livre</span></div>
+            <div class="chat-info-row">
+              <!-- Chat mais urgente em destaque -->
+              <div class="main-chat" style="background-color: rgba(239, 68, 68, 0.05); color:#991b1b;">
+                <span><i class="fa-brands fa-whatsapp"></i> Luanne (Urgente)</span>
+                <span class="badge-time">08:47</span>
+              </div>
+              <!-- Outros 8 chats resumidos em mini pills horizontais -->
+              <div class="other-chats-list">
+                <span class="chat-pill" title="Vilcar Financeiro">Vilcar Fin.</span>
+                <span class="chat-pill" title="Isaque Rockenbach">Isaque R.</span>
+                <span class="chat-pill" title="Francisco">Francisco</span>
+                <span class="chat-pill more" title="Mais 5 chats ativos">+5 chats</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
