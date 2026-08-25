@@ -1014,25 +1014,40 @@ async function runUpdateCycle() {
       sefaz: sefazDataCache
     };
   } catch (err) {
-    console.error('[NPX Integrator] Erro no ciclo de atualização, usando dados simulados de fallback:', err.message);
+    console.error('[NPX Integrator] Erro no ciclo de atualização. Mantendo último dado conhecido:', err.message);
     connectionStatus.error = err.message;
     connectionStatus.authenticated = false;
 
-    const simulatedFallback = generateSimulatedData();
-    simulatedFallback.status = {
-      npx: {
+    if (lastScrapedData && (!lastScrapedData.status || !lastScrapedData.status.isSimulated)) {
+      // Mantém os dados antigos na tela (congelados) e apenas acende o alerta de erro
+      lastScrapedData.status.npx = {
         authenticated: false,
-        isSimulated: true,
+        isSimulated: false,
         error: err.message
-      },
-      prix: {
-        authenticated: prixConnectionStatus.authenticated,
-        isSimulated: prixConnectionStatus.isSimulated,
-        error: prixConnectionStatus.error
-      },
-      isSimulated: true
-    };
-    lastScrapedData = simulatedFallback;
+      };
+      lastScrapedData.status.isSimulated = false;
+    } else {
+      // Só gera simulado se a API nunca tiver respondido desde que ligou o servidor
+      const simulatedFallback = generateSimulatedData();
+      simulatedFallback.status = {
+        npx: {
+          authenticated: false,
+          isSimulated: true,
+          error: err.message
+        },
+        pbx: {
+          authenticated: true,
+          error: null
+        },
+        prix: {
+          authenticated: prixConnectionStatus.authenticated,
+          isSimulated: prixConnectionStatus.isSimulated,
+          error: prixConnectionStatus.error
+        },
+        isSimulated: true
+      };
+      lastScrapedData = simulatedFallback;
+    }
   }
 }
 
