@@ -58,7 +58,13 @@ let prixConnectionStatus = {
   error: null
 };
 
+let prixAuthPromise = null;
+
 async function authenticatePrix() {
+  if (prixAuthPromise) {
+    return prixAuthPromise;
+  }
+
   const email = process.env.PRIXCHAT_EMAIL;
   const password = process.env.PRIXCHAT_PASSWORD;
   const backendUrl = process.env.PRIXCHAT_BACKEND || 'https://backapp.prixchat.com.br';
@@ -67,28 +73,34 @@ async function authenticatePrix() {
     throw new Error('Credenciais do PrixChat não configuradas.');
   }
   
-  try {
-    console.log(`[PrixChat] Tentando autenticar usuário: ${email}...`);
-    const res = await axios.post(`${backendUrl}/auth/login`, {
-      email,
-      password
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0'
-      }
-    });
-    prixSessionToken = res.data.token;
-    prixConnectionStatus.authenticated = true;
-    prixConnectionStatus.error = null;
-    console.log('[PrixChat] Autenticação realizada com sucesso!');
-    return prixSessionToken;
-  } catch (err) {
-    prixConnectionStatus.authenticated = false;
-    prixConnectionStatus.error = err.message;
-    console.error('[PrixChat] Erro na autenticação:', err.message);
-    throw err;
-  }
+  prixAuthPromise = (async () => {
+    try {
+      console.log(`[PrixChat] Tentando autenticar usuário: ${email}...`);
+      const res = await axios.post(`${backendUrl}/auth/login`, {
+        email,
+        password
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0'
+        }
+      });
+      prixSessionToken = res.data.token;
+      prixConnectionStatus.authenticated = true;
+      prixConnectionStatus.error = null;
+      console.log('[PrixChat] Autenticação realizada com sucesso!');
+      return prixSessionToken;
+    } catch (err) {
+      prixConnectionStatus.authenticated = false;
+      prixConnectionStatus.error = err.message;
+      console.error('[PrixChat] Erro na autenticação:', err.message);
+      throw err;
+    } finally {
+      prixAuthPromise = null;
+    }
+  })();
+
+  return prixAuthPromise;
 }
 
 async function getPrixUsersMoments() {
@@ -351,8 +363,14 @@ const DEPARTMENTS = {
   'InfoBrasil_Ponto': { name: 'Ponto', path: 'InfoBrasil_Ponto' }
 };
 
+let npxAuthPromise = null;
+
 // Função para fazer o login no painel NPXTech
 async function authenticate() {
+  if (npxAuthPromise) {
+    return npxAuthPromise; // Retorna a Promise existente se já estiver autenticando
+  }
+
   const email = process.env.NPX_EMAIL;
   const password = process.env.NPX_PASSWORD;
 
@@ -363,52 +381,58 @@ async function authenticate() {
   console.log(`[NPX Integrator] Tentando autenticar usuário: ${email}...`);
   const jar = new CookieJar();
 
-  try {
-    // 1. GET para pegar a página de login e o token de autenticidade (CSRF) do Rails
-    const getRes = await axios.get('https://app.npxtech.com.br/users/sign_in', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+  npxAuthPromise = (async () => {
+    try {
+      // 1. GET para pegar a página de login e o token de autenticidade (CSRF) do Rails
+      const getRes = await axios.get('https://app.npxtech.com.br/users/sign_in', {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      jar.parseSetCookie(getRes.headers);
+      const $ = cheerio.load(getRes.data);
+      const token = $('input[name="authenticity_token"]').val() || $('meta[name="csrf-token"]').attr('content');
+
+      if (!token) {
+        throw new Error('Token CSRF (authenticity_token) não encontrado na página de login.');
       }
-    });
 
-    jar.parseSetCookie(getRes.headers);
-    const $ = cheerio.load(getRes.data);
-    const token = $('input[name="authenticity_token"]').val() || $('meta[name="csrf-token"]').attr('content');
+      // 2. POST enviando os dados de login
+      const params = new URLSearchParams();
+      params.append('authenticity_token', token);
+      params.append('user[email]', email);
+      params.append('user[password]', password);
+      params.append('commit', 'Entrar');
 
-    if (!token) {
-      throw new Error('Token CSRF (authenticity_token) não encontrado na página de login.');
+      const postRes = await axios.post('https://app.npxtech.com.br/users/sign_in', params.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Cookie': jar.getCookieString(),
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        maxRedirects: 0,
+        validateStatus: (status) => status >= 200 && status < 400
+      });
+
+      jar.parseSetCookie(postRes.headers);
+      activeSession = jar;
+      connectionStatus.authenticated = true;
+      connectionStatus.isSimulated = false;
+      connectionStatus.error = null;
+      console.log('[NPX Integrator] Autenticação realizada com sucesso!');
+      return true;
+    } catch (error) {
+      connectionStatus.authenticated = false;
+      connectionStatus.error = error.message;
+      console.error('[NPX Integrator] Erro na autenticação:', error.message);
+      throw error;
+    } finally {
+      npxAuthPromise = null; // Limpa a promise após terminar
     }
+  })();
 
-    // 2. POST enviando os dados de login
-    const params = new URLSearchParams();
-    params.append('authenticity_token', token);
-    params.append('user[email]', email);
-    params.append('user[password]', password);
-    params.append('commit', 'Entrar');
-
-    const postRes = await axios.post('https://app.npxtech.com.br/users/sign_in', params.toString(), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': jar.getCookieString(),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      maxRedirects: 0,
-      validateStatus: (status) => status >= 200 && status < 400
-    });
-
-    jar.parseSetCookie(postRes.headers);
-    activeSession = jar;
-    connectionStatus.authenticated = true;
-    connectionStatus.isSimulated = false;
-    connectionStatus.error = null;
-    console.log('[NPX Integrator] Autenticação realizada com sucesso!');
-    return true;
-  } catch (error) {
-    connectionStatus.authenticated = false;
-    connectionStatus.error = error.message;
-    console.error('[NPX Integrator] Erro na autenticação:', error.message);
-    throw error;
-  }
+  return npxAuthPromise;
 }
 
 // Helper para fazer requisição GET na API do NPX (JSON) com cookies
