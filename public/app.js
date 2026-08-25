@@ -14,6 +14,7 @@ let lastChatData = null; // Armazena a última resposta real obtida do PrixChat
 let pinnedAnalysts = []; // Armazena os nomes dos analistas fixados na tela
 let pinPendingAlways = false; // Se verdadeiro, mantém a coluna de pendentes visível mesmo vazia
 let carouselPaused = false; // Controla se o carrossel está pausado
+let expandedAnalysts = new Set(); // Armazena as chaves dos analistas com card expandido por clique
 
 // Função para fixar/desafixar uma coluna de analista
 window.togglePinAgent = function(name) {
@@ -164,14 +165,23 @@ async function fetchData() {
   }
 }
 
-// Atualiza o Status de Conexão no Cabeçalho
+// Atualiza o Status de Conexão no Cabeçalho e no Rodapé (Visíveis no F11)
 function setConnectionStatus(service, type, label) {
+  // Badges do Header
   const indicator = document.getElementById(`connection-status-${service}`);
   const statusText = document.getElementById(`status-text-${service}`);
-  if (!indicator || !statusText) return;
-  
-  indicator.className = 'status-indicator ' + type;
-  statusText.textContent = label;
+  if (indicator && statusText) {
+    indicator.className = 'status-indicator ' + type;
+    statusText.textContent = label;
+  }
+
+  // Badges do Rodapé (Visíveis no F11)
+  const tickerIndicator = document.getElementById(`connection-status-${service}-ticker`);
+  const tickerText = document.getElementById(`status-text-${service}-ticker`);
+  if (tickerIndicator && tickerText) {
+    tickerIndicator.className = 'status-indicator ' + type + ' ticker-status-pill';
+    tickerText.textContent = label;
+  }
 }
 
 // Utilitário para formatar segundos em MM:SS ou HH:MM:SS
@@ -584,39 +594,169 @@ function renderPrixChat(realData) {
 
 // --- RENDERIZAÇÃO E ATUALIZAÇÃO DA UI ---
 
-function updateUI(data) {
-  // 1. Atualiza Status de Conexão no topo
-  const status = data.status || {};
+// Helper para categorizar erros de APIs externas com Selo da Plataforma
+function categorizeError(errText, tagLabel) {
+  const text = (errText || '').toLowerCase();
+  const tagHtml = `<span class="alert-tag-badge">${tagLabel}</span>`;
   
-  // Status NPX
+  if (text.includes('401') || text.includes('403') || text.includes('login') || text.includes('senha') || text.includes('credencial') || text.includes('unauthorized')) {
+    return {
+      type: 'auth',
+      className: 'alert-banner-auth',
+      iconHtml: '<i class="fa-solid fa-key"></i>',
+      msg: `${tagHtml} 🔑 FALHA DE LOGIN: E-mail ou senha incorretos.`
+    };
+  }
+  
+  if (text.includes('502') || text.includes('500') || text.includes('503') || text.includes('504') || text.includes('bad gateway') || text.includes('server error')) {
+    return {
+      type: 'server',
+      className: 'alert-banner-server',
+      iconHtml: '<i class="fa-solid fa-globe"></i>',
+      msg: `${tagHtml} 🌐 SERVIDOR INDISPONÍVEL: A API retornou HTTP 502 Bad Gateway...`
+    };
+  }
+
+  return {
+    type: 'network',
+    className: 'alert-banner-network',
+    iconHtml: '<i class="fa-solid fa-satellite-dish"></i>',
+    msg: `${tagHtml} 📡 CONEXÃO EXPIRADA: O servidor PBX/API local não respondeu.`
+  };
+}
+
+// Helper para converter string de tempo "HH:MM:SS" ou "MM:SS" em segundos
+function parseTimeToSeconds(timeStr) {
+  if (!timeStr) return 0;
+  const parts = String(timeStr).split(':').map(Number);
+  if (parts.length === 3) {
+    return (parts[0] || 0) * 3600 + (parts[1] || 0) * 60 + (parts[2] || 0);
+  }
+  if (parts.length === 2) {
+    return (parts[0] || 0) * 60 + (parts[1] || 0);
+  }
+  return 0;
+}
+
+// Helper para extrair o tempo limite de uma pausa a partir do seu nome (ex: Banheiro_10 -> 10min, Atend Externo_2h -> 2h, Almoço -> 2h, sem tempo -> Indefinida)
+function getPauseLimitSeconds(pauseName) {
+  if (!pauseName) return Infinity; // Indefinida
+  
+  const name = pauseName.toLowerCase().trim();
+  
+  // 1. Caso especial: Almoço = 2 horas (7200 segundos)
+  if (name.includes('almoço') || name.includes('almoco')) {
+    return 7200; // 2 horas padrão
+  }
+  
+  // 2. Procura padrão de Horas com Minutos opcionais (ex: Atend Externo_2h, Treinamento_1h30, 2h, 3 horas)
+  const hourCompoundMatch = name.match(/[_-\s]?(\d+)\s*h(?:oras?)?(?:[_-\s]?(\d+))?/);
+  if (hourCompoundMatch) {
+    const hours = parseInt(hourCompoundMatch[1], 10);
+    const mins = hourCompoundMatch[2] ? parseInt(hourCompoundMatch[2], 10) : 0;
+    return (hours * 3600) + (mins * 60);
+  }
+  
+  // 3. Procura padrão de Minutos (ex: Banheiro_10, Lanche_10', WhatsApp_45', Pausa_30m, 15min)
+  const minMatch = name.match(/[_-\s](\d+)\s*(?:'|m|min|minutos)?$/) || name.match(/[_-\s](\d+)/);
+  if (minMatch) {
+    return parseInt(minMatch[1], 10) * 60;
+  }
+  
+  // 4. Sem tempo no nome -> Pausa Indefinida (não gera alerta de estouro de limite)
+  return Infinity;
+}
+
+// Helper para definir a cor do botão com base na Psicologia das Cores
+function getErrorStateClass(errText) {
+  if (!errText) return 'warning';
+  const text = errText.toLowerCase();
+  if (text.includes('401') || text.includes('403') || text.includes('login') || text.includes('senha') || text.includes('credencial')) {
+    return 'warning'; // Laranja Âmbar (#f59e0b) - Autenticação/Senha
+  }
+  if (text.includes('timeout') || text.includes('etimedout') || text.includes('enotfound') || text.includes('rede')) {
+    return 'network-warning'; // Laranja Vivo (#ea580c) - Oscilação de Rede
+  }
+  return 'offline'; // Vermelho Queda Total (#ef4444) - HTTP 502/Servidor Fora
+}
+
+function updateUI(data) {
+  // 1. Atualiza Status de Conexão no topo e no rodapé (F11)
+  const status = data.status || {};
+  const alertBanner = document.getElementById('npx-alert-banner');
+  const alertMsg = document.getElementById('npx-alert-message');
+
+  let npxErrorMsg = null;
+  let pbxErrorMsg = null;
+  let prixErrorMsg = null;
+
+  // Status NPX (Infobrasil NPX)
   if (status.npx) {
-    if (status.npx.isSimulated) {
-      setConnectionStatus('npx', 'simulated', 'NPX Simulado');
-    } else if (status.npx.authenticated) {
-      setConnectionStatus('npx', 'connected', 'NPX Conectado');
+    const errText = status.npx.error || '';
+    if (status.npx.isSimulated || !status.npx.authenticated || errText) {
+      npxErrorMsg = errText || 'Desconectado';
+      const errCodeMatch = errText.match(/\b\d{3}\b/);
+      const errLabel = errCodeMatch ? `NPX ERRO ${errCodeMatch[0]}` : 'NPX OFF';
+      const errClass = getErrorStateClass(errText);
+      setConnectionStatus('npx', errClass, errLabel);
     } else {
-      setConnectionStatus('npx', 'offline', 'NPX Off');
+      setConnectionStatus('npx', 'connected', 'NPX');
     }
   } else {
-    // Fallback retrocompatibilidade
-    if (status.isSimulated) {
-      setConnectionStatus('npx', 'simulated', 'NPX Simulado');
+    setConnectionStatus('npx', 'connected', 'NPX');
+  }
+
+  // Status PBX (Nossa Tel PBX)
+  if (status.pbx) {
+    const errText = status.pbx.error || '';
+    if (status.pbx.authenticated === false || errText) {
+      pbxErrorMsg = errText || 'Desconectado';
+      const errCodeMatch = errText.match(/\b\d{3}\b/);
+      const errLabel = errCodeMatch ? `PBX ERRO ${errCodeMatch[0]}` : 'PBX OFF';
+      const errClass = getErrorStateClass(errText);
+      setConnectionStatus('pbx', errClass, errLabel);
     } else {
-      setConnectionStatus('npx', 'connected', 'NPX Conectado');
+      setConnectionStatus('pbx', 'connected', 'PBX');
+    }
+  } else {
+    setConnectionStatus('pbx', 'connected', 'PBX');
+  }
+
+  // Status PRIX (PrixChat)
+  if (status.prix) {
+    const errText = status.prix.error || '';
+    if (status.prix.isSimulated || !status.prix.authenticated || errText) {
+      prixErrorMsg = errText || 'Desconectado';
+      const errCodeMatch = errText.match(/\b\d{3}\b/);
+      const errLabel = errCodeMatch ? `PRIX ERRO ${errCodeMatch[0]}` : 'PRIX OFF';
+      const errClass = getErrorStateClass(errText);
+      setConnectionStatus('prix', errClass, errLabel);
+    } else {
+      setConnectionStatus('prix', 'connected', 'PRIX');
+    }
+  } else {
+    setConnectionStatus('prix', 'connected', 'PRIX');
+  }
+
+  // Gerencia a exibição do Banner Inteligente de Alerta com Selo da Plataforma
+  const activeErrInfo = npxErrorMsg ? categorizeError(npxErrorMsg, '<i class="fa-solid fa-phone"></i> INFOBRASIL NPX') :
+                        pbxErrorMsg ? categorizeError(pbxErrorMsg, '<i class="fa-solid fa-phone-volume"></i> NOSSATEL PBX') :
+                        prixErrorMsg ? categorizeError(prixErrorMsg, '<i class="fa-brands fa-whatsapp"></i> PRIXCHAT') : null;
+
+  if (alertBanner) {
+    if (activeErrInfo) {
+      alertBanner.className = `npx-alert-banner ${activeErrInfo.className}`;
+      if (alertMsg) {
+        alertMsg.innerHTML = `${activeErrInfo.iconHtml} &nbsp; ${activeErrInfo.msg}`;
+      }
+    } else {
+      alertBanner.className = 'npx-alert-banner hidden';
     }
   }
 
-  // Status PRIX
-  if (status.prix) {
-    if (status.prix.isSimulated) {
-      setConnectionStatus('prix', 'simulated', 'PRIX Simulado');
-    } else if (status.prix.authenticated) {
-      setConnectionStatus('prix', 'connected', 'PRIX Conectado');
-    } else {
-      setConnectionStatus('prix', 'offline', 'PRIX Off');
-    }
-  } else {
-    setConnectionStatus('prix', 'connected', 'PRIX Conectado');
+  // 2. Renderiza o Widget SEFAZ Fiscal
+  if (data.sefaz) {
+    renderSefazWidget(data.sefaz);
   }
 
   let currentTotalQueue = 0;
@@ -754,83 +894,106 @@ function updateUI(data) {
 
           let statusClass = 'status-offline';
           let statusLabel = 'Offline';
-          const isPaused = agent.paused == 1 || agent.status === 5 || agent.status === -1;
-          let badgeHtml = '';
-          let isOverLimit = false;
-          let ramalDisplay = ''; // Garante reset do ramal a cada analista (exibe apenas nos Livres)
+          // Identifica se agent.src ou agent.dst contém o nome de uma Pausa do NPX (ex: DemoRemota_3h, WhatsApp_45', etc)
+          const srcText = agent.src || '';
+          const dstText = agent.dst || '';
+          const isSrcPauseName = srcText && /[a-zA-Z_]/i.test(srcText) && !srcText.startsWith('8520') && !srcText.startsWith('8530') && !srcText.startsWith('085');
+          const isDstPauseName = dstText && /[a-zA-Z_]/i.test(dstText) && !dstText.startsWith('8520') && !dstText.startsWith('8530') && !dstText.startsWith('085');
 
-          let limitLabel = agent.src || agent.dst || '';
-          if (limitLabel && agent.time) {
-            const match = limitLabel.match(/_(\d+)(h|')/i);
-            if (match) {
-              let limitMinutes = parseInt(match[1], 10);
-              if (match[2].toLowerCase() === 'h') limitMinutes *= 60;
-              
-              let currentMinutes = 0;
-              const parts = agent.time.split(':').map(Number);
-              if (parts.length === 3) currentMinutes = parts[0] * 60 + parts[1] + (parts[2] / 60);
-              else if (parts.length === 2) currentMinutes = parts[0] * 60 + parts[1];
-              
-              if (currentMinutes > limitMinutes) {
-                isOverLimit = true;
-              }
-            }
+          const pauseName = (isSrcPauseName ? srcText : (isDstPauseName ? dstText : (agent.pause_name || 'Pausa')));
+
+          // Função para validar se uma string é um número real de cliente (e não código interno/ramal/pausa)
+          const isRealClientPhone = (val) => {
+            if (!val) return false;
+            const str = String(val).trim();
+            if (/[a-zA-Z_]/i.test(str) && !str.startsWith('085') && !str.startsWith('85')) return false;
+            if (str.startsWith('4422')) return false; // Código interno de fila/agente do NPX (ex: 4422006, 4422023)
+            if (str === agent.code || str === agent.extension || str === agent.ramal) return false;
+            if (/^20\d{2}$/.test(str)) return false; // Ramal PBX interno
+            return str.length >= 8;
+          };
+
+          // Uma ligação real existe se o PBX estiver em Busy ou se houver um número real de telefone em dst/src
+          const hasRealPhoneSrc = isRealClientPhone(srcText);
+          const hasRealPhoneDst = isRealClientPhone(dstText);
+          const isRealPbxCall = agent.pbxStatus === 'Busy';
+          const isRealNpxCall = (agent.status === 2) && (hasRealPhoneSrc || hasRealPhoneDst);
+          const isCallActive = isRealPbxCall || isRealNpxCall;
+
+          const isPaused = agent.paused == 1 || agent.status === 5 || agent.status === -1 || isSrcPauseName || isDstPauseName;
+
+          let isOverLimit = false;
+          if (isPaused) {
+            const pauseLimit = getPauseLimitSeconds(pauseName);
+            const pauseSeconds = agent.duration || parseTimeToSeconds(agent.time);
+            isOverLimit = (pauseSeconds >= pauseLimit);
           }
 
-          if (agent.status === 2) {
-            statusClass = 'status-2';
-            const isLongCall = agent.duration >= 1800 || (agent.pbxDuration || 0) >= 1800;
+          let ramalDisplay = '';
 
-            const src = agent.src || '';
-            const dst = agent.dst || '';
-            const isOutbound = (dst.length >= 8 && src.length < 8) || agent.pbxDirection === 0;
-            let dirIcon = isOutbound 
-              ? `<span class="dir-badge outbound" title="Chamada Realizada (Saída)"><i class="fa-solid fa-arrow-up-long"></i></span>`
-              : `<span class="dir-badge inbound" title="Chamada Recebida (Entrada)"><i class="fa-solid fa-arrow-down-long"></i></span>`;
-            
-            const numberToShow = (dst.length >= 8 && src.length < 8) ? dst : (src || agent.pbxNumber || 'Em Ligação');
+          // Extrai o número real de telefone para exibir (prioriza número externo)
+          let realNumber = '';
+          if (agent.pbxNumber && agent.pbxNumber.length >= 8) {
+            realNumber = agent.pbxNumber;
+          } else if (hasRealPhoneDst) {
+            realNumber = dstText;
+          } else if (hasRealPhoneSrc) {
+            realNumber = srcText;
+          } else {
+            realNumber = 'Em Ligação';
+          }
 
-            let formattedTime = agent.time || '00:00';
-            if (formattedTime === '00:00' && agent.pbxDuration) {
+          // Direção da chamada: 0 = Outbound (Saída), 1 = Inbound (Entrada)
+          const isOutbound = (dstText.length >= 8 && !isDstPauseName) || agent.pbxDirection === 0;
+          const dirIcon = isOutbound 
+            ? `<span class="dir-badge outbound" title="Chamada Realizada (Saída)"><i class="fa-solid fa-arrow-up-long"></i></span>`
+            : `<span class="dir-badge inbound" title="Chamada Recebida (Entrada)"><i class="fa-solid fa-arrow-down-long"></i></span>`;
+
+          // Tempo e Duração Real da Chamada (separado do tempo de pausa)
+          let formattedCallTime = '00:00';
+          let callSeconds = 0;
+          if (isRealPbxCall) {
+            callSeconds = agent.pbxDuration || (agent.pbxDurationStr ? parseTimeToSeconds(agent.pbxDurationStr) : 0);
+            if (agent.pbxDurationStr) {
+              formattedCallTime = agent.pbxDurationStr;
+            } else if (agent.pbxDuration) {
               const m = Math.floor(agent.pbxDuration / 60);
               const s = agent.pbxDuration % 60;
-              formattedTime = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-            } else if (formattedTime === '00:00' && agent.pbxDurationStr) {
-              formattedTime = agent.pbxDurationStr;
+              formattedCallTime = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
             }
+          } else if (isRealNpxCall) {
+            callSeconds = agent.duration || parseTimeToSeconds(agent.time);
+            formattedCallTime = agent.time || '00:00';
+          }
+
+          // Alerta de ligação longa: A partir de 1 hora de atendimento (3600 segundos)
+          const isLongCall = isCallActive && (callSeconds >= 3600);
+
+          if (isLongCall) {
+            isOverLimit = true;
+          }
+
+          if (isPaused && isCallActive) {
+            // REGRA: Card AZUL de Pausa (status-5) + Badge Interno VERMELHO de Ligação (status-2)
+            statusClass = 'status-5';
 
             badgeHtml = `
-              <span class="status-text-badge status-2 ${isLongCall ? 'alert' : ''}">
-                ${dirIcon}${numberToShow}&nbsp;&nbsp;|&nbsp;&nbsp;<span class="badge-time">${formattedTime}</span>
+              <span class="status-text-badge status-2 ${isLongCall ? 'alert' : ''}" title="Ligação ativa durante a Pausa (${pauseName}) ${isLongCall ? ' - EXCEDEU 1 HORA!' : ''}">
+                ${dirIcon}${realNumber}&nbsp;&nbsp;|&nbsp;&nbsp;<span class="badge-time">${formattedCallTime}</span>
               </span>
             `;
-          } else if (agent.pbxStatus === 'Busy') {
-            statusClass = 'status-pbx-busy';
-            
-            let formattedTime = '00:00';
-            if (agent.pbxDuration) {
-              const m = Math.floor(agent.pbxDuration / 60);
-              const s = agent.pbxDuration % 60;
-              formattedTime = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-            } else if (agent.pbxDurationStr) {
-              formattedTime = agent.pbxDurationStr;
-            }
-            
-            const isLongCall = (agent.pbxDuration || 0) >= 1800;
-            const isOutbound = agent.pbxDirection === 0;
-            const dirIcon = isOutbound 
-              ? `<span class="dir-badge outbound" title="Chamada Realizada (Saída)"><i class="fa-solid fa-arrow-up-long"></i></span>`
-              : `<span class="dir-badge inbound" title="Chamada Recebida (Entrada)"><i class="fa-solid fa-arrow-down-long"></i></span>`;
+          } else if (isCallActive) {
+            statusClass = isRealNpxCall ? 'status-2' : 'status-pbx-busy';
 
             badgeHtml = `
-              <span class="status-text-badge status-2 ${isLongCall ? 'alert' : ''}">
-                ${dirIcon}${agent.pbxNumber || 'Ocupado'}&nbsp;&nbsp;|&nbsp;&nbsp;<span class="badge-time">${formattedTime}</span>
+              <span class="status-text-badge status-2 ${isLongCall ? 'alert' : ''}" title="${isLongCall ? 'ATENDIMENTO EXCEDEU 1 HORA!' : 'Em Ligação'}">
+                ${dirIcon}${realNumber}&nbsp;&nbsp;|&nbsp;&nbsp;<span class="badge-time">${formattedCallTime}</span>
               </span>
             `;
           } else if (isPaused) {
             statusClass = 'status-5';
-            statusLabel = agent.src || 'Pausa';
-            badgeHtml = `<span class="status-text-badge status-5" title="Em Pausa"><i class="fa-solid fa-circle-pause"></i> ${statusLabel}&nbsp;&nbsp;|&nbsp;&nbsp;<span class="badge-time">${agent.time || '00:00'}</span></span>`;
+            statusLabel = pauseName;
+            badgeHtml = `<span class="status-text-badge status-5 ${isOverLimit ? 'alert' : ''}" title="Em Pausa (${isOverLimit ? 'TEMPO LIMITE EXCEDIDO!' : 'Dentro do limite'})"><i class="fa-solid fa-circle-pause"></i> ${statusLabel}&nbsp;&nbsp;|&nbsp;&nbsp;<span class="badge-time">${agent.time || '00:00'}</span></span>`;
           } else if (agent.status === 1) {
             statusClass = 'status-1';
             ramalDisplay = agent.code ? (String(agent.code).length > 4 ? String(agent.code).slice(-4) : String(agent.code)) : (agent.ramal || '');
@@ -882,9 +1045,21 @@ function updateUI(data) {
             </div>
           `;
 
+          // Mantém expandido se o analista foi clicado previamente
+          const agentKey = `${prefix}_${agent.name}`;
+          if (expandedAnalysts.has(agentKey)) {
+            card.classList.add('active');
+          }
+
           card.addEventListener('click', (e) => {
             if (e.target.closest('.status-text-badge') || e.target.closest('.penalty-tag')) return;
-            card.classList.toggle('active');
+            if (expandedAnalysts.has(agentKey)) {
+              expandedAnalysts.delete(agentKey);
+              card.classList.remove('active');
+            } else {
+              expandedAnalysts.add(agentKey);
+              card.classList.add('active');
+            }
           });
 
           analystsList.appendChild(card);
@@ -945,6 +1120,98 @@ function checkFullscreen() {
     document.body.classList.add('fullscreen-mode');
   } else {
     document.body.classList.remove('fullscreen-mode');
+  }
+}
+
+// --- RENDERIZAÇÃO DO WIDGET SEFAZ RADAR DE PERFORMANCE (OPÇÃO 3) ---
+function renderSefazWidget(sefazData) {
+  if (!sefazData) return;
+  const radarList = document.getElementById('sefaz-radar-list');
+  const radarTime = document.getElementById('sefaz-radar-time');
+  if (!radarList) return;
+
+  const docs = [
+    { key: 'nfe', name: 'NF-e', uf: 'CE', defaultLabel: 'SEFAZ CE' },
+    { key: 'nfce', name: 'NFC-e', uf: 'CE', defaultLabel: 'SEFAZ CE' },
+    { key: 'cte', name: 'CT-e', uf: 'SVRS', defaultLabel: 'SVRS' },
+    { key: 'mdfe', name: 'MDF-e', uf: 'SVRS', defaultLabel: 'SVRS' }
+  ];
+
+  let rowsHtml = '';
+
+  docs.forEach(doc => {
+    const item = sefazData[doc.key] || { status: 'OK', latency: 110, label: doc.defaultLabel };
+    let rowStatusClass = 'status-ok';
+    let barClass = 'bar-ok';
+    let icon = '<i class="fa-solid fa-circle-check val-icon"></i>';
+    let latencyMs = item.latency || 110;
+    let latencyText = `${latencyMs}ms`;
+
+    // Calcula a porcentagem da barra (20% a 100%)
+    let pct = Math.min(Math.max(Math.round((latencyMs / 450) * 100), 20), 100);
+
+    if (item.status === 'WARNING') {
+      rowStatusClass = 'status-warning';
+      barClass = 'bar-warning';
+      icon = '<i class="fa-solid fa-triangle-exclamation val-icon"></i>';
+      latencyText = `${latencyMs}ms`;
+      pct = Math.min(Math.max(Math.round((latencyMs / 1500) * 100), 50), 100);
+    } else if (item.status === 'DANGER' || item.status === 'OFF') {
+      rowStatusClass = 'status-danger';
+      barClass = 'bar-danger';
+      icon = '<i class="fa-solid fa-circle-xmark val-icon"></i>';
+      latencyText = 'FORA';
+      pct = 100;
+    } else if (item.status === 'CONTINGENCY') {
+      rowStatusClass = 'status-contingency';
+      barClass = 'bar-contingency';
+      icon = '<i class="fa-solid fa-shield-halved val-icon"></i>';
+      latencyText = 'Conting.';
+      pct = 80;
+    }
+
+    const titleText = `${doc.name} (${item.label || doc.defaultLabel}): ${item.status === 'OK' ? 'Operacional' : item.status}`;
+
+    rowsHtml += `
+      <div class="sefaz-radar-row ${rowStatusClass}" title="${titleText}">
+        <div class="radar-row-info">
+          <span class="doc-badge">${doc.name}</span>
+          <span class="uf-tag">(${doc.uf})</span>
+        </div>
+        <div class="radar-bar-container">
+          <div class="radar-bar-fill ${barClass}" style="width: ${pct}%;"></div>
+        </div>
+        <div class="radar-row-val">
+          ${icon}
+          <span class="latency-text">${latencyText}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  radarList.innerHTML = rowsHtml;
+
+  const globalBadge = document.getElementById('sefaz-global-badge');
+  if (globalBadge) {
+    const hasDanger = Object.values(sefazData).some(d => d && (d.status === 'DANGER' || d.status === 'OFF'));
+    const hasWarning = Object.values(sefazData).some(d => d && d.status === 'WARNING');
+
+    if (hasDanger) {
+      globalBadge.className = 'sefaz-global-badge status-danger';
+      globalBadge.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> FORA DO AR';
+    } else if (hasWarning) {
+      globalBadge.className = 'sefaz-global-badge status-warning';
+      globalBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> INSTÁVEL';
+    } else {
+      globalBadge.className = 'sefaz-global-badge status-ok';
+      globalBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> TUDO OK';
+    }
+  }
+
+  if (radarTime) {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    radarTime.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   }
 }
 

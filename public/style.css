@@ -125,7 +125,7 @@ body {
   gap: 15px;
 }
 
-/* Indicador de Conexão */
+/* Indicador de Conexão (Botões Verdes Sólidos Limpos) */
 .status-container {
   display: flex;
   align-items: center;
@@ -133,42 +133,54 @@ body {
 }
 
 .status-indicator {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background-color: #fff;
-  border: 1px solid var(--border-color);
-  padding: 5px 12px;
-  border-radius: 30px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  justify-content: center;
+  padding: 4px 14px !important;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+  font-size: 0.78rem !important;
+  border: none !important;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
 }
 
 .status-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  display: inline-block;
+  display: none !important;
 }
 
-.status-indicator.online .status-dot,
-.status-indicator.connected .status-dot {
-  background-color: var(--status-free);
-  box-shadow: 0 0 6px var(--status-free);
+.status-indicator.online,
+.status-indicator.connected {
+  background-color: #10b981 !important; /* Verde Sólido OK */
+  color: #ffffff !important;
 }
-.status-indicator.simulated .status-dot {
-  background-color: var(--comercial-color);
-  box-shadow: 0 0 6px var(--comercial-color);
+
+.status-indicator.warning,
+.status-indicator.simulated {
+  background-color: #d97706 !important; /* Laranja Âmbar Sólido Idêntico ao Banner (#d97706) */
+  color: #ffffff !important;
+  border: 1px solid #b45309 !important;
 }
-.status-indicator.offline .status-dot {
-  background-color: var(--status-busy);
-  box-shadow: 0 0 6px var(--status-busy);
-  animation: blink 1s infinite;
+
+.status-indicator.network-warning,
+.status-indicator.pbx-offline {
+  background-color: #475569 !important; /* Cinza Escuro Slate Idêntico ao Banner PBX (#475569) */
+  color: #ffffff !important;
+  border: 1px solid #334155 !important;
+}
+
+.status-indicator.offline,
+.status-indicator.error {
+  background-color: #dc2626 !important; /* Vermelho Queda Sólido Idêntico ao Banner Server (#dc2626) */
+  color: #ffffff !important;
+  border: 1px solid #b91c1c !important;
 }
 
 .status-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  letter-spacing: 0.5px;
 }
 
 /* Widget do Relógio */
@@ -587,14 +599,14 @@ body {
   color: var(--text-muted);
 }
 
-/* --- BARRA DE KPI DE FILA (Horizontal) --- */
+/* --- BARRA DE KPI DE FILA (Horizontal Slim Compacta) --- */
 .queue-kpi-bar {
   display: flex;
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
-  margin-bottom: 0.8vh; /* Reduzido de 1.5vh para economia de espaço */
+  margin-bottom: 4px; /* Ultra compacto */
   transition: all 0.3s ease;
 }
 
@@ -604,7 +616,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3px 5px; /* Reduzido de 8px para 3px */
+  padding: 1px 4px; /* Ultra fino: reduzido de 3px para 1px */
 }
 
 .kpi-fila {
@@ -617,26 +629,26 @@ body {
 }
 
 .kpi-val {
-  font-size: 1.5rem; /* Reduzido de 2.2rem */
+  font-size: 1.15rem; /* Reduzido de 1.5rem para 1.15rem */
   font-weight: 800;
   line-height: 1;
   color: var(--text-main);
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
 }
 
 .kpi-val-time {
-  font-size: 1.15rem; /* Reduzido de 1.4rem */
+  font-size: 0.95rem; /* Reduzido de 1.15rem para 0.95rem */
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1;
   color: var(--text-main);
 }
 
 .kpi-lbl {
-  font-size: 0.58rem; /* Reduzido de 0.7rem */
+  font-size: 0.52rem; /* Reduzido de 0.58rem */
   text-transform: uppercase;
   color: var(--text-light);
   font-weight: 700;
-  margin-top: 1px; /* Reduzido de 3px */
+  margin-top: 0px;
 }
 
 /* Estados de Alerta da Fila */
@@ -848,12 +860,11 @@ body {
   transition: all 0.25s ease-in-out;
 }
 
-/* Expande a gaveta ao passar o mouse ou ao clicar (.active) */
-.analyst-card:hover .analyst-metrics-drawer,
+/* Expande a gaveta EXCLUSIVAMENTE ao clicar (.active) */
 .analyst-card.active .analyst-metrics-drawer {
   max-height: 80px; /* Altura suficiente para o grid 2x2 */
   opacity: 1;
-  border-top-color: #e2e8f0;
+  border-top-color: rgba(255, 255, 255, 0.4);
   margin-top: 8px;
   padding-top: 8px;
 }
@@ -1641,8 +1652,96 @@ body.fullscreen-mode .ticker-clock-widget {
   padding: 8px 16px;
 }
 
-.ticker-clock-widget i {
-  color: #38bdf8;
+/* Banner de Alerta de Conexão Inteligente (Exemplo 2) */
+.npx-alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  z-index: 9999;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  animation: alertBannerPulse 2s infinite alternate;
+}
+
+.npx-alert-banner.hidden,
+body.fullscreen-mode .npx-alert-banner.hidden {
+  display: none !important;
+}
+
+body.fullscreen-mode .npx-alert-banner:not(.hidden) {
+  display: flex !important;
+  margin-bottom: 4px !important;
+  padding: 5px 12px !important;
+  font-size: 0.8rem !important;
+}
+
+/* Categorias de Erro por Cor (Cores 100% Idênticas aos Botões) */
+.npx-alert-banner.alert-banner-auth {
+  background-color: #d97706 !important;
+  color: #ffffff !important;
+  border: 1px solid #b45309 !important;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
+}
+
+.npx-alert-banner.alert-banner-server {
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+  border: 1px solid #b91c1c !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+}
+
+.npx-alert-banner.alert-banner-network,
+.npx-alert-banner.alert-banner-pbx {
+  background-color: #475569 !important;
+  color: #ffffff !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 4px 14px rgba(71, 85, 105, 0.35);
+}
+
+/* Selo de Identificação da Plataforma no Banner */
+.alert-tag-badge {
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff !important;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  margin-right: 8px;
+  font-family: monospace, sans-serif;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.alert-tag-badge i {
+  color: #ffffff !important;
+  font-size: 0.85rem;
+}
+
+/* Pílulas de Status no Rodapé (Ocultas no modo normal, visíveis APENAS no F11) */
+.ticker-status-pill {
+  display: none !important;
+  padding: 3px 10px !important;
+  font-size: 0.76rem !important;
+  border-radius: 12px !important;
+  margin-right: 6px;
+  box-shadow: none !important;
+  align-items: center;
+  justify-content: center;
+}
+
+body.fullscreen-mode .ticker-status-pill {
+  display: inline-flex !important;
 }
 
 #ticker-time, #live-clock {
@@ -1679,3 +1778,396 @@ body.fullscreen-mode #ticker-time {
 .pinned-cards-container::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.35);
 }
+
+/* --- OPÇÃO D: PÍLULA SPLIT BICOLOR (LIGAÇÃO EM PAUSA) --- */
+.status-split-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 20px;
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.split-pause-part {
+  background-color: #0288d1; /* Azul Pausa NPX */
+  color: #ffffff;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.split-call-part {
+  background-color: #d32f2f; /* Vermelho Ocupado NPX */
+  color: #ffffff;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.analyst-card.is-paused-call {
+  border-left: 5px solid #0288d1 !important;
+  background-color: #fff5f5 !important;
+}
+
+body.dark-mode .analyst-card.is-paused-call {
+  background-color: #1c1917 !important;
+  border-left-color: #0288d1 !important;
+}
+
+/* --- SEFAZ FISCAL MONITOR WIDGET (HEADER) --- */
+.sefaz-widget-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 4px 10px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  margin-right: 6px;
+}
+
+.sefaz-widget-container:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.sefaz-header-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-light);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-right: 1px solid var(--border-color);
+  padding-right: 8px;
+  margin-right: 2px;
+}
+
+.sefaz-pills-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sefaz-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+/* 🟢 Status Normal/OK */
+.sefaz-pill.sefaz-status-ok {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+body.dark-mode .sefaz-pill.sefaz-status-ok {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+/* 🟡 Status Instável/Lentidão */
+.sefaz-pill.sefaz-status-warning {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+body.dark-mode .sefaz-pill.sefaz-status-warning {
+  background-color: rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+}
+
+/* 🔴 Status Parada/Fora do Ar (Pisca suavemente) */
+.sefaz-pill.sefaz-status-danger {
+  background-color: #ef4444;
+  color: #ffffff;
+  border: 1px solid #dc2626;
+  animation: pulse-sefaz-danger 1.5s infinite alternate;
+}
+
+@keyframes pulse-sefaz-danger {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); transform: scale(1); }
+  100% { box-shadow: 0 0 8px 3px rgba(239, 68, 68, 0.7); transform: scale(1.03); }
+}
+
+/* 🔵 Status Contingência Ativa */
+.sefaz-pill.sefaz-status-contingency {
+  background-color: rgba(37, 99, 235, 0.15);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.4);
+}
+
+body.dark-mode .sefaz-pill.sefaz-status-contingency {
+  background-color: rgba(37, 99, 235, 0.3);
+  color: #60a5fa;
+}
+
+/* ⚪ Status Desconhecido/Carregando */
+.sefaz-pill.sefaz-status-unknown {
+  background-color: rgba(100, 116, 139, 0.12);
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+/* Tooltip Popover Suspenso */
+.sefaz-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  padding: 10px 12px;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-5px);
+  transition: all 0.2s ease;
+}
+
+.sefaz-widget-container:hover .sefaz-popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+body.dark-mode .sefaz-popover {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.sefaz-popover-header {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sefaz-popover-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sefaz-pop-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.pop-val.ok { color: #059669; }
+.pop-val.warning { color: #d97706; }
+.pop-val.danger { color: #dc2626; font-weight: 800; }
+.pop-val.contingency { color: #2563eb; font-weight: 800; }
+
+.sefaz-pop-footer {
+  font-size: 0.65rem;
+  color: var(--text-light);
+  margin-top: 8px;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 4px;
+  text-align: right;
+}
+
+/* --- RADAR SEFAZ PERFORMANCE --- */
+.sefaz-radar-card {
+  margin-top: auto;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s ease;
+}
+
+body.dark-mode .sefaz-radar-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-color: #334155;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.sefaz-radar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.radar-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: 0.5px;
+}
+
+.radar-icon {
+  color: #3b82f6;
+  font-size: 0.85rem;
+}
+
+.sefaz-global-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sefaz-global-badge.status-ok {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+body.dark-mode .sefaz-global-badge.status-ok {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.sefaz-global-badge.status-warning {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.sefaz-global-badge.status-danger {
+  background-color: #ef4444;
+  color: #ffffff;
+  border: 1px solid #dc2626;
+  animation: pulse-sefaz-danger 1.5s infinite alternate;
+}
+
+.sefaz-radar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sefaz-radar-row {
+  display: grid;
+  grid-template-columns: 75px 1fr 75px;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.radar-row-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.doc-badge {
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+.uf-tag {
+  font-size: 0.62rem;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+.radar-bar-container {
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+body.dark-mode .radar-bar-container {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.radar-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.radar-bar-fill.bar-ok {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.radar-bar-fill.bar-warning {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.radar-bar-fill.bar-danger {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+  animation: pulse-radar-bar 1s infinite alternate;
+}
+
+@keyframes pulse-radar-bar {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.radar-bar-fill.bar-contingency {
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+}
+
+.radar-row-val {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-family: monospace;
+  font-size: 0.72rem;
+}
+
+.sefaz-radar-row.status-ok .val-icon { color: #059669; }
+.sefaz-radar-row.status-warning .val-icon { color: #d97706; }
+.sefaz-radar-row.status-danger .val-icon { color: #dc2626; }
+.sefaz-radar-row.status-contingency .val-icon { color: #2563eb; }
+
+.sefaz-radar-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.63rem;
+  color: var(--text-light);
+  margin-top: 8px;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 5px;
+  font-weight: 500;
+}
+

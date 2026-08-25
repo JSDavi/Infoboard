@@ -1,0 +1,526 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infoboard — Prévia Modo Escuro (Teste)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ========================================================
+       Infoboard - Dark Theme Otimizado para TV & Monitores
+       ======================================================== */
+    :root {
+      --bg-color: #090d16;        /* Fundo ultra escuro obsidian */
+      --card-bg: #111827;        /* Cards em cinza escuro profundo */
+      --card-inner: #1f2937;     /* Sub-elementos dos cards */
+      --border-color: #374151;   /* Bordas discretas em tom escuro */
+      
+      --text-main: #f9fafb;      /* Texto principal de altíssimo contraste */
+      --text-muted: #9ca3af;     /* Rótulos e textos secundários */
+      --text-dim: #6b7280;       /* Texto suave */
+      
+      /* Cores de Destaque por Canal */
+      --voice-color: #3b82f6;    /* Azul elétrico */
+      --voice-glow: rgba(59, 130, 246, 0.2);
+      --chat-color: #10b981;     /* Verde esmeralda */
+      --chat-glow: rgba(16, 185, 129, 0.2);
+      
+      /* Status dos Atendentes (Dark Badges) */
+      --status-free-bg: #064e3b;
+      --status-free-text: #6ee7b7;
+      
+      --status-busy-bg: #7f1d1d;
+      --status-busy-text: #fca5a5;
+      
+      --status-paused-bg: #78350f;
+      --status-paused-text: #fde68a;
+      
+      --status-offline-bg: #1f2937;
+      --status-offline-text: #9ca3af;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+    
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      height: 100vh;
+      padding: 16px;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Cabeçalho do Painel em Modo Escuro */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge-test {
+      background-color: #4f46e5;
+      color: #e0e7ff;
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .header-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .clock {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #f3f4f6;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background-color: #064e3b;
+      color: #34d399;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #34d399;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #34d399;
+    }
+
+    /* Grid principal de 4 colunas */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      height: calc(100vh - 85px);
+    }
+
+    /* Coluna de Setor */
+    .dept-column {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .dept-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 12px;
+    }
+
+    .dept-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #f9fafb;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Blocos de Resumo do Canal */
+    .channel-summary-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .channel-block {
+      border-radius: 10px;
+      padding: 10px 12px;
+      background-color: var(--card-inner);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .channel-block.voice {
+      border-left: 4px solid var(--voice-color);
+    }
+
+    .channel-block.chat {
+      border-left: 4px solid var(--chat-color);
+    }
+
+    .channel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .channel-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .channel-label.voice { color: #60a5fa; }
+    .channel-label.chat { color: #34d399; }
+
+    .channel-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      text-align: center;
+      gap: 4px;
+    }
+
+    .stat-box .val {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #f3f4f6;
+    }
+
+    .stat-box .lbl {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .stat-box.alert .val {
+      color: #f87171;
+    }
+
+    /* Lista de Atendentes */
+    .analysts-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .analysts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      flex-grow: 1;
+      padding-right: 4px;
+    }
+
+    /* Scrollbar estilizada em modo escuro */
+    .analysts-list::-webkit-scrollbar { width: 5px; }
+    .analysts-list::-webkit-scrollbar-track { background: #111827; }
+    .analysts-list::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+
+    /* Card do Atendente */
+    .analyst-card {
+      background-color: var(--card-inner);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .analyst-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .analyst-name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #f3f4f6;
+    }
+
+    .status-tag {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .status-tag.free { background: var(--status-free-bg); color: var(--status-free-text); }
+    .status-tag.busy { background: var(--status-busy-bg); color: var(--status-busy-text); }
+    .status-tag.paused { background: var(--status-paused-bg); color: var(--status-paused-text); }
+
+    .analyst-channels {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mini-badge {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #374151;
+      color: #d1d5db;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .mini-badge.voice { border-left: 3px solid var(--voice-color); }
+    .mini-badge.chat { border-left: 3px solid var(--chat-color); }
+  </style>
+</head>
+<body>
+
+  <!-- Cabeçalho -->
+  <header class="header">
+    <div class="brand">
+      <div class="logo"><i class="fa-solid fa-chart-line"></i> Infoboard</div>
+      <span class="badge-test">Prévia Modo Escuro (Dark Theme Test)</span>
+    </div>
+    <div class="header-info">
+      <div class="status-pill">
+        <div class="status-dot"></div> Servidor Operacional
+      </div>
+      <div class="clock" id="live-clock">12:40:53</div>
+    </div>
+  </header>
+
+  <!-- Grid com 4 Setores em Modo Escuro -->
+  <div class="dashboard-grid">
+
+    <!-- SETOR 1: COMERCIAL -->
+    <div class="dept-column">
+      <div class="dept-header">
+        <div class="dept-title"><i class="fa-solid fa-briefcase" style="color: #60a5fa;"></i> Comercial</div>
+      </div>
+
+      <div class="channel-summary-group">
+        <!-- Telefonia -->
+        <div class="channel-block voice">
+          <div class="channel-header">
+            <span class="channel-label voice"><i class="fa-solid fa-phone"></i> Voz</span>
+          </div>
+          <div class="channel-stats">
+            <div class="stat-box"><div class="val">14</div><div class="lbl">Atendidas</div></div>
+            <div class="stat-box"><div class="val">0</div><div class="lbl">Fila</div></div>
+            <div class="stat-box"><div class="val">00:00</div><div class="lbl">Espera</div></div>
+          </div>
+        </div>
+
+        <!-- Chat -->
+        <div class="channel-block chat">
+          <div class="channel-header">
+            <span class="channel-label chat"><i class="fa-brands fa-whatsapp"></i> Chat</span>
+          </div>
+          <div class="channel-stats">
+            <div class="stat-box"><div class="val">28</div><div class="lbl">Atendidos</div></div>
+            <div class="stat-box alert"><div class="val">2</div><div class="lbl">Fila</div></div>
+            <div class="stat-box alert"><div class="val">03:15</div><div class="lbl">Espera</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="analysts-title">Equipe (3)</div>
+      <div class="analysts-list">
+        <div class="analyst-card">
+          <div class="analyst-top">
+            <span class="analyst-name">Carlos Oliveira</span>
+            <span class="status-tag busy">Em Atendimento</span>
+          </div>
+          <div class="analyst-channels">
+            <span class="mini-badge chat"><i class="fa-brands fa-whatsapp"></i> Chat (12m)</span>
+          </div>
+        </div>
+
+        <div class="analyst-card">
+          <div class="analyst-top">
+            <span class="analyst-name">Mariana Souza</span>
+            <span class="status-tag free">Livre</span>
+          </div>
+          <div class="analyst-channels">
+            <span class="mini-badge voice"><i class="fa-solid fa-phone"></i> Ramal 201</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETOR 2: FINANCEIRO -->
+    <div class="dept-column">
+      <div class="dept-header">
+        <div class="dept-title"><i class="fa-solid fa-coins" style="color: #34d399;"></i> Financeiro</div>
+      </div>
+
+      <div class="channel-summary-group">
+        <div class="channel-block voice">
+          <div class="channel-header">
+            <span class="channel-label voice"><i class="fa-solid fa-phone"></i> Voz</span>
+          </div>
+          <div class="channel-stats">
+            <div class="stat-box"><div class="val">9</div><div class="lbl">Atendidas</div></div>
+            <div class="stat-box"><div class="val">0</div><div class="lbl">Fila</div></div>
+            <div class="stat-box"><div class="val">00:00</div><div class="lbl">Espera</div></div>
+          </div>
+        </div>
+
+        <div class="channel-block chat">
+          <div class="channel-header">
+            <span class="channel-label chat"><i class="fa-brands fa-whatsapp"></i> Chat</span>
+          </div>
+          <div class="channel-stats">
+            <div class="stat-box"><div class="val">19</div><div class="lbl">Atendidos</div></div>
+            <div class="stat-box"><div class="val">0</div><div class="lbl">Fila</div></div>
+            <div class="stat-box"><div class="val">00:00</div><div class="lbl">Espera</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="analysts-title">Equipe (2)</div>
+      <div class="analysts-list">
+        <div class="analyst-card">
+          <div class="analyst-top">
+            <span class="analyst-name">Fernanda Lima</span>
+            <span class="status-tag free">Livre</span>
+          </div>
+        </div>
+
+        <div class="analyst-card">
+          <div class="analyst-top">
+            <span class="analyst-name">Roberto Santos</span>
+            <span class="status-tag paused">Pausa</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETOR 3: SUPORTE -->
+    <div class="dept-column">
+      <div class="dept-header">
+        <div class="dept-title"><i class="fa-solid fa-headset" style="color: #a78bfa;"></i> Suporte Técnico</div>
+      </div>
+
+      <div class="channel-summary-group">
+        <div class="channel-block voice">
+          <div class="channel-header">
+            <span class="channel-label voice"><i class="fa-solid fa-phone"></i> Voz</span>
+          </div>
+          <div class="channel-stats">
+            <div class="stat-box"><div class="val">42</div><div class="lbl">Atendidas</div></div>
+            <div class="stat-box alert"><div class="val">1</div><div class="lbl">Fila</div></div>
+            <div class="stat-box alert"><div class="val">01:45</div><div class="lbl">Espera</div></div>
+          </div>
+        </div>
+
+        <div class="channel-block chat">
+          <div class="channel-header">
+            <span class="channel-label chat"><i class="fa-brands fa-whatsapp"></i> Chat</span>
+          </div>
+          <div class="channel-stats">
+            <div class="stat-box"><div class="val">65</div><div class="lbl">Atendidos</div></div>
+            <div class="stat-box"><div class="val">0</div><div class="lbl">Fila</div></div>
+            <div class="stat-box"><div class="val">00:00</div><div class="lbl">Espera</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="analysts-title">Equipe (4)</div>
+      <div class="analysts-list">
+        <div class="analyst-card">
+          <div class="analyst-top">
+            <span class="analyst-name">Lucas Mendes</span>
+            <span class="status-tag busy">Em Chamada</span>
+          </div>
+        </div>
+        <div class="analyst-card">
+          <div class="analyst-top">
+            <span class="analyst-name">Beatriz Costa</span>
+            <span class="status-tag busy">Em Chat</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETOR 4: SPED FISCAL -->
+    <div class="dept-column">
+      <div class="dept-header">
+        <div class="dept-title"><i class="fa-solid fa-file-invoice" style="color: #fbbf24;"></i> SPED Fiscal</div>
+      </div>
+
+      <div class="channel-summary-group">
+        <div class="channel-block voice">
+          <div class="channel-header">
+            <span class="channel-label voice"><i class="fa-solid fa-phone"></i> Voz</span>
+          </div>
+          <div class="channel-stats">
+            <div class="stat-box"><div class="val">11</div><div class="lbl">Atendidas</div></div>
+            <div class="stat-box"><div class="val">0</div><div class="lbl">Fila</div></div>
+            <div class="stat-box"><div class="val">00:00</div><div class="lbl">Espera</div></div>
+          </div>
+        </div>
+
+        <div class="channel-block chat">
+          <div class="channel-header">
+            <span class="channel-label chat"><i class="fa-brands fa-whatsapp"></i> Chat</span>
+          </div>
+          <div class="channel-stats">
+            <div class="stat-box"><div class="val">22</div><div class="lbl">Atendidos</div></div>
+            <div class="stat-box"><div class="val">0</div><div class="lbl">Fila</div></div>
+            <div class="stat-box"><div class="val">00:00</div><div class="lbl">Espera</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="analysts-title">Equipe (2)</div>
+      <div class="analysts-list">
+        <div class="analyst-card">
+          <div class="analyst-top">
+            <span class="analyst-name">Gabriel Rocha</span>
+            <span class="status-tag free">Livre</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Relógio dinâmico
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('live-clock').innerText = now.toLocaleTimeString('pt-BR');
+    }, 1000);
+  </script>
+</body>
+</html>
