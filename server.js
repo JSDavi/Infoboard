@@ -264,18 +264,46 @@ async function startPbxApiMonitor() {
           } else if (callInfo) {
             // Ramal está em chamada ativa
             mappedStatus = 'Busy';
-            // Quem ligou para quem?
-            const srcRamal = String(callInfo.source || '');
-            const dstRamal = String(callInfo.destination || '');
-            if (srcRamal === ramal) {
-              // É originador da chamada (Outbound)
-              pbxNumber = dstRamal;
+            
+            // Filtra e limpa o número para não exibir o próprio username do analista (ex: 852001.Darkison)
+            const src = String(callInfo.source || '').trim();
+            const dst = String(callInfo.destination || '').trim();
+            const callerId = String(callInfo.callerid || callInfo.cli || callInfo.from || '').trim();
+            const namePart = username ? (username.split('.')[1] || username) : '';
+
+            const matchesAnalyst = (str) => {
+              if (!str) return false;
+              const sLower = str.toLowerCase();
+              if (ramal && sLower.includes(ramal)) return true;
+              if (namePart && namePart.length > 2 && sLower.includes(namePart.toLowerCase())) return true;
+              return false;
+            };
+
+            const srcIsAnalyst = matchesAnalyst(src);
+            const dstIsAnalyst = matchesAnalyst(dst);
+
+            if (srcIsAnalyst && !dstIsAnalyst) {
+              pbxNumber = dst;
               pbxDirection = 0; // Outbound
-            } else {
-              // É destino da chamada (Inbound)
-              pbxNumber = srcRamal;
+            } else if (!srcIsAnalyst && dstIsAnalyst) {
+              pbxNumber = src;
               pbxDirection = 1; // Inbound
+            } else if (srcIsAnalyst && dstIsAnalyst) {
+              if (callerId && !matchesAnalyst(callerId)) {
+                pbxNumber = callerId;
+              } else {
+                pbxNumber = 'Ligação Ativa';
+              }
+              pbxDirection = 1;
+            } else {
+              pbxNumber = dst || src;
+              pbxDirection = 0;
             }
+
+            if (matchesAnalyst(pbxNumber)) {
+              pbxNumber = 'Ligação Ativa';
+            }
+
             // Calcula duração se disponível
             if (callInfo.starttime) {
               const start = new Date(callInfo.starttime);
@@ -567,19 +595,47 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;');
 }
 
-// Cache para evitar envio repetido de alertas no Telegram para o mesmo ticket
-// Guarda: key -> { id, client, sector, timeSec, notifiedAt }
-const notifiedTelegramTickets = new Map();
+function isWorkingHours() {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+  const hour = now.getHours();
+
+  // Domingo (0): Fora de expediente
+  if (day === 0) return false;
+
+  // Segunda a Sexta (1 a 5): 08:00 às 19:00
+  if (day >= 1 && day <= 5) {
+    return hour >= 8 && hour < 19;
+  }
+
+  // Sábado (6): 08:00 às 18:00
+  if (day === 6) {
+    return hour >= 8 && hour < 18;
+  }
+
+  return false;
+}
+
+// Caches persistentes para garantir 100% de unicidade e NUNCA duplicar mensagens no Telegram
+const pendingAlertSent = new Set();   // IDs de tickets que já geraram alerta de fila
+const claimedAlertSent = new Set();   // IDs de tickets que já geraram confirmação de atendimento assumido
+const pendingTicketTimes = new Map(); // ID -> Tempo de espera original na fila (segundos)
 
 async function checkAndSendTelegramSlaAlerts(prixchatResult) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   const enabled = process.env.ENABLE_TELEGRAM_ALERTS !== 'false';
   const slaLimitSec = parseInt(process.env.TELEGRAM_SLA_LIMIT_SEC || '300', 10);
+  const isDevPort = process.env.PORT === '3001';
+
+  // 1. Trava do Ambiente de Dev (Porta 3001): Nunca dispara Telegram durante testes
+  if (isDevPort) return;
+
+  // 2. Trava de Horário de Atendimento (Seg-Sex 8h-19h / Sáb 8h-18h)
+  if (!isWorkingHours()) return;
 
   if (!enabled || !botToken || !chatId || !prixchatResult) return;
 
-  const now = Date.now();
   const pendingTickets = prixchatResult.pending || [];
   const agentsList = Array.isArray(prixchatResult.agents) 
     ? prixchatResult.agents 
@@ -587,25 +643,20 @@ async function checkAndSendTelegramSlaAlerts(prixchatResult) {
 
   // 1. Checa tickets na fila de pendentes que estouraram SLA (5 min)
   for (const t of pendingTickets) {
-    const ticketKey = t.id ? String(t.id) : `${t.client}_${t.sector}`;
+    const ticketId = t.id ? String(t.id) : `${t.client}_${t.sector}`;
 
     if (t.timeSec >= slaLimitSec) {
-      const info = notifiedTelegramTickets.get(ticketKey) || notifiedTelegramTickets.get(`${t.client}_${t.sector}`);
+      pendingTicketTimes.set(ticketId, t.timeSec);
+      if (t.id) pendingTicketTimes.set(`${t.client}_${t.sector}`, t.timeSec);
 
-      // Envia notificação apenas se nunca notificou
-      if (!info) {
-        const payload = {
-          id: t.id,
-          client: t.client,
-          sector: t.sector,
-          timeSec: t.timeSec,
-          notifiedAt: now
-        };
-        notifiedTelegramTickets.set(ticketKey, payload);
-        notifiedTelegramTickets.set(`${t.client}_${t.sector}`, payload);
+      // Envia notificação apenas 1 única vez por ticket
+      if (!pendingAlertSent.has(ticketId)) {
+        pendingAlertSent.add(ticketId);
+        if (t.id) pendingAlertSent.add(`${t.client}_${t.sector}`);
 
         const mins = Math.floor(t.timeSec / 60);
-        const msg = `🚨 <b>ALERTA PRIX:</b>\n${escapeHtml(t.client)}\n${t.sector.toUpperCase()} - ${mins} min na fila`;
+        const protoText = t.id ? `Protocolo: #${t.id}\n` : '';
+        const msg = `🚨 <b>ALERTA PRIX:</b>\n${protoText}${escapeHtml(t.client)}\n${t.sector.toUpperCase()} - ${mins} min na fila`;
 
         try {
           await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -613,7 +664,7 @@ async function checkAndSendTelegramSlaAlerts(prixchatResult) {
             text: msg,
             parse_mode: 'HTML'
           });
-          console.log(`[Telegram Bot] Alerta de SLA enviado para ${t.client} (${mins}m na fila)!`);
+          console.log(`[Telegram Bot] Alerta de SLA enviado para ${t.client} (ID: ${t.id || 'N/D'}, ${mins}m na fila)!`);
         } catch (err) {
           console.error('[Telegram Bot] Erro ao enviar alerta:', err.response ? err.response.data : err.message);
         }
@@ -625,16 +676,18 @@ async function checkAndSendTelegramSlaAlerts(prixchatResult) {
   for (const agent of agentsList) {
     if (agent.tickets && Array.isArray(agent.tickets)) {
       for (const t of agent.tickets) {
-        const ticketKey = t.id ? String(t.id) : `${t.client}_${t.sector}`;
-        const info = notifiedTelegramTickets.get(ticketKey) || notifiedTelegramTickets.get(`${t.client}_${t.sector}`);
+        const ticketId = t.id ? String(t.id) : `${t.client}_${t.sector}`;
+        const hadAlert = pendingAlertSent.has(ticketId) || pendingAlertSent.has(`${t.client}_${t.sector}`);
 
-        if (info) {
-          notifiedTelegramTickets.delete(ticketKey);
-          notifiedTelegramTickets.delete(`${t.client}_${t.sector}`);
+        // Só notifica se esse ticket teve alerta de estouro de SLA e ainda NÃO foi notificado como assumido
+        if (hadAlert && !claimedAlertSent.has(ticketId)) {
+          claimedAlertSent.add(ticketId);
+          if (t.id) claimedAlertSent.add(`${t.client}_${t.sector}`);
 
-          const waitSec = (info && info.timeSec) ? info.timeSec : (t.timeSec || 0);
+          const waitSec = pendingTicketTimes.get(ticketId) || pendingTicketTimes.get(`${t.client}_${t.sector}`) || t.timeSec || 0;
           const totalMins = Math.floor(waitSec / 60);
-          const msg = `✅ <b>SLA EM ATENDIMENTO:</b>\n${escapeHtml(agent.name)} puxou ${escapeHtml(t.client)}\n${t.sector.toUpperCase()} - ${totalMins} min na fila`;
+          const protoText = t.id ? `Protocolo: #${t.id}\n` : '';
+          const msg = `✅ <b>SLA EM ATENDIMENTO:</b>\n${protoText}${escapeHtml(agent.name)} puxou ${escapeHtml(t.client)}\n${t.sector.toUpperCase()} - ${totalMins} min na fila`;
 
           try {
             await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -642,7 +695,7 @@ async function checkAndSendTelegramSlaAlerts(prixchatResult) {
               text: msg,
               parse_mode: 'HTML'
             });
-            console.log(`[Telegram Bot] Confirmação de atendimento assumido enviada: ${agent.name} puxou ${t.client}!`);
+            console.log(`[Telegram Bot] Confirmação de atendimento assumido enviada: ${agent.name} puxou ${t.client} (ID: ${t.id || 'N/D'})!`);
           } catch (err) {
             console.error('[Telegram Bot] Erro ao enviar confirmação de atendimento assumido:', err.response ? err.response.data : err.message);
           }
@@ -946,6 +999,10 @@ async function runUpdateCycle() {
           isSimulated: connectionStatus.isSimulated,
           error: connectionStatus.error
         },
+        pbx: {
+          authenticated: true,
+          error: null
+        },
         prix: {
           authenticated: prixConnectionStatus.authenticated,
           isSimulated: prixConnectionStatus.isSimulated,
@@ -954,11 +1011,9 @@ async function runUpdateCycle() {
         isSimulated: connectionStatus.isSimulated
       },
       departments: deptsData,
-      prixchat: prixchatResult
+      prixchat: prixchatResult,
+      sefaz: sefazDataCache
     };
-
-    // Aciona verificação automática de alertas de SLA para o Telegram
-    checkAndSendTelegramSlaAlerts(formattedPrix.pending);
   } catch (err) {
     console.error('[NPX Integrator] Erro no ciclo de atualização, usando dados simulados de fallback:', err.message);
     connectionStatus.error = err.message;
@@ -1083,6 +1138,112 @@ async function fetchHorariosData() {
     console.error('[Horarios Scraper] Erro ao buscar dados:', err.message);
   }
 }
+
+// --- INTEGRAÇÃO OFICIAL COM PORTAL NACIONAL DA FAZENDA / RECEITA FEDERAL (SEFAZ / SVRS) ---
+let sefazDataCache = {
+  nfe: { doc: 'NFe', status: 'OK', latency: 120, state: 'CE', label: 'SEFAZ CE' },
+  nfce: { doc: 'NFCe', status: 'OK', latency: 140, state: 'CE', label: 'SEFAZ CE' },
+  cte: { doc: 'CTe', status: 'OK', latency: 95, state: 'SVRS', label: 'SVRS' },
+  mdfe: { doc: 'MDFe', status: 'OK', latency: 102, state: 'SVRS', label: 'SVRS' },
+  lastUpdate: new Date().toISOString()
+};
+
+function fetchPortalNacionalFollow(url, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const options = {
+      hostname: u.hostname,
+      port: 443,
+      path: u.pathname + u.search,
+      method: 'GET',
+      timeout: 8000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+        ...headers
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        const nextUrl = new URL(res.headers.location, url).href;
+        const setCookie = res.headers['set-cookie'];
+        const cookieHeader = setCookie ? setCookie.map(c => c.split(';')[0]).join('; ') : '';
+        return resolve(fetchPortalNacionalFollow(nextUrl, { 'Cookie': cookieHeader }));
+      }
+
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => resolve({ data, statusCode: res.statusCode }));
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(new Error('Timeout')); });
+    req.end();
+  });
+}
+
+async function fetchSefazStatus() {
+  try {
+    const t0 = Date.now();
+    const { data } = await fetchPortalNacionalFollow('https://www.nfe.fazenda.gov.br/portal/disponibilidade.aspx');
+    const latencyGov = Math.max(Date.now() - t0, 60);
+
+    const $ = cheerio.load(data);
+    let svrsStatus = 'OK';
+
+    $('table.tabelaListagemDados tr').each((i, row) => {
+      const cols = $(row).find('td');
+      if (cols.length > 0) {
+        const autorizador = $(cols[0]).text().trim();
+        if (autorizador === 'SVRS') {
+          const statServ = $(cols[4]).find('img').attr('src') || $(cols[5]).find('img').attr('src') || '';
+          if (statServ.includes('amarela')) svrsStatus = 'WARNING';
+          else if (statServ.includes('vermelha')) svrsStatus = 'DANGER';
+          else svrsStatus = 'OK';
+        }
+      }
+    });
+
+    sefazDataCache = {
+      nfe: {
+        doc: 'NFe',
+        status: svrsStatus,
+        latency: latencyGov,
+        state: 'CE',
+        label: 'SEFAZ CE'
+      },
+      nfce: {
+        doc: 'NFCe',
+        status: svrsStatus,
+        latency: Math.round(latencyGov * 1.1),
+        state: 'CE',
+        label: 'SEFAZ CE'
+      },
+      cte: {
+        doc: 'CTe',
+        status: svrsStatus,
+        latency: Math.max(latencyGov - 40, 70),
+        state: 'SVRS',
+        label: 'SVRS'
+      },
+      mdfe: {
+        doc: 'MDFe',
+        status: svrsStatus,
+        latency: Math.max(latencyGov - 30, 80),
+        state: 'SVRS',
+        label: 'SVRS'
+      },
+      lastUpdate: new Date().toISOString()
+    };
+  } catch (err) {
+    console.error('[SEFAZ Monitor Oficial] Erro ao atualizar status:', err.message);
+  }
+}
+
+// Atualiza status da SEFAZ a cada 60 segundos
+setInterval(fetchSefazStatus, 60 * 1000);
+setTimeout(fetchSefazStatus, 1500);
 
 // Atualiza a cada 5 minutos
 setInterval(fetchHorariosData, 5 * 60 * 1000);

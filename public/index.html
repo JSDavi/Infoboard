@@ -9,10 +9,16 @@
   <!-- FontAwesome para ícones -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Estilos customizados (Omnichannel Split Screen) -->
-  <link rel="stylesheet" href="style.css?v=3.2.0">
+  <link rel="stylesheet" href="style.css?v=6.4.0">
 </head>
 <body>
   <div class="wallboard-container">
+    <!-- Banner de Alerta de Conexão (Visível quando houver erro HTTP/API) -->
+    <div id="npx-alert-banner" class="npx-alert-banner hidden">
+      <i class="fa-solid fa-triangle-exclamation alert-icon"></i>
+      <span id="npx-alert-message" class="alert-msg">ATENÇÃO: Instabilidade na conexão com a plataforma NPX. Tentando reconectar...</span>
+    </div>
+
     <!-- Cabeçalho Principal -->
     <header class="main-header">
       <div class="header-left">
@@ -24,14 +30,15 @@
       </div>
       
       <div class="header-right">
-        <!-- Status de Conexão -->
-        <div id="connection-status-npx" class="status-indicator simulated header-status">
-          <span class="status-dot"></span>
+        <!-- Status de Conexão (Ordem: NPX, PRIX, PBX) -->
+        <div id="connection-status-npx" class="status-indicator connected header-status" title="INFOBRASIL NPX">
           <span id="status-text-npx" class="status-label">NPX</span>
         </div>
-        <div id="connection-status-prix" class="status-indicator simulated header-status">
-          <span class="status-dot"></span>
+        <div id="connection-status-prix" class="status-indicator connected header-status" title="PRIXCHAT">
           <span id="status-text-prix" class="status-label">PRIX</span>
+        </div>
+        <div id="connection-status-pbx" class="status-indicator connected header-status" title="NOSSATEL PBX">
+          <span id="status-text-pbx" class="status-label">PBX</span>
         </div>
         <!-- Relógio -->
         <div class="clock-widget header-clock">
@@ -165,6 +172,82 @@
                   <div class="analysts-list" id="ponto-analysts-list">
                     <div class="loading-state">Carregando...</div>
                   </div>
+
+                  <!-- Widget SEFAZ Opção 3: Radar de Performance com Barras de Latência -->
+                  <div class="sefaz-radar-card" id="sefaz-radar-card">
+                    <div class="sefaz-radar-header">
+                      <div class="radar-header-left">
+                        <i class="fa-solid fa-building-columns radar-icon"></i>
+                        <span class="radar-title">SEFAZ</span>
+                      </div>
+                      <div class="radar-header-right">
+                        <span class="sefaz-global-badge status-ok" id="sefaz-global-badge"><i class="fa-solid fa-circle-check"></i> TUDO OK</span>
+                      </div>
+                    </div>
+
+                    <div class="sefaz-radar-list" id="sefaz-radar-list">
+                      <div class="sefaz-radar-row status-ok">
+                        <div class="radar-row-info">
+                          <span class="doc-badge">NF-e</span>
+                          <span class="uf-tag">CE</span>
+                        </div>
+                        <div class="radar-bar-container">
+                          <div class="radar-bar-fill bar-ok" style="width: 28%;"></div>
+                        </div>
+                        <div class="radar-row-val">
+                          <i class="fa-solid fa-circle-check val-icon"></i>
+                          <span class="latency-text">110ms</span>
+                        </div>
+                      </div>
+
+                      <div class="sefaz-radar-row status-ok">
+                        <div class="radar-row-info">
+                          <span class="doc-badge">NFC-e</span>
+                          <span class="uf-tag">CE</span>
+                        </div>
+                        <div class="radar-bar-container">
+                          <div class="radar-bar-fill bar-ok" style="width: 32%;"></div>
+                        </div>
+                        <div class="radar-row-val">
+                          <i class="fa-solid fa-circle-check val-icon"></i>
+                          <span class="latency-text">130ms</span>
+                        </div>
+                      </div>
+
+                      <div class="sefaz-radar-row status-ok">
+                        <div class="radar-row-info">
+                          <span class="doc-badge">CT-e</span>
+                          <span class="uf-tag">SVRS</span>
+                        </div>
+                        <div class="radar-bar-container">
+                          <div class="radar-bar-fill bar-ok" style="width: 24%;"></div>
+                        </div>
+                        <div class="radar-row-val">
+                          <i class="fa-solid fa-circle-check val-icon"></i>
+                          <span class="latency-text">95ms</span>
+                        </div>
+                      </div>
+
+                      <div class="sefaz-radar-row status-ok">
+                        <div class="radar-row-info">
+                          <span class="doc-badge">MDF-e</span>
+                          <span class="uf-tag">SVRS</span>
+                        </div>
+                        <div class="radar-bar-container">
+                          <div class="radar-bar-fill bar-ok" style="width: 26%;"></div>
+                        </div>
+                        <div class="radar-row-val">
+                          <i class="fa-solid fa-circle-check val-icon"></i>
+                          <span class="latency-text">102ms</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="sefaz-radar-footer">
+                      <span><i class="fa-solid fa-signal"></i> Servidores CE &amp; SVRS</span>
+                      <span id="sefaz-radar-time">Atualizado agora</span>
+                    </div>
+                  </div>
                 </div>
 
               </div>
@@ -229,14 +312,23 @@
         <div id="ticker-text" class="ticker-text">Carregando dados da escala de sábados e sobreaviso...</div>
       </div>
       <div class="ticker-clock-widget">
+        <!-- Status de Conexão no Rodapé (Visíveis APENAS no F11 - Ordem: NPX, PRIX, PBX) -->
+        <div id="connection-status-npx-ticker" class="status-indicator connected header-status ticker-status-pill" title="INFOBRASIL NPX (F11)">
+          <span id="status-text-npx-ticker" class="status-label">NPX</span>
+        </div>
+        <div id="connection-status-prix-ticker" class="status-indicator connected header-status ticker-status-pill" title="PRIXCHAT (F11)">
+          <span id="status-text-prix-ticker" class="status-label">PRIX</span>
+        </div>
+        <div id="connection-status-pbx-ticker" class="status-indicator connected header-status ticker-status-pill" title="NOSSATEL PBX (F11)">
+          <span id="status-text-pbx-ticker" class="status-label">PBX</span>
+        </div>
         <i class="fa-regular fa-clock"></i>
         <span id="ticker-time">00:00:00</span>
-        <span id="ticker-date" class="ticker-date">--/--/----</span>
       </div>
     </div>
   </div>
 
   <!-- Script JS -->
-  <script src="app.js?v=3.2.0"></script>
+  <script src="app.js?v=3.7.0"></script>
 </body>
 </html>
