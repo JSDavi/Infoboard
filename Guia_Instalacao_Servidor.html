@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Guia Infoboard - Servidor</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 800px; margin: auto; padding: 40px; color: #333; }
+        h1 { color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+        h2 { color: #2563eb; margin-top: 30px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; }
+        h3 { color: #4b5563; }
+        code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #ef4444; font-family: monospace; font-size: 0.95em; }
+        pre { background: #1f2937; color: #f8f8f2; padding: 15px; border-radius: 8px; overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        pre code { background: none; color: inherit; padding: 0; }
+        ol li { margin-bottom: 10px; }
+        .alert { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 15px 0; border-radius: 0 4px 4px 0; }
+        .success { background: #dcfce7; border-left: 4px solid #22c55e; padding: 15px; margin: 15px 0; border-radius: 0 4px 4px 0; }
+        @media print {
+            body { padding: 0; }
+            pre { box-shadow: none; border: 1px solid #e5e7eb; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Guia de Instalação e Atualização do Infoboard</h1>
+    <p>Este guia prático explica como implantar e atualizar o painel do <strong>Infoboard (NPX & PrixChat)</strong> no Servidor Principal da empresa. O sistema rodará de forma invisível em segundo plano (como um serviço Windows) e poderá ser acessado por qualquer TV ou computador da rede local.</p>
+
+    <h2>1. INSTALAÇÃO INICIAL NO SERVIDOR</h2>
+
+    <h3>Passo 1: Preparar o Ambiente</h3>
+    <ol>
+        <li>Acesse o Servidor Principal (via Acesso Remoto/RDP).</li>
+        <li>Instale o <strong>Node.js</strong> (baixe a versão "LTS" em nodejs.org e instale clicando em Next).</li>
+        <li>Crie uma pasta no servidor onde o sistema vai morar. Por exemplo: <code>C:\Sistemas\Infoboard</code></li>
+    </ol>
+
+    <h3>Passo 2: Copiar os Arquivos</h3>
+    <ol>
+        <li>No seu computador (Davi.Oliveira), copie os arquivos da sua pasta de projetos.</li>
+        <div class="alert">
+            <strong>⚠️ ATENÇÃO:</strong> <strong>NÃO COPIE</strong> a pasta <code>node_modules</code>. Ela possui milhares de arquivos pesados que iremos recriar no servidor rapidamente no próximo passo.
+        </div>
+        <li>Cole os arquivos na pasta que você criou no Servidor (<code>C:\Sistemas\Infoboard</code>).</li>
+        <li><strong>Importante:</strong> Certifique-se de que o arquivo <code>.env</code> (onde ficam suas chaves, emails e senhas) foi copiado também. Como ele é um arquivo "oculto" no Windows, às vezes passa despercebido.</li>
+    </ol>
+
+    <h3>Passo 3: Instalar as Dependências</h3>
+    <ol>
+        <li>No servidor, abra o <strong>Prompt de Comando (CMD)</strong>.</li>
+        <li>Navegue até a pasta do sistema digitando:
+            <pre><code>cd C:\Sistemas\Infoboard</code></pre>
+        </li>
+        <li>Instale os pacotes (isso vai recriar a pasta node_modules perfeitamente adaptada ao servidor):
+            <pre><code>npm install</code></pre>
+        </li>
+    </ol>
+
+    <h3>Passo 4: Liberar o Acesso na Rede Local (Firewall)</h3>
+    <p>Para que as TVs e os computadores dos gerentes consigam abrir o painel pelo IP, precisamos avisar o Windows do servidor para não bloquear a porta 3000.</p>
+    <ol>
+        <li>Abra o <strong>PowerShell</strong> como Administrador.</li>
+        <li>Cole o comando abaixo e aperte Enter:
+            <pre><code>New-NetFirewallRule -DisplayName "Acesso TV Infoboard" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow</code></pre>
+        </li>
+    </ol>
+
+    <h3>Passo 5: Ativar o "Cão de Guarda" (PM2)</h3>
+    <p>O PM2 é a ferramenta profissional que manterá o sistema rodando de forma invisível e reiniciará o painel caso o servidor seja desligado ou atualizado à noite.</p>
+    <ol>
+        <li>No CMD (aberto como Administrador), instale o PM2 globalmente:
+            <pre><code>npm install -g pm2</code></pre>
+        </li>
+        <li>Instale o utilitário que liga o PM2 junto com o Boot do Windows:
+            <pre><code>npm install -g pm2-windows-startup
+pm2-startup install</code></pre>
+        </li>
+        <li>Ligue o Infoboard (lembre-se de estar dentro da pasta <code>C:\Sistemas\Infoboard</code>):
+            <pre><code>pm2 start server.js --name "Infoboard-TV"</code></pre>
+        </li>
+        <li>Salve a configuração para ele memorizar esse serviço:
+            <pre><code>pm2 save</code></pre>
+        </li>
+    </ol>
+
+    <div class="success">
+        <strong>✅ PRONTO! IMPLANTAÇÃO CONCLUÍDA.</strong><br>
+        A partir de agora, ninguém precisa abrir nenhuma janela no servidor. Basta acessar o painel de qualquer TV ou PC da empresa digitando o IP do servidor no Chrome/Edge. (Exemplo: <code>http://192.168.1.100:3000</code>).
+    </div>
+
+    <br>
+
+    <h2>2. COMO ATUALIZAR O CÓDIGO NO FUTURO</h2>
+    <p>Sempre que você fizer melhorias no painel no seu computador de testes e quiser enviar para o servidor, siga estes 3 passos simples:</p>
+
+    <ol>
+        <li><strong>Copie os arquivos novos:</strong> Copie do seu computador apenas os arquivos que você modificou (Ex: <code>app.js</code>, <code>style.css</code>, <code>index.html</code>, <code>server.js</code>).</li>
+        <li><strong>Substitua no Servidor:</strong> Cole esses arquivos na pasta <code>C:\Sistemas\Infoboard</code> do servidor, substituindo os antigos.</li>
+        <li><strong>Avise o Cão de Guarda:</strong> Abra o CMD no servidor e aplique a atualização com este comando mágico:
+            <pre><code>pm2 restart "Infoboard-TV"</code></pre>
+        </li>
+    </ol>
+
+    <p><em>O sistema piscará nos bastidores em 1 segundo e todas as TVs pegarão a atualização instantaneamente.</em></p>
+
+    <br>
+    <p style="text-align: center; color: #9ca3af; font-size: 0.9em; margin-top: 40px;">Documentação Gerada para Infoboard 2026</p>
+
+</body>
+</html>
