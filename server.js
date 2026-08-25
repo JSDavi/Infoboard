@@ -416,11 +416,29 @@ async function authenticate() {
       });
 
       jar.parseSetCookie(postRes.headers);
+
+      // Segue o redirect para o dashboard para o Rails consolidar o cookie de sessão autenticado
+      if (postRes.headers['location']) {
+        const redirUrl = postRes.headers['location'].startsWith('http')
+          ? postRes.headers['location']
+          : 'https://app.npxtech.com.br' + postRes.headers['location'];
+        
+        const redirRes = await axios.get(redirUrl, {
+          headers: {
+            'Cookie': jar.getCookieString(),
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          },
+          maxRedirects: 5,
+          validateStatus: (status) => status >= 200 && status < 400
+        });
+        jar.parseSetCookie(redirRes.headers);
+      }
+
       activeSession = jar;
       connectionStatus.authenticated = true;
       connectionStatus.isSimulated = false;
       connectionStatus.error = null;
-      console.log('[NPX Integrator] Autenticação realizada com sucesso!');
+      console.log('[NPX Integrator] Autenticação realizada com sucesso (Sessão consolidada)!');
       return true;
     } catch (error) {
       connectionStatus.authenticated = false;
@@ -448,19 +466,28 @@ async function apiGet(endpoint, params = {}) {
       params,
       headers: {
         'Cookie': activeSession.getCookieString(),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'X-Requested-With': 'XMLHttpRequest'
       }
     });
 
     // Se o HTML retornado contém o formulário de login, nossa sessão expirou
     if (typeof res.data === 'string' && (res.data.includes('new_user') || res.data.includes('users/sign_in'))) {
       console.log('[NPX Integrator] Sessão expirou. Re-autenticando...');
+      activeSession = new CookieJar();
       await authenticate();
       return apiGet(endpoint, params); // Tenta novamente após re-autenticar
     }
 
     return res.data;
   } catch (error) {
+    if (error.response && error.response.status === 401) {
+      console.log('[NPX Integrator] Recebeu 401 (Não autorizado). Renovando sessão...');
+      activeSession = new CookieJar();
+      await authenticate();
+      return apiGet(endpoint, params);
+    }
     console.error(`[NPX Integrator] Erro ao buscar ${endpoint}:`, error.message);
     throw error;
   }
