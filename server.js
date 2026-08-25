@@ -323,8 +323,7 @@ async function startPbxApiMonitor() {
             number: pbxNumber,
             duration: pbxDuration,
             durationStr: pbxDurationStr,
-            direction: pbxDirection,
-            raw: dev
+            direction: pbxDirection
           };
         });
         lastPbxData = newPbxData;
@@ -1269,77 +1268,10 @@ app.get('/api/data', (req, res) => {
   res.json(payload);
 });
 
-// Endpoint de depuração para salvar o HTML real dos monitores no servidor (desabilitado em produção)
-app.get('/api/debug/save-html', async (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(403).json({ error: 'Endpoint de depuração desabilitado em produção.' });
-  }
-
-  const results = [];
-  const debugDir = path.join(__dirname, 'debug_html');
-
-  try {
-    if (!fs.existsSync(debugDir)) {
-      fs.mkdirSync(debugDir);
-    }
-
-    if (!process.env.NPX_EMAIL || process.env.NPX_EMAIL === 'seu_email@empresa.com') {
-      return res.status(400).json({ 
-        error: 'Você precisa configurar as credenciais reais no arquivo .env antes de usar a rota de depuração.' 
-      });
-    }
-
-    for (const [key, dept] of Object.entries(DEPARTMENTS)) {
-      console.log(`[NPX Debug] Salvando HTML real do monitor: ${dept.name}...`);
-      
-      // Salva tanto o HTML bruto da página do monitor
-      const url = `https://app.npxtech.com.br/rates/${dept.path}/monitor`;
-      const pageRes = await axios.get(url, {
-        headers: {
-          'Cookie': activeSession.getCookieString(),
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      });
-      const htmlFilename = `debug_monitor_${key}.html`;
-      const htmlFilepath = path.join(debugDir, htmlFilename);
-      fs.writeFileSync(htmlFilepath, pageRes.data);
-
-      // Salva os JSONs originais também para depuração completa
-      const totals = await apiGet('/rates/totals_filter_by_queues.json', { queue: dept.path, queue_type: 'LOG' });
-      const details = await apiGet('/rates/details_by_queue.json', { queue: dept.path, queue_type: 'LOG' });
-      const waitCalls = await apiGet('/rates/wait_calls.json', { queue: dept.path });
-
-      fs.writeFileSync(path.join(debugDir, `debug_json_totals_${key}.json`), JSON.stringify(totals, null, 2));
-      fs.writeFileSync(path.join(debugDir, `debug_json_details_${key}.json`), JSON.stringify(details, null, 2));
-      fs.writeFileSync(path.join(debugDir, `debug_json_wait_${key}.json`), JSON.stringify(waitCalls, null, 2));
-
-      results.push({ department: dept.name, filename: htmlFilename, savedPath: htmlFilepath });
-    }
-
-    res.json({
-      message: 'HTMLs e JSONs de depuração salvos com sucesso na pasta debug_html!',
-      savedFiles: results
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Falha ao salvar HTML/JSON de depuração: ' + err.message });
-  }
-});
-
-// Endpoint para testar o login
-app.post('/api/test-login', async (req, res) => {
-  try {
-    const success = await authenticate();
-    res.json({ success: true, message: 'Autenticado com sucesso no NPXTech!' });
-  } catch (err) {
-    res.status(401).json({ success: false, error: err.message });
-  }
-});
-
 app.listen(PORT, () => {
   console.log('========================================================');
   console.log(`[NPX Integrator Server] Rodando na porta ${PORT}`);
   console.log(`Acesse o Wallboard da TV em: http://localhost:${PORT}`);
   console.log(`Endpoint de Dados: http://localhost:${PORT}/api/data`);
-  console.log(`Endpoint de Depuração HTML: http://localhost:${PORT}/api/debug/save-html`);
   console.log('========================================================');
 });
