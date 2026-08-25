@@ -12,7 +12,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const UPDATE_INTERVAL = (process.env.UPDATE_INTERVAL_SECONDS || 5) * 1000;
+const UPDATE_INTERVAL = (process.env.UPDATE_INTERVAL_SECONDS || 6) * 1000;
 
 app.use(cors());
 app.use(express.json());
@@ -787,6 +787,9 @@ async function runUpdateCycle() {
           apiGet('/rates/details_by_queue.json', { queue: dept.path, queue_type: 'LOG' }),
           apiGet('/rates/wait_calls.json', { queue: dept.path })
         ]);
+
+        // Pequena pausa suave (150ms) entre setores para não enviar tudo em rajada (anti rate-limit)
+        await new Promise(resolve => setTimeout(resolve, 150));
 
         // Organiza a contagem de fila e tempos
         const queueCount = totals.total_wait !== undefined ? totals.total_wait : (waitCalls.wait_calls || []).length;
