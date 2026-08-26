@@ -1125,9 +1125,31 @@ async function fetchHorariosData() {
   const [yyyy, mm, dd] = satDate.split('-');
   const formattedSatDate = `${dd}/${mm}/${yyyy}`;
 
+  let res = null;
+  const urlsToTry = [
+    `http://srv-ads002:8888/horarios?data_filtro_sabado=${satDate}`,
+    `http://192.168.243.2:8888/horarios?data_filtro_sabado=${satDate}`
+  ];
+
+  for (const url of urlsToTry) {
+    try {
+      res = await axios.get(url, { timeout: 6000 });
+      if (res && res.data) break;
+    } catch (err) {
+      // Tenta a próxima URL
+    }
+  }
+
+  if (!res || !res.data) {
+    console.error('[Horarios Scraper] Não foi possível conectar ao servidor de horários (srv-ads002 / 192.168.243.2).');
+    // Se ainda não temos nenhum dado em cache, tenta novamente em 5 segundos
+    if (!horariosCache) {
+      setTimeout(fetchHorariosData, 5000);
+    }
+    return;
+  }
+
   try {
-    const url = `http://srv-ads002:8888/horarios?data_filtro_sabado=${satDate}`;
-    const res = await axios.get(url, { timeout: 5000 });
     const $ = cheerio.load(res.data);
 
     const turnos = [];
@@ -1203,7 +1225,10 @@ async function fetchHorariosData() {
     };
     console.log(`[Horarios Scraper] Escala atualizada para ${formattedSatDate}`);
   } catch (err) {
-    console.error('[Horarios Scraper] Erro ao buscar dados:', err.message);
+    console.error('[Horarios Scraper] Erro ao processar HTML de horários:', err.message);
+    if (!horariosCache) {
+      setTimeout(fetchHorariosData, 5000);
+    }
   }
 }
 
