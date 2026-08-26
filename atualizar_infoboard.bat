@@ -2,8 +2,7 @@
 echo =========================================
 echo Atualizando o Infoboard pelo GitHub...
 echo =========================================
-:: Mude este caminho para o local onde o Infoboard ficara no Servidor
-cd "C:\Projetos\Infoboard"
+cd /d "%~dp0"
 
 :: Puxa as ultimas modificacoes do GitHub
 git pull origin master
