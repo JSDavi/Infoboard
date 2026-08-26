@@ -93,45 +93,26 @@ powershell -Command "New-NetFirewallRule -DisplayName 'Infoboard TV (Porta 3000)
 echo       - Regra de Firewall criada/atualizada com sucesso!
 echo.
 
-:: 5. Criando Servico no Windows (Inicializacao no Boot + Auto-Recuperacao)
-echo [5/5] Configurando Servico do Windows (Inicializacao no Boot e Auto-Recuperacao)...
-set "VBS_SCRIPT=%APP_DIR%\start_infoboard_silent.vbs"
-
-:: Cria tarefa agendada como SYSTEM que roda no Boot da maquina (sem precisar de login)
+:: 5. Instalando Servico Nativo do Windows (services.msc)
+echo [5/5] Registrando como Servico Nativo do Windows (services.msc)...
+:: Remove tarefa agendada legada se existir
 schtasks /delete /tn "Infoboard_Server_AutoStart" /f >nul 2>&1
-schtasks /create /tn "Infoboard_Server_AutoStart" /tr "wscript.exe \"%VBS_SCRIPT%\"" /sc onstart /ru "SYSTEM" /rl highest /f >nul 2>&1
 
-if %errorLevel% neq 0 (
-    :: Fallback para onlogon se onstart falhar por permissao de maquina
-    schtasks /create /tn "Infoboard_Server_AutoStart" /tr "wscript.exe \"%VBS_SCRIPT%\"" /sc onlogon /rl highest /f >nul 2>&1
-)
+:: Executa instalador de servico nativo
+call node install_service.js
 
-if %errorLevel% equ 0 (
-    echo       - Servico 'Infoboard_Server_AutoStart' configurado com sucesso!
-    echo       - [OK] Inicializa sozinho ao ligar o computador (sem precisar de login).
-    echo       - [OK] Watchdog Ativo: Se o servidor cair, se recupera sozinho em 2s.
-) else (
-    echo       - [AVISO] Nao foi possivel criar o servico automaticamente.
-)
 echo.
-
 echo ===============================================================================
 echo                      INSTALACAO CONCLUIDA COM SUCESSO!
 echo ===============================================================================
 echo.
-echo O Infoboard esta pronto para rodar neste servidor.
+echo O Infoboard foi instalado como um SERVICO NATIVO DO WINDOWS!
 echo.
-echo Deseja INICIAR o servidor do Infoboard agora mesmo? (S/N)
-set /p INICIAR="> "
-if /i "!INICIAR!"=="S" (
-    schtasks /run /tn "Infoboard_Server_AutoStart" >nul 2>&1 || (
-        start "" wscript.exe "%VBS_SCRIPT%"
-    )
-    echo.
-    echo [OK] Servidor iniciado com sucesso em segundo plano na porta 3000!
-    echo Voce pode acessar na rede local pelo IP deste servidor na porta 3000.
-)
-
+echo  * Nome do Servico: "Infoboard TV Server" (InfoboardService)
+echo  * Status: Ja esta rodando em segundo plano na porta 3000.
+echo  * Inicializacao: Automatica no Boot da maquina (sem precisar de login).
+echo  * Auto-Recuperacao: Reinicia automaticamente se houver qualquer erro.
+echo  * Gerenciamento: Voce pode parar/iniciar abrindo o 'services.msc' do Windows.
 echo.
 echo Pressione qualquer tecla para sair...
 pause >nul
