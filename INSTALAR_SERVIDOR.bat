@@ -93,18 +93,25 @@ powershell -Command "New-NetFirewallRule -DisplayName 'Infoboard TV (Porta 3000)
 echo       - Regra de Firewall criada/atualizada com sucesso!
 echo.
 
-:: 5. Criando Tarefa Agendada no Windows para Inicio Automatico com o Servidor
-echo [5/5] Configurando Inicializacao Automatica no Windows...
+:: 5. Criando Servico no Windows (Inicializacao no Boot + Auto-Recuperacao)
+echo [5/5] Configurando Servico do Windows (Inicializacao no Boot e Auto-Recuperacao)...
 set "VBS_SCRIPT=%APP_DIR%\start_infoboard_silent.vbs"
 
-:: Cria tarefa agendada que roda no logon do usuario ou boot
+:: Cria tarefa agendada como SYSTEM que roda no Boot da maquina (sem precisar de login)
 schtasks /delete /tn "Infoboard_Server_AutoStart" /f >nul 2>&1
-schtasks /create /tn "Infoboard_Server_AutoStart" /tr "wscript.exe \"%VBS_SCRIPT%\"" /sc onlogon /rl highest /f >nul 2>&1
+schtasks /create /tn "Infoboard_Server_AutoStart" /tr "wscript.exe \"%VBS_SCRIPT%\"" /sc onstart /ru "SYSTEM" /rl highest /f >nul 2>&1
+
+if %errorLevel% neq 0 (
+    :: Fallback para onlogon se onstart falhar por permissao de maquina
+    schtasks /create /tn "Infoboard_Server_AutoStart" /tr "wscript.exe \"%VBS_SCRIPT%\"" /sc onlogon /rl highest /f >nul 2>&1
+)
 
 if %errorLevel% equ 0 (
-    echo       - Tarefa Agendada 'Infoboard_Server_AutoStart' configurada com sucesso!
+    echo       - Servico 'Infoboard_Server_AutoStart' configurado com sucesso!
+    echo       - [OK] Inicializa sozinho ao ligar o computador (sem precisar de login).
+    echo       - [OK] Watchdog Ativo: Se o servidor cair, se recupera sozinho em 2s.
 ) else (
-    echo       - [AVISO] Nao foi possivel criar a tarefa agendada automaticamente.
+    echo       - [AVISO] Nao foi possivel criar o servico automaticamente.
 )
 echo.
 
