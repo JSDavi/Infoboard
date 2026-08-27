@@ -48,13 +48,19 @@ if exist "%SCRIPT_DIR%\..\server.js" (
     set "TARGET_DIR=!CD!"
     popd
     echo [CONFIG] Modo: Instalacao a partir do repositorio local.
-) else if exist "%SCRIPT_DIR%\server.js" (
+    goto :TARGET_SET
+)
+
+if exist "%SCRIPT_DIR%\server.js" (
     set "TARGET_DIR=%SCRIPT_DIR%"
     echo [CONFIG] Modo: Instalacao no diretorio atual.
-) else (
-    set "TARGET_DIR=C:\Infoboard"
-    echo [CONFIG] Modo: Nova instalacao no diretorio padrao.
+    goto :TARGET_SET
 )
+
+set "TARGET_DIR=C:\Infoboard"
+echo [CONFIG] Modo: Nova instalacao no diretorio padrao.
+
+:TARGET_SET
 echo [CONFIG] Diretorio de Destino: "!TARGET_DIR!"
 echo ===============================================================================
 echo.
@@ -65,46 +71,74 @@ echo.
 echo -------------------------------------------------------------------------------
 echo [ETAPA 1/6] Verificando instalacao e versao do Node.js...
 echo -------------------------------------------------------------------------------
-echo  -^> Checando comando 'node' no sistema...
+echo  -^> Checando Node.js no sistema...
+
+node -v >nul 2>&1
+if %errorLevel% equ 0 goto :NODE_JA_INSTALADO
 
 where node >nul 2>&1
-if %errorLevel% neq 0 (
-    goto :INSTALAR_NODE_PROMPT
+if %errorLevel% equ 0 goto :NODE_JA_INSTALADO
+
+if exist "%ProgramFiles%\nodejs\node.exe" (
+    set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;!PATH!"
+    goto :NODE_JA_INSTALADO
 )
 
-for /f "tokens=*" %%v in ('node -v') do set "NODE_VER=%%v"
+goto :NODE_NAO_ENCONTRADO
+
+:NODE_JA_INSTALADO
+for /f "delims=" %%v in ('node -v 2^>nul') do set "NODE_VER=%%v"
+if "!NODE_VER!"=="" set "NODE_VER=Detectado"
 echo  -^> [OK] Node.js detectado com sucesso: !NODE_VER!
 echo.
 goto :ETAPA_2
 
-:INSTALAR_NODE_PROMPT
+:NODE_NAO_ENCONTRADO
 echo.
+echo ===============================================================================
 echo [ATENCAO] O Node.js NAO foi detectado neste computador!
 echo O Node.js LTS e necessario para executar o Infoboard TV.
+echo ===============================================================================
 set /p INSTALAR_NODE="Deseja baixar e instalar o Node.js LTS automaticamente agora? [S/N]: "
-if /i "!INSTALAR_NODE!"=="S" (
-    echo  -^> Baixando instalador oficial do Node.js LTS (compativel com Windows Server)...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://nodejs.org/dist/v20.18.0/node-v20.18.0-x64.msi' -OutFile '%TEMP%\nodejs_installer.msi' -UseBasicParsing"
-    echo  -^> Instalando Node.js de forma silenciosa (aguarde alguns instantes)...
-    msiexec /i "%TEMP%\nodejs_installer.msi" /quiet /norestart
-    echo  -^> Atualizando caminhos do sistema no prompt atual...
-    set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;%PATH%"
-    node -v >nul 2>&1
-    if !errorLevel! neq 0 (
-        echo.
-        echo [AVISO] O Node.js foi instalado, mas requer reabrir o terminal.
-        echo Por favor, execute este instalador novamente para continuar.
-        pause
-        exit /b
+if /i not "!INSTALAR_NODE!"=="S" goto :NODE_RECUSADO
+
+echo  -^> Baixando instalador oficial do Node.js LTS para Windows Server...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://nodejs.org/dist/v20.18.0/node-v20.18.0-x64.msi' -OutFile '%TEMP%\nodejs_installer.msi' -UseBasicParsing"
+
+echo  -^> Instalando Node.js de forma silenciosa... Aguarde a conclusao...
+msiexec /i "%TEMP%\nodejs_installer.msi" /quiet /norestart
+
+echo  -^> Atualizando variaveis de ambiente...
+set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;!PATH!"
+
+node -v >nul 2>&1
+if %errorLevel% neq 0 (
+    if exist "%ProgramFiles%\nodejs\node.exe" (
+        set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;!PATH!"
     )
-    for /f "tokens=*" %%v in ('node -v') do set "NODE_VER=%%v"
-    echo  -^> [OK] Node.js instalado com sucesso: !NODE_VER!
+)
+
+node -v >nul 2>&1
+if %errorLevel% neq 0 (
     echo.
-) else (
-    echo [ERRO] O Node.js e obrigatorio. Baixe manualmente em https://nodejs.org e execute novamente.
+    echo [AVISO] O Node.js foi instalado, mas o Windows requer reiniciar o prompt.
+    echo Por favor, execute este instalador novamente para prosseguir.
+    echo.
     pause
     exit /b
 )
+
+for /f "delims=" %%v in ('node -v 2^>nul') do set "NODE_VER=%%v"
+echo  -^> [OK] Node.js instalado com sucesso: !NODE_VER!
+echo.
+goto :ETAPA_2
+
+:NODE_RECUSADO
+echo.
+echo [ERRO] O Node.js e obrigatorio. Baixe manualmente em https://nodejs.org e tente novamente.
+echo.
+pause
+exit /b
 
 :: -----------------------------------------------------------------------------
 :: ETAPA 2/6: Download / Sincronizacao dos Arquivos do GitHub
@@ -117,116 +151,126 @@ if not exist "!TARGET_DIR!" mkdir "!TARGET_DIR!"
 
 if exist "!TARGET_DIR!\server.js" (
     echo  -^> [OK] Arquivos do Infoboard ja estao presentes em "!TARGET_DIR!".
-) else (
-    set "DOWNLOAD_OK=0"
-    where git >nul 2>&1
-    if !errorLevel! equ 0 (
-        echo  -^> Git detectado. Clonando repositorio oficial (modo publico/anonimo)...
-        git -c core.askPass= -c credential.helper= clone https://github.com/JSDavi/Infoboard.git "!TARGET_DIR!" >nul 2>&1
-        if exist "!TARGET_DIR!\server.js" set "DOWNLOAD_OK=1"
-    )
-    
-    if "!DOWNLOAD_OK!"=="0" (
-        echo  -^> Baixando codigo fonte direto do GitHub (ZIP - Windows Server Mode)...
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile '%TEMP%\infoboard_source.zip' -UseBasicParsing; Expand-Archive -Path '%TEMP%\infoboard_source.zip' -DestinationPath '%TEMP%\infoboard_extracted' -Force; Copy-Item -Path '%TEMP%\infoboard_extracted\Infoboard-master\*' -Destination '!TARGET_DIR!' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_extracted' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_source.zip' -Force"
-    )
+    goto :ETAPA_2_OK
+)
+
+set "DOWNLOAD_OK=0"
+where git >nul 2>&1
+if %errorLevel% equ 0 (
+    echo  -^> Git detectado. Clonando repositorio oficial modo anonimo...
+    git -c core.askPass= -c credential.helper= clone https://github.com/JSDavi/Infoboard.git "!TARGET_DIR!" >nul 2>&1
+    if exist "!TARGET_DIR!\server.js" set "DOWNLOAD_OK=1"
+)
+
+if "!DOWNLOAD_OK!"=="0" (
+    echo  -^> Baixando codigo fonte direto do GitHub pacote ZIP...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile '%TEMP%\infoboard_source.zip' -UseBasicParsing; Expand-Archive -Path '%TEMP%\infoboard_source.zip' -DestinationPath '%TEMP%\infoboard_extracted' -Force; Copy-Item -Path '%TEMP%\infoboard_extracted\Infoboard-master\*' -Destination '!TARGET_DIR!' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_extracted' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_source.zip' -Force"
 )
 
 if not exist "!TARGET_DIR!\server.js" (
+    echo.
     echo [ERRO] Nao foi possivel obter os arquivos do servidor. Verifique sua conexao de internet.
+    echo.
     pause
     exit /b
 )
+
+:ETAPA_2_OK
 echo  -^> [OK] Arquivos do projeto prontos com sucesso!
 echo.
 
 :: -----------------------------------------------------------------------------
 :: ETAPA 3/6: Configuracao do Arquivo .env
 :: -----------------------------------------------------------------------------
+:ETAPA_3
 echo -------------------------------------------------------------------------------
 echo [ETAPA 3/6] Verificando arquivo de credenciais e configuracao (.env)...
 echo -------------------------------------------------------------------------------
-if not exist "!TARGET_DIR!\.env" (
-    echo  -^> Arquivo .env nao encontrado. Iniciando assistente de credenciais:
-    echo.
-    echo ===============================================================================
-    echo                       ASSISTENTE DE CONFIGURACAO (.ENV)
-    echo ===============================================================================
-    echo Nenhuma senha fica salva no instalador. Digite os dados solicitados abaixo:
-    echo.
-    
-    echo --- 1. CREDENCIAIS DO NPXMANAGER ---
-    set /p NPX_EM="Email do NPX: "
-    set /p NPX_PW="Senha do NPX: "
-    echo.
-
-    echo --- 2. CREDENCIAIS DO PRIXCHAT ---
-    set /p PRIX_EM="Email do PrixChat: "
-    set /p PRIX_PW="Senha do PrixChat: "
-    echo.
-
-    echo --- 3. CREDENCIAIS DA API PBX (Nossa Telecom) ---
-    set /p PBX_URL="URL Base PBX (padrao: https://pbx.nossatelecom.com.br): "
-    if "!PBX_URL!"=="" set "PBX_URL=https://pbx.nossatelecom.com.br"
-    set /p PBX_TK="Token da API PBX: "
-    set /p PBX_KEY="Chave API Key PBX: "
-    echo.
-
-    echo --- 4. ALERTAS TELEGRAM (OPCIONAL) ---
-    set /p ATIVAR_TG="Deseja ativar alertas no Telegram para SLA critico? [S/N]: "
-    set "TG_ENABLE=false"
-    set "TG_TOKEN="
-    set "TG_CHAT="
-    if /i "!ATIVAR_TG!"=="S" (
-        set "TG_ENABLE=true"
-        set /p TG_TOKEN="Token do Bot do Telegram: "
-        set /p TG_CHAT="ID do Chat do Telegram (ex: -100...): "
-    )
-
-    (
-        echo # Configuracoes do Servidor
-        echo PORT=3000
-        echo UPDATE_INTERVAL_SECONDS=5
-        echo NODE_ENV=production
-        echo LOG_LEVEL=info
-        echo.
-        echo # Configuracoes do NPXManager
-        echo NPX_EMAIL=!NPX_EM!
-        echo NPX_PASSWORD=!NPX_PW!
-        echo.
-        echo # Configuracoes do PrixChat
-        echo PRIXCHAT_EMAIL=!PRIX_EM!
-        echo PRIXCHAT_PASSWORD=!PRIX_PW!
-        echo PRIXCHAT_BACKEND=https://backapp.prixchat.com.br
-        echo.
-        echo # Credenciais da API do PBX
-        echo PBX_BASE_URL=!PBX_URL!
-        echo PBX_API_TOKEN=!PBX_TK!
-        echo PBX_API_KEY=!PBX_KEY!
-        echo.
-        echo # Limites de Alerta (SLA)
-        echo ALERT_QUEUE_WARNING=2
-        echo ALERT_QUEUE_CRITICAL=4
-        echo ALERT_WAIT_WARNING=180
-        echo ALERT_WAIT_CRITICAL=300
-        echo.
-        echo # Configuracoes do Telegram
-        echo ENABLE_TELEGRAM_ALERTS=!TG_ENABLE!
-        echo TELEGRAM_BOT_TOKEN=!TG_TOKEN!
-        echo TELEGRAM_CHAT_ID=!TG_CHAT!
-        echo TELEGRAM_SLA_LIMIT_SEC=420
-    ) > "!TARGET_DIR!\.env"
-    
-    echo.
-    echo  -^> [OK] Arquivo .env gerado e configurado com sucesso!
-) else (
+if exist "!TARGET_DIR!\.env" (
     echo  -^> [OK] Arquivo .env existente detectado. Mantendo credenciais atuais preservadas.
+    goto :ETAPA_3_OK
 )
+
+echo  -^> Arquivo .env nao encontrado. Iniciando assistente de credenciais:
+echo.
+echo ===============================================================================
+echo                       ASSISTENTE DE CONFIGURACAO (.ENV)
+echo ===============================================================================
+echo Nenhuma senha fica salva no instalador. Digite os dados solicitados abaixo:
+echo.
+
+echo --- 1. CREDENCIAIS DO NPXMANAGER ---
+set /p NPX_EM="Email do NPX: "
+set /p NPX_PW="Senha do NPX: "
+echo.
+
+echo --- 2. CREDENCIAIS DO PRIXCHAT ---
+set /p PRIX_EM="Email do PrixChat: "
+set /p PRIX_PW="Senha do PrixChat: "
+echo.
+
+echo --- 3. CREDENCIAIS DA API PBX (Nossa Telecom) ---
+set /p PBX_URL="URL Base PBX (padrao: https://pbx.nossatelecom.com.br): "
+if "!PBX_URL!"=="" set "PBX_URL=https://pbx.nossatelecom.com.br"
+set /p PBX_TK="Token da API PBX: "
+set /p PBX_KEY="Chave API Key PBX: "
+echo.
+
+echo --- 4. ALERTAS TELEGRAM (OPCIONAL) ---
+set /p ATIVAR_TG="Deseja ativar alertas no Telegram para SLA critico? [S/N]: "
+set "TG_ENABLE=false"
+set "TG_TOKEN="
+set "TG_CHAT="
+if /i "!ATIVAR_TG!"=="S" (
+    set "TG_ENABLE=true"
+    set /p TG_TOKEN="Token do Bot do Telegram: "
+    set /p TG_CHAT="ID do Chat do Telegram (ex: -100...): "
+)
+
+(
+    echo # Configuracoes do Servidor
+    echo PORT=3000
+    echo UPDATE_INTERVAL_SECONDS=5
+    echo NODE_ENV=production
+    echo LOG_LEVEL=info
+    echo.
+    echo # Configuracoes do NPXManager
+    echo NPX_EMAIL=!NPX_EM!
+    echo NPX_PASSWORD=!NPX_PW!
+    echo.
+    echo # Configuracoes do PrixChat
+    echo PRIXCHAT_EMAIL=!PRIX_EM!
+    echo PRIXCHAT_PASSWORD=!PRIX_PW!
+    echo PRIXCHAT_BACKEND=https://backapp.prixchat.com.br
+    echo.
+    echo # Credenciais da API do PBX
+    echo PBX_BASE_URL=!PBX_URL!
+    echo PBX_API_TOKEN=!PBX_TK!
+    echo PBX_API_KEY=!PBX_KEY!
+    echo.
+    echo # Limites de Alerta (SLA)
+    echo ALERT_QUEUE_WARNING=2
+    echo ALERT_QUEUE_CRITICAL=4
+    echo ALERT_WAIT_WARNING=180
+    echo ALERT_WAIT_CRITICAL=300
+    echo.
+    echo # Configuracoes do Telegram
+    echo ENABLE_TELEGRAM_ALERTS=!TG_ENABLE!
+    echo TELEGRAM_BOT_TOKEN=!TG_TOKEN!
+    echo TELEGRAM_CHAT_ID=!TG_CHAT!
+    echo TELEGRAM_SLA_LIMIT_SEC=420
+) > "!TARGET_DIR!\.env"
+
+echo.
+echo  -^> [OK] Arquivo .env gerado e configurado com sucesso!
+
+:ETAPA_3_OK
 echo.
 
 :: -----------------------------------------------------------------------------
 :: ETAPA 4/6: Instalacao das Dependencias do Node.js
 :: -----------------------------------------------------------------------------
+:ETAPA_4
 echo -------------------------------------------------------------------------------
 echo [ETAPA 4/6] Instalando dependencias e modulos do Node.js (npm install)...
 echo -------------------------------------------------------------------------------
@@ -243,6 +287,7 @@ echo.
 :: -----------------------------------------------------------------------------
 :: ETAPA 5/6: Liberacao de Porta no Firewall do Windows
 :: -----------------------------------------------------------------------------
+:ETAPA_5
 echo -------------------------------------------------------------------------------
 echo [ETAPA 5/6] Configurando regra de rede e Firewall do Windows...
 echo -------------------------------------------------------------------------------
@@ -254,6 +299,7 @@ echo.
 :: -----------------------------------------------------------------------------
 :: ETAPA 6/6: Registro e Inicializacao do Servico Windows (services.msc)
 :: -----------------------------------------------------------------------------
+:ETAPA_6
 echo -------------------------------------------------------------------------------
 echo [ETAPA 6/6] Registrando Servico Nativo do Windows (services.msc)...
 echo -------------------------------------------------------------------------------
@@ -265,14 +311,13 @@ if exist "!TARGET_DIR!\instalador\install_service.js" (
     call node "!TARGET_DIR!\install_service.js"
 )
 
-echo  -^> Criando atalhos uteis na Area de Trabalho (Usuario e Publico)...
-:: Cria atalhos no Desktop do usuario e no Public Desktop do Windows Server
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $d1 = [Environment]::GetFolderPath('Desktop'); $d2 = [Environment]::GetFolderPath('CommonDesktopDirectory'); foreach($d in @($d1, $d2)) { if(Test-Path $d) { $s = $ws.CreateShortcut((Join-Path $d 'Abrir Painel Infoboard.url')); $s.TargetPath = 'http://localhost:3000'; $s.Save(); } }" >nul 2>&1
+echo  -^> Criando atalhos uteis na Area de Trabalho...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $d1 = [Environment]::GetFolderPath('Desktop'); $d2 = [Environment]::GetFolderPath('CommonDesktopDirectory'); foreach($d in @($d1, $d2)) { if($d -and (Test-Path $d)) { $s = $ws.CreateShortcut((Join-Path $d 'Abrir Painel Infoboard.url')); $s.TargetPath = 'http://localhost:3000'; $s.Save(); } }" >nul 2>&1
 
 if exist "!TARGET_DIR!\instalador\ATUALIZAR_INFOBOARD.bat" (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $d1 = [Environment]::GetFolderPath('Desktop'); $d2 = [Environment]::GetFolderPath('CommonDesktopDirectory'); foreach($d in @($d1, $d2)) { if(Test-Path $d) { $s = $ws.CreateShortcut((Join-Path $d 'Atualizar Infoboard.lnk')); $s.TargetPath = '!TARGET_DIR!\instalador\ATUALIZAR_INFOBOARD.bat'; $s.WorkingDirectory = '!TARGET_DIR!\instalador'; $s.Save(); } }" >nul 2>&1
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $d1 = [Environment]::GetFolderPath('Desktop'); $d2 = [Environment]::GetFolderPath('CommonDesktopDirectory'); foreach($d in @($d1, $d2)) { if($d -and (Test-Path $d)) { $s = $ws.CreateShortcut((Join-Path $d 'Atualizar Infoboard.lnk')); $s.TargetPath = '!TARGET_DIR!\instalador\ATUALIZAR_INFOBOARD.bat'; $s.WorkingDirectory = '!TARGET_DIR!\instalador'; $s.Save(); } }" >nul 2>&1
 ) else (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $d1 = [Environment]::GetFolderPath('Desktop'); $d2 = [Environment]::GetFolderPath('CommonDesktopDirectory'); foreach($d in @($d1, $d2)) { if(Test-Path $d) { $s = $ws.CreateShortcut((Join-Path $d 'Atualizar Infoboard.lnk')); $s.TargetPath = '!TARGET_DIR!\ATUALIZAR_INFOBOARD.bat'; $s.WorkingDirectory = '!TARGET_DIR!'; $s.Save(); } }" >nul 2>&1
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $d1 = [Environment]::GetFolderPath('Desktop'); $d2 = [Environment]::GetFolderPath('CommonDesktopDirectory'); foreach($d in @($d1, $d2)) { if($d -and (Test-Path $d)) { $s = $ws.CreateShortcut((Join-Path $d 'Atualizar Infoboard.lnk')); $s.TargetPath = '!TARGET_DIR!\ATUALIZAR_INFOBOARD.bat'; $s.WorkingDirectory = '!TARGET_DIR!'; $s.Save(); } }" >nul 2>&1
 )
 echo  -^> [OK] Atalhos criados com sucesso!
 echo.
