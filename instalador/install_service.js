@@ -1,8 +1,11 @@
 const Service = require('node-windows').Service;
 const path = require('path');
+const fs = require('fs');
 
-// Raiz do projeto (uma pasta acima da pasta instalador)
-const projectRoot = path.join(__dirname, '..');
+// Identifica a raiz do projeto (esteja o script dentro de instalador/ ou na raiz)
+const projectRoot = fs.existsSync(path.join(__dirname, 'server.js')) 
+  ? __dirname 
+  : path.join(__dirname, '..');
 
 // Cria o objeto do servico nativo do Windows
 const svc = new Service({
@@ -23,7 +26,7 @@ const svc = new Service({
 // Evento disparado quando a instalacao termina
 svc.on('install', function() {
   console.log('================================================================');
-  console.log('[SUCESSO] Servico nativo "Infoboard TV Server" instalado no Windows!');
+  console.log('[SUCESSO] Servico nativo "Infoboard TV" instalado no Windows!');
   console.log('Voce pode visualiza-lo no painel de servicos: services.msc');
   console.log('================================================================');
   svc.start();
