@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Guia de Instalação e Atualização - Infoboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 850px; margin: auto; padding: 40px; color: #1e293b; background: #f8fafc; }
+        .card { background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); margin-bottom: 24px; border: 1px solid #e2e8f0; }
+        h1 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; font-size: 1.8rem; }
+        h2 { color: #2563eb; margin-top: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; font-size: 1.3rem; }
+        h3 { color: #334155; font-size: 1.1rem; }
+        code { background: #f1f5f9; padding: 3px 6px; border-radius: 6px; color: #0284c7; font-family: Consolas, monospace; font-size: 0.9em; }
+        pre { background: #0f172a; color: #f8fafc; padding: 16px; border-radius: 8px; overflow-x: auto; }
+        pre code { background: none; color: inherit; padding: 0; }
+        .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+        .feature-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; }
+        .alert { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+        .success { background: #ecfdf5; border-left: 4px solid #10b981; padding: 14px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+        @media (max-width: 640px) { .feature-grid { grid-template-columns: 1fr; } body { padding: 16px; } }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>🚀 Guia de Instalação e Atualização - Infoboard</h1>
+        <p>Este guia explica como implantar e manter o <strong>Infoboard TV</strong> em qualquer servidor ou terminal Windows de forma 100% automatizada.</p>
+
+        <h2>1. Instalação Automática (1 Clique)</h2>
+        <p>Tudo foi preparado na pasta <code>instalador/</code> no arquivo <code>INSTALAR_INFOBOARD.bat</code>.</p>
+        
+        <ol>
+            <li>Abra a pasta <code>instalador/</code> (ou copie ela para o novo computador).</li>
+            <li>Dê dois cliques em <code>INSTALAR_INFOBOARD.bat</code> (ele pedirá permissão de Administrador automaticamente).</li>
+        </ol>
+
+        <div class="feature-grid">
+            <div class="feature-item"><strong>🔍 Verificação do Node.js</strong><br>Detecta ou baixa/instala o Node.js LTS silenciosamente.</div>
+            <div class="feature-item"><strong>📥 Sincronização GitHub</strong><br>Baixa a versão oficial mais recente direto do repositório.</div>
+            <div class="feature-item"><strong>⚙️ Assistente .env</strong><br>Configura credenciais de NPX e PrixChat interativamente.</div>
+            <div class="feature-item"><strong>🛡️ Firewall Automático</strong><br>Libera a porta 3000 para acesso de TVs e computadores.</div>
+            <div class="feature-item"><strong>🔄 Serviço Nativo Windows</strong><br>Registra em <code>services.msc</code> (início automático no boot).</div>
+            <div class="feature-item"><strong>🖥️ Atalhos no Desktop</strong><br>Cria atalhos para Abrir o Painel e Atualizar com 1 clique.</div>
+        </div>
+
+        <div class="success">
+            <strong>✅ Pronto!</strong> O painel já fica rodando em segundo plano e pode ser acessado na rede pelo endereço <code>http://IP_DO_SERVIDOR:3000</code>.
+        </div>
+
+        <h2>2. Como Atualizar o Sistema</h2>
+        <p>Sempre que fizer alterações no código no seu computador e subir para o GitHub:</p>
+        <ol>
+            <li>No servidor/terminal, dê dois cliques em <code>instalador\ATUALIZAR_INFOBOARD.bat</code> (ou no atalho da Área de Trabalho).</li>
+            <li>O script para o serviço com segurança, baixa as novidades, instala dependências e reinicia o servidor em segundos sem perder as configurações do <code>.env</code>.</li>
+        </ol>
+
+        <h2>3. Desinstalação</h2>
+        <p>Caso precise remover o serviço e limpar regras de firewall, basta executar <code>instalador\DESINSTALAR_INFOBOARD.bat</code>.</p>
+    </div>
+
+</body>
+</html>

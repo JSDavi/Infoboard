@@ -1,12 +1,14 @@
 const Service = require('node-windows').Service;
 const path = require('path');
 
+// Raiz do projeto (uma pasta acima da pasta instalador)
+const projectRoot = path.join(__dirname, '..');
+
 // Cria o objeto do servico nativo do Windows
 const svc = new Service({
-  name: 'InfoboardService',
-  displayName: 'Infoboard TV Server',
-  description: 'Servico nativo do Windows para o Painel Infoboard (NPX, PrixChat e PBX)',
-  script: path.join(__dirname, 'server.js'),
+  name: 'Infoboard TV',
+  description: 'Servico nativo do Windows para o Painel Infoboard TV (NPX, PrixChat e PBX)',
+  script: path.join(projectRoot, 'server.js'),
   env: [
     {
       name: "PORT",

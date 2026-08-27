@@ -1,0 +1,34 @@
+<service>
+	<id>infoboardservice.exe</id>
+	<name>InfoboardService</name>
+	<description>Servico nativo do Windows para o Painel Infoboard (NPX, PrixChat e PBX)</description>
+	<executable>C:\Program Files\nodejs\node.exe</executable>
+	<argument>--harmony</argument>
+	<argument>C:\Users\Davi.Oliveira\Documents\antigravity\Infoboard\node_modules\node-windows\lib\wrapper.js</argument>
+	<argument>--file</argument>
+	<argument>C:\Users\Davi.Oliveira\Documents\antigravity\Infoboard\server.js</argument>
+	<argument>--scriptoptions=</argument>
+	<argument>--log</argument>
+	<argument>InfoboardService wrapper</argument>
+	<argument>--grow</argument>
+	<argument>0.25</argument>
+	<argument>--wait</argument>
+	<argument>2</argument>
+	<argument>--maxrestarts</argument>
+	<argument>3</argument>
+	<argument>--abortonerror</argument>
+	<argument>n</argument>
+	<argument>--stopparentfirst</argument>
+	<argument>undefined</argument>
+	<argument>--maxretries</argument>
+	<argument>50</argument>
+	<logmode>rotate</logmode>
+	<stoptimeout>30sec</stoptimeout>
+	<env name="PORT" value="3000"/>
+	<serviceaccount>
+		<domain>INFO-NTB530</domain>
+		<user>LocalSystem</user>
+		<password></password>
+	</serviceaccount>
+	<workingdirectory>C:\Users\Davi.Oliveira\Documents\antigravity\Infoboard</workingdirectory>
+</service>

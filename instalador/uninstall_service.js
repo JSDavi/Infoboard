@@ -1,9 +1,17 @@
 const Service = require('node-windows').Service;
 const path = require('path');
 
-const svc = new Service({
+const projectRoot = path.join(__dirname, '..');
+
+const svcOld = new Service({
   name: 'InfoboardService',
-  script: path.join(__dirname, 'server.js')
+  script: path.join(projectRoot, 'server.js')
+});
+svcOld.uninstall();
+
+const svc = new Service({
+  name: 'Infoboard TV',
+  script: path.join(projectRoot, 'server.js')
 });
 
 svc.on('uninstall', function() {

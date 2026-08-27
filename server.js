@@ -675,7 +675,7 @@ async function checkAndSendTelegramSlaAlerts(prixchatResult) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   const enabled = process.env.ENABLE_TELEGRAM_ALERTS !== 'false';
-  const slaLimitSec = parseInt(process.env.TELEGRAM_SLA_LIMIT_SEC || '300', 10);
+  const slaLimitSec = parseInt(process.env.TELEGRAM_SLA_LIMIT_SEC || '420', 10);
   const isDevPort = process.env.PORT === '3001';
 
   // 1. Trava do Ambiente de Dev (Porta 3001): Nunca dispara Telegram durante testes
