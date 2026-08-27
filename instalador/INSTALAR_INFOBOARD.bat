@@ -3,11 +3,6 @@ setlocal EnableDelayedExpansion
 title Instalador Automatico - Infoboard TV
 
 :: -----------------------------------------------------------------------------
-:: Garante que o diretorio atual seja a pasta do script
-:: -----------------------------------------------------------------------------
-cd /d "%~dp0"
-
-:: -----------------------------------------------------------------------------
 :: Verifica privilegios de Administrador
 :: -----------------------------------------------------------------------------
 net session >nul 2>&1
@@ -15,7 +10,7 @@ if %errorLevel% neq 0 (
     echo ===============================================================================
     echo [AVISO] Solicitando permissoes de Administrador...
     echo ===============================================================================
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd.exe -ArgumentList '/k cd /d \"\"%~dp0\"\" && \"\"%~f0\"\"' -Verb RunAs"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs" 2>nul
     if !errorLevel! neq 0 (
         echo.
         echo ===============================================================================
@@ -29,6 +24,9 @@ if %errorLevel% neq 0 (
     )
     exit /b
 )
+
+:: Garante que o diretorio atual seja a pasta do script
+cd /d "%~dp0"
 
 cls
 echo ===============================================================================
