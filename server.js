@@ -705,8 +705,8 @@ async function checkAndSendTelegramSlaAlerts(prixchatResult) {
         if (t.id) pendingAlertSent.add(`${t.client}_${t.sector}`);
 
         const mins = Math.floor(t.timeSec / 60);
-        const protoText = t.id ? `Protocolo: #${t.id}\n` : '';
-        const msg = `🚨 <b>ALERTA PRIX:</b>\n${protoText}${escapeHtml(t.client)}\n${t.sector.toUpperCase()} - ${mins} min na fila`;
+        const protoText = t.id ? `\nProtocolo: #${t.id}` : '';
+        const msg = `🚨 <b>ALERTA DE FILA - ${t.sector.toUpperCase()}</b>\nO cliente <b>${escapeHtml(t.client)}</b> está há <b>${mins} minutos</b> esperando!${protoText}`;
 
         try {
           await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -736,8 +736,8 @@ async function checkAndSendTelegramSlaAlerts(prixchatResult) {
 
           const waitSec = pendingTicketTimes.get(ticketId) || pendingTicketTimes.get(`${t.client}_${t.sector}`) || t.timeSec || 0;
           const totalMins = Math.floor(waitSec / 60);
-          const protoText = t.id ? `Protocolo: #${t.id}\n` : '';
-          const msg = `✅ <b>SLA EM ATENDIMENTO:</b>\n${protoText}${escapeHtml(agent.name)} puxou ${escapeHtml(t.client)}\n${t.sector.toUpperCase()} - ${totalMins} min na fila`;
+          const protoText = t.id ? `\nProtocolo: #${t.id} (Espera: ${totalMins} min)` : `\n(Espera: ${totalMins} min)`;
+          const msg = `✅ <b>FILA ANDOU - ${t.sector.toUpperCase()}</b>\nO analista <b>${escapeHtml(agent.name)}</b> assumiu o chat de <b>${escapeHtml(t.client)}</b>.${protoText}`;
 
           try {
             await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
