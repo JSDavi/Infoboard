@@ -3,11 +3,21 @@ setlocal EnableDelayedExpansion
 title Atualizador Automatico - Infoboard TV
 
 :: -----------------------------------------------------------------------------
+:: Garante que o diretorio atual seja a pasta do script
+:: -----------------------------------------------------------------------------
+cd /d "%~dp0"
+
+:: -----------------------------------------------------------------------------
 :: Verifica privilegios de Administrador
 :: -----------------------------------------------------------------------------
 net session >nul 2>&1
 if %errorLevel% neq 0 (
-    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd.exe -ArgumentList '/k cd /d \"\"%~dp0\"\" && \"\"%~f0\"\"' -Verb RunAs"
+    if !errorLevel! neq 0 (
+        echo.
+        echo [ATENCAO] Execute este arquivo como Administrador.
+        pause
+    )
     exit /b
 )
 
@@ -27,7 +37,7 @@ echo ===========================================================================
 echo            INFOBRASIL - ATUALIZACAO AUTOMATICA DO INFOBOARD
 echo ===============================================================================
 echo.
-echo Diretorio do Sistema: "%APP_DIR%"
+echo Diretorio do Sistema: "!APP_DIR!"
 echo.
 
 :: -----------------------------------------------------------------------------
@@ -42,13 +52,13 @@ echo.
 :: 2. Sincronizando com o GitHub
 :: -----------------------------------------------------------------------------
 echo [2/4] Baixando a versao mais recente do GitHub...
-cd /d "%APP_DIR%"
-if exist "%APP_DIR%\.git" (
+cd /d "!APP_DIR!"
+if exist "!APP_DIR!\.git" (
     echo       - Repositorio Git detectado. Executando git pull...
-    git pull origin master
+    git -c core.askPass= -c credential.helper= pull origin master
 ) else (
-    echo       - Baixando pacote atualizado do GitHub...
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile '%TEMP%\infoboard_update.zip'; Expand-Archive -Path '%TEMP%\infoboard_update.zip' -DestinationPath '%TEMP%\infoboard_upd_extracted' -Force; Get-ChildItem -Path '%TEMP%\infoboard_upd_extracted\Infoboard-master' -Recurse | Where-Object { $_.Name -ne '.env' } | Copy-Item -Destination { Join-Path '%APP_DIR%' $_.FullName.Substring(('%TEMP%\infoboard_upd_extracted\Infoboard-master').Length) } -Force; Remove-Item -Path '%TEMP%\infoboard_upd_extracted' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_update.zip' -Force"
+    echo       - Baixando pacote atualizado do GitHub (ZIP)...
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile '%TEMP%\infoboard_update.zip'; Expand-Archive -Path '%TEMP%\infoboard_update.zip' -DestinationPath '%TEMP%\infoboard_upd_extracted' -Force; Get-ChildItem -Path '%TEMP%\infoboard_upd_extracted\Infoboard-master' -Recurse | Where-Object { $_.Name -ne '.env' } | Copy-Item -Destination { Join-Path '!APP_DIR!' $_.FullName.Substring(('%TEMP%\infoboard_upd_extracted\Infoboard-master').Length) } -Force; Remove-Item -Path '%TEMP%\infoboard_upd_extracted' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_update.zip' -Force"
 )
 echo       - Arquivos atualizados com sucesso!
 echo.
@@ -57,7 +67,7 @@ echo.
 :: 3. Atualizando dependencias
 :: -----------------------------------------------------------------------------
 echo [3/4] Verificando novas dependencias (npm install)...
-cd /d "%APP_DIR%"
+cd /d "!APP_DIR!"
 call npm install --omit=dev
 echo       - Modulos verificados.
 echo.
