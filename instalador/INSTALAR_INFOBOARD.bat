@@ -3,6 +3,11 @@ setlocal EnableDelayedExpansion
 title Instalador Automatico - Infoboard TV
 
 :: -----------------------------------------------------------------------------
+:: Garante que o diretorio atual seja a pasta do script
+:: -----------------------------------------------------------------------------
+cd /d "%~dp0"
+
+:: -----------------------------------------------------------------------------
 :: Verifica privilegios de Administrador
 :: -----------------------------------------------------------------------------
 net session >nul 2>&1
@@ -10,7 +15,18 @@ if %errorLevel% neq 0 (
     echo ===============================================================================
     echo [AVISO] Solicitando permissoes de Administrador...
     echo ===============================================================================
-    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd.exe -ArgumentList '/k cd /d \"\"%~dp0\"\" && \"\"%~f0\"\"' -Verb RunAs"
+    if !errorLevel! neq 0 (
+        echo.
+        echo ===============================================================================
+        echo [ATENCAO] E necessario executar este instalador como Administrador.
+        echo.
+        echo 1. Clique com o BOTAO DIREITO em 'INSTALAR_INFOBOARD.bat'
+        echo 2. Selecione a opcao 'Executar como Administrador'
+        echo ===============================================================================
+        echo.
+        pause
+    )
     exit /b
 )
 
@@ -31,7 +47,7 @@ if exist "%SCRIPT_DIR%\..\server.js" (
     pushd "%SCRIPT_DIR%\.."
     set "TARGET_DIR=!CD!"
     popd
-    echo [CONFIG] Modo: Instalacao a partir do diretorio local clonado.
+    echo [CONFIG] Modo: Instalacao a partir do repositorio local.
 ) else if exist "%SCRIPT_DIR%\server.js" (
     set "TARGET_DIR=%SCRIPT_DIR%"
     echo [CONFIG] Modo: Instalacao no diretorio atual.
@@ -103,7 +119,7 @@ if exist "!TARGET_DIR!\server.js" (
     echo  -^> [OK] Arquivos do Infoboard ja estao presentes em "!TARGET_DIR!".
 ) else (
     set "DOWNLOAD_OK=0"
-    git --version >nul 2>&1
+    where git >nul 2>&1
     if !errorLevel! equ 0 (
         echo  -^> Git detectado. Clonando repositorio oficial (modo publico/anonimo)...
         git -c core.askPass= -c credential.helper= clone https://github.com/JSDavi/Infoboard.git "!TARGET_DIR!" >nul 2>&1

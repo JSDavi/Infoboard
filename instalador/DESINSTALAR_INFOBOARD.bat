@@ -3,11 +3,21 @@ setlocal EnableDelayedExpansion
 title Desinstalador - Infoboard TV
 
 :: -----------------------------------------------------------------------------
+:: Garante que o diretorio atual seja a pasta do script
+:: -----------------------------------------------------------------------------
+cd /d "%~dp0"
+
+:: -----------------------------------------------------------------------------
 :: Verifica privilegios de Administrador
 :: -----------------------------------------------------------------------------
 net session >nul 2>&1
 if %errorLevel% neq 0 (
-    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd.exe -ArgumentList '/k cd /d \"\"%~dp0\"\" && \"\"%~f0\"\"' -Verb RunAs"
+    if !errorLevel! neq 0 (
+        echo.
+        echo [ATENCAO] Execute este arquivo como Administrador.
+        pause
+    )
     exit /b
 )
 
@@ -27,7 +37,7 @@ echo ===========================================================================
 echo            INFOBRASIL - DESINSTALADOR DO INFOBOARD TV
 echo ===============================================================================
 echo.
-echo Tem certeza que deseja desinstalar o servico do Infoboard desta maquina? (S/N)
+echo Tem certeza que deseja desinstalar o servico do Infoboard desta maquina? [S/N]
 set /p CONFIRMAR="> "
 if /i not "!CONFIRMAR!"=="S" (
     echo Operacao cancelada pelo usuario.
@@ -37,11 +47,11 @@ if /i not "!CONFIRMAR!"=="S" (
 
 echo.
 echo [1/3] Removendo servico nativo do Windows (services.msc)...
-cd /d "%APP_DIR%"
-if exist "%APP_DIR%\instalador\uninstall_service.js" (
-    call node "%APP_DIR%\instalador\uninstall_service.js"
-) else if exist "%APP_DIR%\uninstall_service.js" (
-    call node "%APP_DIR%\uninstall_service.js"
+cd /d "!APP_DIR!"
+if exist "!APP_DIR!\instalador\uninstall_service.js" (
+    call node "!APP_DIR!\instalador\uninstall_service.js"
+) else if exist "!APP_DIR!\uninstall_service.js" (
+    call node "!APP_DIR!\uninstall_service.js"
 )
 
 echo.
