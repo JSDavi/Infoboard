@@ -455,7 +455,7 @@ async function authenticate() {
 
 // Helper para fazer requisição GET na API do NPX (JSON) com cookies
 async function apiGet(endpoint, params = {}) {
-  if (!activeSession.hasCookies()) {
+  if (!connectionStatus.authenticated || !activeSession.hasCookies()) {
     await authenticate();
   }
 
@@ -469,26 +469,26 @@ async function apiGet(endpoint, params = {}) {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'application/json, text/javascript, */*; q=0.01',
         'X-Requested-With': 'XMLHttpRequest'
-      }
+      },
+      timeout: 10000
     });
 
     // Se o HTML retornado contém o formulário de login, nossa sessão expirou
     if (typeof res.data === 'string' && (res.data.includes('new_user') || res.data.includes('users/sign_in'))) {
       console.log('[NPX Integrator] Sessão expirou. Re-autenticando...');
       activeSession = new CookieJar();
+      connectionStatus.authenticated = false;
       await authenticate();
       return apiGet(endpoint, params); // Tenta novamente após re-autenticar
     }
 
     return res.data;
   } catch (error) {
-    if (error.response && error.response.status === 401) {
-      console.log('[NPX Integrator] Recebeu 401 (Não autorizado). Renovando sessão...');
-      activeSession = new CookieJar();
-      await authenticate();
-      return apiGet(endpoint, params);
-    }
-    console.error(`[NPX Integrator] Erro ao buscar ${endpoint}:`, error.message);
+    // Se for 401 ou erro de conexão (ECONNRESET, ETIMEDOUT, etc.), limpa os cookies para forçar login novo
+    console.error(`[NPX Integrator] Erro ao buscar ${endpoint}: ${error.message}. Resetando sessão para reconectar.`);
+    activeSession = new CookieJar();
+    connectionStatus.authenticated = false;
+    connectionStatus.error = error.message;
     throw error;
   }
 }

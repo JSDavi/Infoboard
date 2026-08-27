@@ -613,7 +613,7 @@ function categorizeError(errText, tagLabel) {
       type: 'server',
       className: 'alert-banner-server',
       iconHtml: '<i class="fa-solid fa-globe"></i>',
-      msg: `${tagHtml} 🌐 SERVIDOR INDISPONÍVEL: A API retornou HTTP 502 Bad Gateway...`
+      msg: `${tagHtml} 🌐 SERVIDOR INDISPONÍVEL: A API retornou instabilidade. Reconectando...`
     };
   }
 
@@ -621,7 +621,7 @@ function categorizeError(errText, tagLabel) {
     type: 'network',
     className: 'alert-banner-network',
     iconHtml: '<i class="fa-solid fa-satellite-dish"></i>',
-    msg: `${tagHtml} 📡 CONEXÃO EXPIRADA: O servidor PBX/API local não respondeu.`
+    msg: `${tagHtml} 📡 CONEXÃO OSCILOU: Reconectando à API do NPX automaticamente...`
   };
 }
 
