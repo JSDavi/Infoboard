@@ -102,12 +102,16 @@ if not exist "!TARGET_DIR!" mkdir "!TARGET_DIR!"
 if exist "!TARGET_DIR!\server.js" (
     echo  -^> [OK] Arquivos do Infoboard ja estao presentes em "!TARGET_DIR!".
 ) else (
+    set "DOWNLOAD_OK=0"
     git --version >nul 2>&1
     if !errorLevel! equ 0 (
-        echo  -^> Git detectado. Clonando repositorio oficial...
-        git clone https://github.com/JSDavi/Infoboard.git "!TARGET_DIR!"
-    ) else (
-        echo  -^> Git nao detectado. Baixando codigo fonte direto do GitHub (ZIP)...
+        echo  -^> Git detectado. Clonando repositorio oficial (modo publico/anonimo)...
+        git -c core.askPass= -c credential.helper= clone https://github.com/JSDavi/Infoboard.git "!TARGET_DIR!" >nul 2>&1
+        if exist "!TARGET_DIR!\server.js" set "DOWNLOAD_OK=1"
+    )
+    
+    if "!DOWNLOAD_OK!"=="0" (
+        echo  -^> Baixando codigo fonte direto do GitHub (ZIP)...
         powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile '%TEMP%\infoboard_source.zip'; Expand-Archive -Path '%TEMP%\infoboard_source.zip' -DestinationPath '%TEMP%\infoboard_extracted' -Force; Copy-Item -Path '%TEMP%\infoboard_extracted\Infoboard-master\*' -Destination '!TARGET_DIR!' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_extracted' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_source.zip' -Force"
     )
 )
