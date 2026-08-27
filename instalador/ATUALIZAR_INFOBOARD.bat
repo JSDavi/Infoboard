@@ -57,8 +57,8 @@ if exist "!APP_DIR!\.git" (
     echo       - Repositorio Git detectado. Executando git pull...
     git -c core.askPass= -c credential.helper= pull origin master
 ) else (
-    echo       - Baixando pacote atualizado do GitHub (ZIP)...
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile '%TEMP%\infoboard_update.zip'; Expand-Archive -Path '%TEMP%\infoboard_update.zip' -DestinationPath '%TEMP%\infoboard_upd_extracted' -Force; Get-ChildItem -Path '%TEMP%\infoboard_upd_extracted\Infoboard-master' -Recurse | Where-Object { $_.Name -ne '.env' } | Copy-Item -Destination { Join-Path '!APP_DIR!' $_.FullName.Substring(('%TEMP%\infoboard_upd_extracted\Infoboard-master').Length) } -Force; Remove-Item -Path '%TEMP%\infoboard_upd_extracted' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_update.zip' -Force"
+    echo       - Baixando pacote atualizado do GitHub (ZIP - Windows Server Mode)...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile '%TEMP%\infoboard_update.zip' -UseBasicParsing; Expand-Archive -Path '%TEMP%\infoboard_update.zip' -DestinationPath '%TEMP%\infoboard_upd_extracted' -Force; Get-ChildItem -Path '%TEMP%\infoboard_upd_extracted\Infoboard-master' -Recurse | Where-Object { $_.Name -ne '.env' } | Copy-Item -Destination { Join-Path '!APP_DIR!' $_.FullName.Substring(('%TEMP%\infoboard_upd_extracted\Infoboard-master').Length) } -Force; Remove-Item -Path '%TEMP%\infoboard_upd_extracted' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_update.zip' -Force"
 )
 echo       - Arquivos atualizados com sucesso!
 echo.

@@ -83,8 +83,8 @@ echo [ATENCAO] O Node.js NAO foi detectado neste computador!
 echo O Node.js LTS e necessario para executar o Infoboard TV.
 set /p INSTALAR_NODE="Deseja baixar e instalar o Node.js LTS automaticamente agora? [S/N]: "
 if /i "!INSTALAR_NODE!"=="S" (
-    echo  -^> Baixando instalador oficial do Node.js LTS...
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://nodejs.org/dist/v20.18.0/node-v20.18.0-x64.msi' -OutFile '%TEMP%\nodejs_installer.msi'"
+    echo  -^> Baixando instalador oficial do Node.js LTS (compativel com Windows Server)...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://nodejs.org/dist/v20.18.0/node-v20.18.0-x64.msi' -OutFile '%TEMP%\nodejs_installer.msi' -UseBasicParsing"
     echo  -^> Instalando Node.js de forma silenciosa (aguarde alguns instantes)...
     msiexec /i "%TEMP%\nodejs_installer.msi" /quiet /norestart
     echo  -^> Atualizando caminhos do sistema no prompt atual...
@@ -127,8 +127,8 @@ if exist "!TARGET_DIR!\server.js" (
     )
     
     if "!DOWNLOAD_OK!"=="0" (
-        echo  -^> Baixando codigo fonte direto do GitHub (ZIP)...
-        powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile '%TEMP%\infoboard_source.zip'; Expand-Archive -Path '%TEMP%\infoboard_source.zip' -DestinationPath '%TEMP%\infoboard_extracted' -Force; Copy-Item -Path '%TEMP%\infoboard_extracted\Infoboard-master\*' -Destination '!TARGET_DIR!' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_extracted' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_source.zip' -Force"
+        echo  -^> Baixando codigo fonte direto do GitHub (ZIP - Windows Server Mode)...
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile '%TEMP%\infoboard_source.zip' -UseBasicParsing; Expand-Archive -Path '%TEMP%\infoboard_source.zip' -DestinationPath '%TEMP%\infoboard_extracted' -Force; Copy-Item -Path '%TEMP%\infoboard_extracted\Infoboard-master\*' -Destination '!TARGET_DIR!' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_extracted' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_source.zip' -Force"
     )
 )
 
@@ -247,7 +247,7 @@ echo ---------------------------------------------------------------------------
 echo [ETAPA 5/6] Configurando regra de rede e Firewall do Windows...
 echo -------------------------------------------------------------------------------
 echo  -^> Liberando porta TCP 3000 para acesso de TVs e computadores da rede local...
-powershell -Command "New-NetFirewallRule -DisplayName 'Infoboard TV (Porta 3000)' -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow -ErrorAction SilentlyContinue" >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "New-NetFirewallRule -DisplayName 'Infoboard TV (Porta 3000)' -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow -ErrorAction SilentlyContinue" >nul 2>&1
 echo  -^> [OK] Regra de Firewall ativada!
 echo.
 
@@ -265,16 +265,16 @@ if exist "!TARGET_DIR!\instalador\install_service.js" (
     call node "!TARGET_DIR!\install_service.js"
 )
 
-echo  -^> Criando atalhos uteis na Area de Trabalho...
-:: Atalho 1: Abrir o Painel no Navegador
-powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Abrir Painel Infoboard.url'); $s.TargetPath = 'http://localhost:3000'; $s.Save()" >nul 2>&1
-:: Atalho 2: Atualizar o Infoboard via GitHub
+echo  -^> Criando atalhos uteis na Area de Trabalho (Usuario e Publico)...
+:: Cria atalhos no Desktop do usuario e no Public Desktop do Windows Server
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $d1 = [Environment]::GetFolderPath('Desktop'); $d2 = [Environment]::GetFolderPath('CommonDesktopDirectory'); foreach($d in @($d1, $d2)) { if(Test-Path $d) { $s = $ws.CreateShortcut((Join-Path $d 'Abrir Painel Infoboard.url')); $s.TargetPath = 'http://localhost:3000'; $s.Save(); } }" >nul 2>&1
+
 if exist "!TARGET_DIR!\instalador\ATUALIZAR_INFOBOARD.bat" (
-    powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Atualizar Infoboard.lnk'); $s.TargetPath = '!TARGET_DIR!\instalador\ATUALIZAR_INFOBOARD.bat'; $s.WorkingDirectory = '!TARGET_DIR!\instalador'; $s.Save()" >nul 2>&1
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $d1 = [Environment]::GetFolderPath('Desktop'); $d2 = [Environment]::GetFolderPath('CommonDesktopDirectory'); foreach($d in @($d1, $d2)) { if(Test-Path $d) { $s = $ws.CreateShortcut((Join-Path $d 'Atualizar Infoboard.lnk')); $s.TargetPath = '!TARGET_DIR!\instalador\ATUALIZAR_INFOBOARD.bat'; $s.WorkingDirectory = '!TARGET_DIR!\instalador'; $s.Save(); } }" >nul 2>&1
 ) else (
-    powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Atualizar Infoboard.lnk'); $s.TargetPath = '!TARGET_DIR!\ATUALIZAR_INFOBOARD.bat'; $s.WorkingDirectory = '!TARGET_DIR!'; $s.Save()" >nul 2>&1
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $d1 = [Environment]::GetFolderPath('Desktop'); $d2 = [Environment]::GetFolderPath('CommonDesktopDirectory'); foreach($d in @($d1, $d2)) { if(Test-Path $d) { $s = $ws.CreateShortcut((Join-Path $d 'Atualizar Infoboard.lnk')); $s.TargetPath = '!TARGET_DIR!\ATUALIZAR_INFOBOARD.bat'; $s.WorkingDirectory = '!TARGET_DIR!'; $s.Save(); } }" >nul 2>&1
 )
-echo  -^> [OK] Atalhos criados na Area de Trabalho!
+echo  -^> [OK] Atalhos criados com sucesso!
 echo.
 
 :: -----------------------------------------------------------------------------
