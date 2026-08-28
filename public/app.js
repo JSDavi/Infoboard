@@ -11,19 +11,126 @@ let countdownValue = 5;
 let countdownInterval = null;
 let chatCarouselIndex = 0; // Controla qual página de atendentes do chat está ativa
 let lastChatData = null; // Armazena a última resposta real obtida do PrixChat
-let pinnedAnalysts = []; // Armazena os nomes dos analistas fixados na tela
+// Agrupamento por Slots (0 = Esquerda, 1 = Centro, 2 = Direita) e Modos de Exibição
+let chatSlotGroups = JSON.parse(localStorage.getItem('chat_slot_groups') || '{"0":[],"1":[],"2":[]}');
+let chatAnalystViewModes = JSON.parse(localStorage.getItem('chat_analyst_view_modes') || '{}');
 let pinPendingAlways = false; // Se verdadeiro, mantém a coluna de pendentes visível mesmo vazia
 let carouselPaused = false; // Controla se o carrossel está pausado
 let expandedAnalysts = new Set(); // Armazena as chaves dos analistas com card expandido por clique
 
-// Função para fixar/desafixar uma coluna de analista
-window.togglePinAgent = function(name) {
-  const index = pinnedAnalysts.indexOf(name);
-  if (index > -1) {
-    pinnedAnalysts.splice(index, 1);
-  } else {
-    pinnedAnalysts.push(name);
+// Função para alternar modo compacto / detalhado de um analista
+window.toggleAnalystViewMode = function(name, e) {
+  if (e) {
+    e.stopPropagation();
+    e.preventDefault();
   }
+  const currentMode = chatAnalystViewModes[name] || 'compact'; // padrão é compacto conforme imagem
+  chatAnalystViewModes[name] = currentMode === 'compact' ? 'full' : 'compact';
+  localStorage.setItem('chat_analyst_view_modes', JSON.stringify(chatAnalystViewModes));
+  renderPrixChat(lastChatData);
+};
+
+// Função para fixar/desafixar analista (compatível com slots)
+window.togglePinAgent = function(name, e) {
+  if (e) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+  let foundInSlot = -1;
+  for (let s in chatSlotGroups) {
+    if (chatSlotGroups[s] && chatSlotGroups[s].includes(name)) {
+      foundInSlot = parseInt(s);
+      break;
+    }
+  }
+
+  if (foundInSlot > -1) {
+    // Desafixa: remove do slot e volta ao carrossel rotativo
+    chatSlotGroups[foundInSlot] = chatSlotGroups[foundInSlot].filter(n => n !== name);
+  } else {
+    // Fixa no primeiro slot vago ou no slot 0
+    let targetSlot = 0;
+    for (let s = 0; s < 3; s++) {
+      if (!chatSlotGroups[s] || chatSlotGroups[s].length === 0) {
+        targetSlot = s;
+        break;
+      }
+    }
+    if (!chatSlotGroups[targetSlot]) chatSlotGroups[targetSlot] = [];
+    chatSlotGroups[targetSlot].push(name);
+  }
+
+  localStorage.setItem('chat_slot_groups', JSON.stringify(chatSlotGroups));
+  renderPrixChat(lastChatData);
+};
+
+// --- DRAG & DROP DE ANALISTAS DO CHAT (AGRUPAMENTO POR COLUNA) ---
+window.handleChatDragStart = function(e, analystName) {
+  e.dataTransfer.setData('text/plain', analystName);
+  e.dataTransfer.effectAllowed = 'move';
+  const col = e.target.closest('.chat-column');
+  if (col) {
+    setTimeout(() => col.classList.add('chat-dragging'), 0);
+  }
+};
+
+window.handleChatDragEnd = function(e) {
+  document.querySelectorAll('.chat-dragging').forEach(el => el.classList.remove('chat-dragging'));
+  document.querySelectorAll('.chat-drag-over').forEach(el => el.classList.remove('chat-drag-over'));
+};
+
+window.handleChatDragOver = function(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const target = e.currentTarget;
+  if (target && !target.classList.contains('chat-drag-over')) {
+    target.classList.add('chat-drag-over');
+  }
+};
+
+window.handleChatDragLeave = function(e) {
+  const target = e.currentTarget;
+  if (target) {
+    target.classList.remove('chat-drag-over');
+  }
+};
+
+window.handleChatDrop = function(e, slotIndex, targetAnalystName) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelectorAll('.chat-drag-over').forEach(el => el.classList.remove('chat-drag-over'));
+  document.querySelectorAll('.chat-dragging').forEach(el => el.classList.remove('chat-dragging'));
+
+  const draggedName = e.dataTransfer.getData('text/plain');
+  if (!draggedName) return;
+
+  // Remove draggedName de todos os slots onde já estava
+  for (let s in chatSlotGroups) {
+    chatSlotGroups[s] = (chatSlotGroups[s] || []).filter(name => name !== draggedName);
+  }
+
+  if (!chatSlotGroups[slotIndex]) {
+    chatSlotGroups[slotIndex] = [];
+  }
+
+  // Se soltou em cima de outro analista, garante que o alvo também fique fixado neste slot
+  if (targetAnalystName && targetAnalystName !== draggedName) {
+    for (let s in chatSlotGroups) {
+      if (parseInt(s) !== slotIndex) {
+        chatSlotGroups[s] = (chatSlotGroups[s] || []).filter(name => name !== targetAnalystName);
+      }
+    }
+    if (!chatSlotGroups[slotIndex].includes(targetAnalystName)) {
+      chatSlotGroups[slotIndex].push(targetAnalystName);
+    }
+  }
+
+  // Adiciona o analista arrastado no slot
+  if (!chatSlotGroups[slotIndex].includes(draggedName)) {
+    chatSlotGroups[slotIndex].push(draggedName);
+  }
+
+  localStorage.setItem('chat_slot_groups', JSON.stringify(chatSlotGroups));
   renderPrixChat(lastChatData);
 };
 
@@ -80,22 +187,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const busyAgents = chatData.agents ? chatData.agents.filter(a => a.tickets && a.tickets.length > 0) : [];
     
-    // Filtra quais dos analistas fixados estão ativos
-    const activePinnedAgents = busyAgents.filter(a => pinnedAnalysts.includes(a.name));
-    
-    // Slots ocupados pelas fixações:
-    // Todos os analistas fixados compartilham 1 único slot (o wrapper vertical),
-    // independente de quantos estejam fixados. Se nenhum fixado, ocupa 0 slots.
-    const occupiedSlots = activePinnedAgents.length > 0 ? 1 : 0;
-    const rotatingSlotsCount = analystSlotsCount - occupiedSlots;
-    
-    let maxPages = 1;
+    // Identifica analistas fixados em qualquer slot
+    const allPinned = [];
+    for (let s = 0; s < analystSlotsCount; s++) {
+      const inSlot = (chatSlotGroups[s] || []).filter(name => busyAgents.some(a => a.name === name));
+      allPinned.push(...inSlot);
+    }
 
-    if (rotatingSlotsCount > 0) {
-      const rotatingAgents = busyAgents.filter(a => !pinnedAnalysts.includes(a.name));
-      maxPages = Math.ceil(rotatingAgents.length / rotatingSlotsCount);
-    } else {
-      maxPages = 1;
+    const availableRotating = busyAgents.filter(a => !allPinned.includes(a.name));
+    
+    let freeSlotsCount = 0;
+    for (let s = 0; s < analystSlotsCount; s++) {
+      const inSlot = (chatSlotGroups[s] || []).filter(name => busyAgents.some(a => a.name === name));
+      if (inSlot.length === 0) freeSlotsCount++;
+    }
+
+    let maxPages = 1;
+    if (freeSlotsCount > 0 && availableRotating.length > 0) {
+      maxPages = Math.ceil(availableRotating.length / freeSlotsCount) || 1;
     }
 
     if (!carouselPaused) {
@@ -460,142 +569,166 @@ function renderPrixChat(realData) {
     }
   }
   
-  // 2. Colunas de Agentes com suporte a Fixação (Pin) e Carrossel rotativo
+  // 2. Colunas de Agentes com suporte a Drag & Drop, Fixação em Slots e Carrossel rotativo
   const busyAgents = chatData.agents ? [...chatData.agents]
     .filter(a => a.tickets && a.tickets.length > 0)
     .sort((a, b) => b.tickets.length - a.tickets.length) : [];
 
-  // Filtra quais dos analistas fixados estão ativos atualmente
-  const activePinnedAgents = busyAgents.filter(a => pinnedAnalysts.includes(a.name));
-  
-  // Mantém a ordem dos fixados conforme o array pinnedAnalysts
-  activePinnedAgents.sort((a, b) => pinnedAnalysts.indexOf(a.name) - pinnedAnalysts.indexOf(b.name));
+  // Criação do elemento de coluna do analista (compatível com modo compacto ou completo)
+  function createAnalystColumnElement(agent, isCompact, isPinned, slotIndex, isGrouped) {
+    const col = document.createElement('div');
+    col.className = 'chat-column' + (agent.online === false ? ' offline' : '') + (isPinned ? ' pinned-active' : '');
+    col.setAttribute('draggable', 'true');
+    col.setAttribute('ondragstart', `handleChatDragStart(event, '${agent.name}')`);
+    col.setAttribute('ondragend', `handleChatDragEnd(event)`);
+    col.setAttribute('ondragover', `handleChatDragOver(event)`);
+    col.setAttribute('ondragleave', `handleChatDragLeave(event)`);
+    col.setAttribute('ondrop', `handleChatDrop(event, ${slotIndex}, '${agent.name}')`);
 
-  const hasPinned = activePinnedAgents.length > 0;
-  const rotatingSlotsCount = analystSlotsCount - (hasPinned ? 1 : 0);
+    const pinIconClass = isPinned ? 'fa-solid fa-thumbtack pinned-active' : 'fa-solid fa-thumbtack';
+    const pinTitle = isPinned ? 'Desafixar coluna (voltar ao carrossel)' : 'Fixar nesta coluna';
+    const modeTitle = isCompact ? 'Mudar para cartões completos' : 'Agrupar em lista compacta';
+    const modeIcon = isCompact ? 'fa-table-cells-large' : 'fa-list-ul';
 
-  let rotatingAgents = [];
-  if (rotatingSlotsCount > 0) {
-    const remainingAgents = busyAgents.filter(a => !pinnedAnalysts.includes(a.name));
-    const totalRemaining = remainingAgents.length;
-    
-    if (totalRemaining > 0) {
-      const maxPages = Math.ceil(totalRemaining / rotatingSlotsCount);
-      if (chatCarouselIndex >= maxPages) {
-        chatCarouselIndex = 0;
-      }
-
-      if (totalRemaining <= rotatingSlotsCount) {
-        rotatingAgents = remainingAgents;
-      } else {
-        // Algoritmo Wrap-Around: Preenche todos os slots de coluna sem deixar furos/colunas vazias
-        const startIdx = (chatCarouselIndex * rotatingSlotsCount) % totalRemaining;
-        for (let i = 0; i < rotatingSlotsCount; i++) {
-          const idx = (startIdx + i) % totalRemaining;
-          const agentCandidate = remainingAgents[idx];
-          if (!rotatingAgents.some(a => a.name === agentCandidate.name)) {
-            rotatingAgents.push(agentCandidate);
-          }
-        }
-      }
-    }
-  }
-
-  // Se houver fixados, renderiza o wrapper vertical ocupando 1 slot de coluna
-  if (hasPinned) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'chat-column-vertical-wrapper';
-    
-    activePinnedAgents.forEach(agent => {
-      const col = document.createElement('div');
-      col.className = 'chat-column' + (agent.online === false ? ' offline' : '');
-      
-      const pinIconClass = 'fa-solid fa-thumbtack pinned-active';
-      const pinTitle = 'Desafixar coluna';
-
-      col.innerHTML = `
-        <div class="chat-column-header">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="chat-pin-btn" onclick="togglePinAgent('${agent.name}')" title="${pinTitle}">
-              <i class="${pinIconClass}"></i>
-            </button>
-            <span>${agent.name}</span>
-          </div>
-          <span class="online-badge" style="background:rgba(255,255,255,0.25); color:white;">${agent.tickets.length}</span>
+    col.innerHTML = `
+      <div class="chat-column-header">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button class="chat-pin-btn" onclick="togglePinAgent('${agent.name}', event)" title="${pinTitle}">
+            <i class="${pinIconClass}"></i>
+          </button>
+          <button class="chat-view-mode-btn ${isCompact ? 'active' : ''}" onclick="toggleAnalystViewMode('${agent.name}', event)" title="${modeTitle}">
+            <i class="fa-solid ${modeIcon}"></i>
+          </button>
+          <span class="chat-header-name" title="Clique e arraste para agrupar em outra coluna">${agent.name}</span>
         </div>
-        <div class="chat-cards-container pinned-cards-container"></div>
-      `;
-      
-      // Ordena tickets por tempo (maior tempo/urgência primeiro)
-      const sortedTickets = [...agent.tickets].sort((a, b) => {
-        if (b.timeSec !== undefined && a.timeSec !== undefined) {
-          return b.timeSec - a.timeSec;
-        }
-        return (a.time || '').localeCompare(b.time || '');
-      });
+        <span class="online-badge" style="background:rgba(255,255,255,0.25); color:white;">${agent.tickets ? agent.tickets.length : 0}</span>
+      </div>
+      <div class="chat-cards-container ${isGrouped ? 'pinned-cards-container' : ''}"></div>
+    `;
 
-      // Limita para exibir apenas 1 cliente no agrupamento
-      const ticketsToShow = sortedTickets.slice(0, 1);
+    const cardsContainer = col.querySelector('.chat-cards-container');
+    const tickets = agent.tickets || [];
 
-      const cardsContainer = col.querySelector('.chat-cards-container');
-      ticketsToShow.forEach(t => {
-        const card = document.createElement('div');
-        const isSlaAlert = t.timeSec > 1800; // 30 minutos em atendimento sem interação
-        card.className = 'chat-kanban-card' + (isSlaAlert ? ' alert-card-sla' : '');
+    // Ordena tickets por tempo (maior tempo / maior urgência primeiro)
+    const sortedTickets = [...tickets].sort((a, b) => {
+      if (b.timeSec !== undefined && a.timeSec !== undefined) {
+        return b.timeSec - a.timeSec;
+      }
+      return (a.time || '').localeCompare(b.time || '');
+    });
+
+    sortedTickets.forEach(t => {
+      const isSlaAlert = t.timeSec > 1800; // 30 minutos em atendimento sem interação
+      const card = document.createElement('div');
+
+      if (isCompact) {
+        card.className = 'chat-compact-card' + (isSlaAlert ? ' alert-card-sla' : '');
         card.title = `${t.client} | ${t.msg || 'Sem mensagens recentes'}`;
         card.innerHTML = `
-          <span class="chat-kanban-client" title="${t.client}">${t.client}</span>
+          <span class="chat-compact-client" title="${t.client}">${t.client}</span>
+          <span class="chat-compact-time ${isSlaAlert ? 'alert' : ''}">${t.time}</span>
+          <span class="chat-compact-sector ${t.sector}">${t.sector.toUpperCase()}</span>
+        `;
+      } else {
+        card.className = 'chat-kanban-card' + (isSlaAlert ? ' alert-card-sla' : '');
+        card.innerHTML = `
+          <span class="chat-kanban-client">${t.client}</span>
           <span class="chat-kanban-snippet">${t.msg}</span>
           <div class="chat-kanban-meta">
             <span class="chat-kanban-time ${isSlaAlert ? 'alert' : ''}">${t.time}</span>
             <span class="chat-kanban-sector ${t.sector}">${t.sector.toUpperCase()}</span>
           </div>
         `;
-        cardsContainer.appendChild(card);
-      });
-      wrapper.appendChild(col);
-    });
-    container.appendChild(wrapper);
-  }
-
-  // Renderiza as colunas rotativas restantes nos slots que sobraram
-  rotatingAgents.forEach(agent => {
-    const col = document.createElement('div');
-    col.className = 'chat-column accent-animated' + (agent.online === false ? ' offline' : '');
-    
-    const pinIconClass = 'fa-solid fa-thumbtack';
-    const pinTitle = 'Fixar/Pausar esta coluna';
-
-    col.innerHTML = `
-      <div class="chat-column-header">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <button class="chat-pin-btn" onclick="togglePinAgent('${agent.name}')" title="${pinTitle}">
-            <i class="${pinIconClass}"></i>
-          </button>
-          <span>${agent.name}</span>
-        </div>
-        <span class="online-badge" style="background:rgba(255,255,255,0.25); color:white;">${agent.tickets.length}</span>
-      </div>
-      <div class="chat-cards-container"></div>
-    `;
-    container.appendChild(col);
-    
-    const cardsContainer = col.querySelector('.chat-cards-container');
-    agent.tickets.forEach(t => {
-      const card = document.createElement('div');
-      const isSlaAlert = t.timeSec > 1800; // 30 minutos em atendimento sem interação
-      card.className = 'chat-kanban-card' + (isSlaAlert ? ' alert-card-sla' : '');
-      card.innerHTML = `
-        <span class="chat-kanban-client">${t.client}</span>
-        <span class="chat-kanban-snippet">${t.msg}</span>
-        <div class="chat-kanban-meta">
-          <span class="chat-kanban-time ${isSlaAlert ? 'alert' : ''}">${t.time}</span>
-          <span class="chat-kanban-sector ${t.sector}">${t.sector.toUpperCase()}</span>
-        </div>
-      `;
+      }
       cardsContainer.appendChild(card);
     });
-  });
+
+    return col;
+  }
+
+  // Mapeia todos os analistas fixados em qualquer slot
+  const allPinnedNames = [];
+  for (let s = 0; s < analystSlotsCount; s++) {
+    const inSlot = (chatSlotGroups[s] || []).filter(name => busyAgents.some(a => a.name === name));
+    allPinnedNames.push(...inSlot);
+  }
+
+  // Analistas rotativos disponíveis
+  const availableRotatingAgents = busyAgents.filter(a => !allPinnedNames.includes(a.name));
+
+  // Identifica slots livres (sem analistas fixados)
+  const freeSlots = [];
+  for (let s = 0; s < analystSlotsCount; s++) {
+    const activeInSlot = (chatSlotGroups[s] || []).filter(name => busyAgents.some(a => a.name === name));
+    if (activeInSlot.length === 0) {
+      freeSlots.push(s);
+    }
+  }
+
+  // Distribuição do carrossel rotativo para os slots livres
+  let rotatingAgentsDistribution = {};
+  if (freeSlots.length > 0 && availableRotatingAgents.length > 0) {
+    const totalRemaining = availableRotatingAgents.length;
+    const maxPages = Math.ceil(totalRemaining / freeSlots.length) || 1;
+    if (chatCarouselIndex >= maxPages) {
+      chatCarouselIndex = 0;
+    }
+    const startIdx = (chatCarouselIndex * freeSlots.length) % totalRemaining;
+    freeSlots.forEach((slotIdx, i) => {
+      const agentCandidate = availableRotatingAgents[(startIdx + i) % totalRemaining];
+      if (agentCandidate) {
+        rotatingAgentsDistribution[slotIdx] = agentCandidate;
+      }
+    });
+  }
+
+  // Renderiza os slots do grid (Esquerda, Centro, Direita)
+  for (let slotIdx = 0; slotIdx < analystSlotsCount; slotIdx++) {
+    const slotZone = document.createElement('div');
+    slotZone.className = 'chat-slot-zone';
+    slotZone.setAttribute('data-slot-index', slotIdx);
+    slotZone.setAttribute('ondragover', 'handleChatDragOver(event)');
+    slotZone.setAttribute('ondragleave', 'handleChatDragLeave(event)');
+    slotZone.setAttribute('ondrop', `handleChatDrop(event, ${slotIdx})`);
+
+    const activeInSlot = (chatSlotGroups[slotIdx] || []).filter(name => busyAgents.some(a => a.name === name));
+
+    if (activeInSlot.length > 1) {
+      // Mais de 1 analista agrupado neste slot: renderiza wrapper vertical
+      const wrapper = document.createElement('div');
+      wrapper.className = 'chat-column-vertical-wrapper';
+
+      activeInSlot.forEach(name => {
+        const agent = busyAgents.find(a => a.name === name);
+        if (agent) {
+          // No agrupamento, padrão é modo compacto, exceto se o usuário configurou para full
+          const isCompact = chatAnalystViewModes[agent.name] !== 'full';
+          const col = createAnalystColumnElement(agent, isCompact, true, slotIdx, true);
+          wrapper.appendChild(col);
+        }
+      });
+      slotZone.appendChild(wrapper);
+    } else if (activeInSlot.length === 1) {
+      // 1 analista fixado neste slot
+      const agent = busyAgents.find(a => a.name === activeInSlot[0]);
+      if (agent) {
+        const isCompact = chatAnalystViewModes[agent.name] === 'compact';
+        const col = createAnalystColumnElement(agent, isCompact, true, slotIdx, false);
+        slotZone.appendChild(col);
+      }
+    } else {
+      // Slot livre: exibe o analista do carrossel rotativo
+      const agent = rotatingAgentsDistribution[slotIdx];
+      if (agent) {
+        const isCompact = chatAnalystViewModes[agent.name] === 'compact';
+        const col = createAnalystColumnElement(agent, isCompact, false, slotIdx, false);
+        col.classList.add('accent-animated');
+        slotZone.appendChild(col);
+      }
+    }
+
+    container.appendChild(slotZone);
+  }
 }
 
 // --- RENDERIZAÇÃO E ATUALIZAÇÃO DA UI ---
