@@ -424,7 +424,7 @@ body {
 /* Kanban Board de WhatsApp */
 .chat-kanban-board {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 colunas de chat */
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 colunas de chat com minmax para evitar transbordamento */
   gap: 10px;
   height: calc(100% - 70px);
   overflow: hidden; /* Trava o transbordamento para exibição simétrica */
@@ -1513,6 +1513,7 @@ body.fullscreen-mode .carousel-toggle-btn {
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  min-width: 0;
   border-radius: 12px;
   transition: background-color 0.2s ease, outline 0.2s ease;
   position: relative;
