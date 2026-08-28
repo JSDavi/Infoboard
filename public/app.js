@@ -711,8 +711,14 @@ function updateUI(data) {
     const errText = status.pbx.error || '';
     if (status.pbx.authenticated === false || errText) {
       pbxErrorMsg = errText || 'Desconectado';
-      const errCodeMatch = errText.match(/(?<!\.)\b\d{3}\b(?!\.)/);
-      const errLabel = errCodeMatch ? `PBX ERRO ${errCodeMatch[0]}` : 'PBX OFF';
+      let errLabel = 'PBX OFF';
+      if (errText.includes('status code')) {
+        const match = errText.match(/status code (\d{3})/);
+        if (match) errLabel = `PBX ERRO ${match[1]}`;
+      } else if (errText.includes('ECONN') || errText.includes('TIMEOUT')) {
+        errLabel = 'PBX S/ REDE';
+      }
+
       const errClass = getErrorStateClass(errText);
       setConnectionStatus('pbx', errClass, errLabel);
     } else {
@@ -727,8 +733,14 @@ function updateUI(data) {
     const errText = status.prix.error || '';
     if (status.prix.isSimulated || !status.prix.authenticated || errText) {
       prixErrorMsg = errText || 'Desconectado';
-      const errCodeMatch = errText.match(/(?<!\.)\b\d{3}\b(?!\.)/);
-      const errLabel = errCodeMatch ? `PRIX ERRO ${errCodeMatch[0]}` : 'PRIX OFF';
+      let errLabel = 'PRIX OFF';
+      if (errText.includes('status code')) {
+        const match = errText.match(/status code (\d{3})/);
+        if (match) errLabel = `PRIX ERRO ${match[1]}`;
+      } else if (errText.includes('ECONN') || errText.includes('TIMEOUT')) {
+        errLabel = 'PRIX S/ REDE';
+      }
+
       const errClass = getErrorStateClass(errText);
       setConnectionStatus('prix', errClass, errLabel);
     } else {
