@@ -711,7 +711,7 @@ function updateUI(data) {
     const errText = status.pbx.error || '';
     if (status.pbx.authenticated === false || errText) {
       pbxErrorMsg = errText || 'Desconectado';
-      const errCodeMatch = errText.match(/\b\d{3}\b/);
+      const errCodeMatch = errText.match(/(?<!\.)\b\d{3}\b(?!\.)/);
       const errLabel = errCodeMatch ? `PBX ERRO ${errCodeMatch[0]}` : 'PBX OFF';
       const errClass = getErrorStateClass(errText);
       setConnectionStatus('pbx', errClass, errLabel);
@@ -727,7 +727,7 @@ function updateUI(data) {
     const errText = status.prix.error || '';
     if (status.prix.isSimulated || !status.prix.authenticated || errText) {
       prixErrorMsg = errText || 'Desconectado';
-      const errCodeMatch = errText.match(/\b\d{3}\b/);
+      const errCodeMatch = errText.match(/(?<!\.)\b\d{3}\b(?!\.)/);
       const errLabel = errCodeMatch ? `PRIX ERRO ${errCodeMatch[0]}` : 'PRIX OFF';
       const errClass = getErrorStateClass(errText);
       setConnectionStatus('prix', errClass, errLabel);
