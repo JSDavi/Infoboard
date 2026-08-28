@@ -24,7 +24,9 @@ window.toggleAnalystViewMode = function(name, e) {
     e.stopPropagation();
     e.preventDefault();
   }
-  const currentMode = chatAnalystViewModes[name] || 'compact'; // padrão é compacto conforme imagem
+  // Se não estiver definido, o padrão visual era 'full' para isolados e 'compact' para agrupados.
+  // Vamos inverter o estado salvo na memória. Se não tem nada salvo, assumimos que ele quer mudar para compact
+  const currentMode = chatAnalystViewModes[name] || 'full'; 
   chatAnalystViewModes[name] = currentMode === 'compact' ? 'full' : 'compact';
   localStorage.setItem('chat_analyst_view_modes', JSON.stringify(chatAnalystViewModes));
   renderPrixChat(lastChatData);
