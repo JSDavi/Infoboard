@@ -537,8 +537,9 @@ function renderPrixChat(realData) {
         const card = document.createElement('div');
         const isSlaAlert = t.timeSec > 1800; // 30 minutos em atendimento sem interação
         card.className = 'chat-kanban-card' + (isSlaAlert ? ' alert-card-sla' : '');
+        card.title = `${t.client} | ${t.msg || 'Sem mensagens recentes'}`;
         card.innerHTML = `
-          <span class="chat-kanban-client">${t.client}</span>
+          <span class="chat-kanban-client" title="${t.client}">${t.client}</span>
           <span class="chat-kanban-snippet">${t.msg}</span>
           <div class="chat-kanban-meta">
             <span class="chat-kanban-time ${isSlaAlert ? 'alert' : ''}">${t.time}</span>
