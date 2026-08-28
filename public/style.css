@@ -1486,46 +1486,125 @@ body.fullscreen-mode .carousel-toggle-btn {
 
 /* No fullscreen não precisa de override - o botão já é fixed e está fora do channel-header */
 /* Wrapper vertical para colunas fixadas agrupadas - ocupa 1 slot do grid */
+/* Wrapper vertical para colunas fixadas agrupadas - ocupa 1 slot do grid */
 .chat-column-vertical-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   grid-column: span 1;
+  padding-right: 2px;
 }
 
-/* Colunas internas crescem apenas conforme o conteúdo, sem espaço em branco */
+/* Scrollbar suave no wrapper vertical */
+.chat-column-vertical-wrapper::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-column-vertical-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+/* Colunas internas crescem apenas conforme o conteúdo */
 .chat-column-vertical-wrapper .chat-column {
-  flex: 0 0 auto;
-  height: auto;
-  min-height: 0;
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-/* Container de cards das colunas FIXADAS — padrão "peek":
-   Mostra 1 card completo + espia do próximo para sinalizar scroll */
-.pinned-cards-container {
-  max-height: 140px;
+/* Cabeçalho compacto para o analista no agrupamento */
+.chat-column-vertical-wrapper .chat-column-header {
+  padding: 6px 10px;
+  font-size: 0.82rem;
+}
+
+/* Container de cards dentro do wrapper vertical — impede colapso do flexbox */
+.chat-column-vertical-wrapper .chat-column .chat-cards-container,
+.chat-column-vertical-wrapper .pinned-cards-container {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: 190px !important;
+  padding: 6px;
+  gap: 5px;
   overflow-y: auto;
-  scroll-behavior: smooth;
-  scrollbar-width: thin;                     /* Firefox */
-  scrollbar-color: rgba(0,0,0,0.2) transparent;
+  overflow-x: hidden;
 }
 
-/* Scrollbar estilizada para Chrome/Edge */
+body.fullscreen-mode .chat-column-vertical-wrapper .chat-column .chat-cards-container,
+body.fullscreen-mode .chat-column-vertical-wrapper .pinned-cards-container {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: 220px !important;
+}
+
+/* --- CARDS COMPACTOS PARA COLUNAS FIXADAS / AGRUPADAS --- */
+.chat-column-vertical-wrapper .chat-kanban-card {
+  padding: 6px 8px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border-radius: 6px;
+  min-height: 30px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.chat-column-vertical-wrapper .chat-kanban-card:hover {
+  transform: translateY(-1px);
+  border-color: #94a3b8;
+}
+
+/* Oculta mensagem longa para focar no nome do cliente */
+.chat-column-vertical-wrapper .chat-kanban-snippet {
+  display: none !important;
+}
+
+/* Nome do cliente em destaque */
+.chat-column-vertical-wrapper .chat-kanban-client {
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-main);
+}
+
+/* Metadados (Tempo e Setor) em linha compacta */
+.chat-column-vertical-wrapper .chat-kanban-meta {
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.chat-column-vertical-wrapper .chat-kanban-time {
+  font-size: 0.70rem;
+  padding: 1px 4px;
+}
+
+.chat-column-vertical-wrapper .chat-kanban-sector {
+  font-size: 0.60rem;
+  padding: 1px 3px;
+}
+
+/* Scrollbar estilizada para Chrome/Edge nas colunas fixadas */
 .pinned-cards-container::-webkit-scrollbar-thumb {
   background: rgba(0,0,0,0.2);
   border-radius: 4px;
 }
 
-/* Container de cards dentro do wrapper segue scroll interno seguro */
-.chat-column-vertical-wrapper .chat-column .chat-cards-container {
-  overflow-y: auto;
-  max-height: 180px;
-}
-
-/* Limita a altura do container de cards do chat para permitir scroll interno em colunas longas (ex: 8+ chamados do Darkison) sem espremer o rodapé */
+/* Limita a altura do container de cards das colunas normais/rotativas */
 .chat-column .chat-cards-container {
   flex: 1 1 0px;
   min-height: 0;
