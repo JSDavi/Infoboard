@@ -526,14 +526,19 @@ function renderPrixChat(realData) {
         <div class="chat-cards-container pinned-cards-container"></div>
       `;
       
-      // Ordena tickets por hora crescente (mais antigo primeiro = maior prioridade)
+      // Ordena tickets por tempo (maior tempo/urgência primeiro)
       const sortedTickets = [...agent.tickets].sort((a, b) => {
-        // Compara as strings de tempo HH:MM diretamente (funciona para horários do mesmo dia)
+        if (b.timeSec !== undefined && a.timeSec !== undefined) {
+          return b.timeSec - a.timeSec;
+        }
         return (a.time || '').localeCompare(b.time || '');
       });
 
+      // Limita para exibir apenas 1 cliente no agrupamento
+      const ticketsToShow = sortedTickets.slice(0, 1);
+
       const cardsContainer = col.querySelector('.chat-cards-container');
-      sortedTickets.forEach(t => {
+      ticketsToShow.forEach(t => {
         const card = document.createElement('div');
         const isSlaAlert = t.timeSec > 1800; // 30 minutos em atendimento sem interação
         card.className = 'chat-kanban-card' + (isSlaAlert ? ' alert-card-sla' : '');
