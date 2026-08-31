@@ -6,6 +6,8 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 // Carrega variáveis de ambiente
 dotenv.config();
@@ -13,6 +15,20 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 const UPDATE_INTERVAL = (process.env.UPDATE_INTERVAL_SECONDS || 6) * 1000;
+
+// Configurações de Segurança (Hardening)
+app.use(helmet({
+  contentSecurityPolicy: false // Desativado para não quebrar scripts inline do painel
+}));
+app.disable('x-powered-by'); // Oculta a assinatura do Express
+
+// Rate Limit: Máximo de 400 requisições a cada 1 minuto por IP
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, 
+  max: 400,
+  message: { error: 'Muitas requisições originadas deste IP. Aguarde um instante.' }
+});
+app.use(limiter);
 
 app.use(cors());
 app.use(express.json());
