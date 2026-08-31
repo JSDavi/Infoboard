@@ -9,7 +9,10 @@ net session >nul 2>&1
 if %errorLevel% neq 0 (
     echo ===============================================================================
     echo [AVISO] Solicitando permissoes de Administrador...
+    echo Uma nova janela sera aberta em Modo Administrador.
+    echo Por favor, clique em "Sim" quando o Windows solicitar.
     echo ===============================================================================
+    timeout /t 3 >nul
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs" 2>nul
     if !errorLevel! neq 0 (
         echo.
@@ -38,27 +41,14 @@ echo.
 :: -----------------------------------------------------------------------------
 :: 1. Define o Diretorio de Instalacao
 :: -----------------------------------------------------------------------------
-set "SCRIPT_DIR=%~dp0"
-if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
-
-if exist "%SCRIPT_DIR%\..\server.js" (
-    pushd "%SCRIPT_DIR%\.."
-    set "TARGET_DIR=!CD!"
-    popd
-    echo [CONFIG] Modo: Instalacao a partir do repositorio local.
-    goto :TARGET_SET
-)
-
-if exist "%SCRIPT_DIR%\server.js" (
-    set "TARGET_DIR=%SCRIPT_DIR%"
-    echo [CONFIG] Modo: Instalacao no diretorio atual.
-    goto :TARGET_SET
-)
-
 set "TARGET_DIR=C:\Infoboard"
-echo [CONFIG] Modo: Nova instalacao no diretorio padrao.
+echo ===============================================================================
+echo [CONFIGURACAO] Escolha o Diretorio de Instalacao
+echo ===============================================================================
+set /p USER_DIR="Informe o diretorio para instalar o Infoboard (Pressione ENTER para usar !TARGET_DIR!): "
+if not "!USER_DIR!"=="" set "TARGET_DIR=!USER_DIR!"
 
-:TARGET_SET
+echo.
 echo [CONFIG] Diretorio de Destino: "!TARGET_DIR!"
 echo ===============================================================================
 echo.
@@ -66,6 +56,7 @@ echo.
 :: -----------------------------------------------------------------------------
 :: ETAPA 1/6: Verificacao do Node.js
 :: -----------------------------------------------------------------------------
+:ETAPA_1
 echo -------------------------------------------------------------------------------
 echo [ETAPA 1/6] Verificando instalacao e versao do Node.js...
 echo -------------------------------------------------------------------------------
@@ -102,9 +93,17 @@ if /i not "!INSTALAR_NODE!"=="S" goto :NODE_RECUSADO
 
 echo  -^> Baixando instalador oficial do Node.js LTS para Windows Server...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://nodejs.org/dist/v20.18.0/node-v20.18.0-x64.msi' -OutFile '%TEMP%\nodejs_installer.msi' -UseBasicParsing"
+if %errorLevel% neq 0 (
+    call :ERRO_FATAL "ETAPA 1/6 - Node.js" "Falha ao baixar o instalador do Node.js."
+    exit /b
+)
 
 echo  -^> Instalando Node.js de forma silenciosa... Aguarde a conclusao...
 msiexec /i "%TEMP%\nodejs_installer.msi" /quiet /norestart
+if %errorLevel% neq 0 (
+    call :ERRO_FATAL "ETAPA 1/6 - Node.js" "Falha durante a instalacao do Node.js."
+    exit /b
+)
 
 echo  -^> Atualizando variaveis de ambiente...
 set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;!PATH!"
@@ -118,11 +117,7 @@ if %errorLevel% neq 0 (
 
 node -v >nul 2>&1
 if %errorLevel% neq 0 (
-    echo.
-    echo [AVISO] O Node.js foi instalado, mas o Windows requer reiniciar o prompt.
-    echo Por favor, execute este instalador novamente para prosseguir.
-    echo.
-    pause
+    call :ERRO_FATAL "ETAPA 1/6 - Node.js" "Node.js instalado, mas requer reiniciar o prompt. Execute o instalador novamente."
     exit /b
 )
 
@@ -132,10 +127,7 @@ echo.
 goto :ETAPA_2
 
 :NODE_RECUSADO
-echo.
-echo [ERRO] O Node.js e obrigatorio. Baixe manualmente em https://nodejs.org e tente novamente.
-echo.
-pause
+call :ERRO_FATAL "ETAPA 1/6 - Node.js" "O Node.js e obrigatorio. Instalacao recusada pelo usuario."
 exit /b
 
 :: -----------------------------------------------------------------------------
@@ -160,16 +152,13 @@ if %errorLevel% equ 0 (
     if exist "!TARGET_DIR!\server.js" set "DOWNLOAD_OK=1"
 )
 
-if "!DOWNLOAD_OK!"=="0" (
-    echo  -^> Baixando codigo fonte direto do GitHub pacote ZIP...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile '%TEMP%\infoboard_source.zip' -UseBasicParsing; Expand-Archive -Path '%TEMP%\infoboard_source.zip' -DestinationPath '%TEMP%\infoboard_extracted' -Force; Copy-Item -Path '%TEMP%\infoboard_extracted\Infoboard-master\*' -Destination '!TARGET_DIR!' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_extracted' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_source.zip' -Force"
-)
+if "!DOWNLOAD_OK!"=="1" goto :ETAPA_2_OK
+
+echo  -^> Baixando codigo fonte direto do GitHub pacote ZIP...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile '%TEMP%\infoboard_source.zip' -UseBasicParsing; Expand-Archive -Path '%TEMP%\infoboard_source.zip' -DestinationPath '%TEMP%\infoboard_extracted' -Force; Copy-Item -Path '%TEMP%\infoboard_extracted\Infoboard-master\*' -Destination '!TARGET_DIR!' -Recurse -Force -Verbose; Remove-Item -Path '%TEMP%\infoboard_extracted' -Recurse -Force; Remove-Item -Path '%TEMP%\infoboard_source.zip' -Force"
 
 if not exist "!TARGET_DIR!\server.js" (
-    echo.
-    echo [ERRO] Nao foi possivel obter os arquivos do servidor. Verifique sua conexao de internet.
-    echo.
-    pause
+    call :ERRO_FATAL "ETAPA 2/6 - Download" "Nao foi possivel obter os arquivos do servidor. Verifique sua conexao."
     exit /b
 )
 
@@ -258,6 +247,10 @@ if /i "!ATIVAR_TG!"=="S" (
     echo TELEGRAM_CHAT_ID=!TG_CHAT!
     echo TELEGRAM_SLA_LIMIT_SEC=420
 ) > "!TARGET_DIR!\.env"
+if %errorLevel% neq 0 (
+    call :ERRO_FATAL "ETAPA 3/6 - Config .env" "Nao foi possivel criar o arquivo .env no diretorio alvo."
+    exit /b
+)
 
 echo.
 echo  -^> [OK] Arquivo .env gerado e configurado com sucesso!
@@ -276,7 +269,8 @@ echo  -^> Executando 'npm install --omit=dev' em "!TARGET_DIR!"...
 cd /d "!TARGET_DIR!"
 call npm install --omit=dev
 if %errorLevel% neq 0 (
-    echo  -^> [AVISO] O npm retornou avisos, prosseguindo...
+    call :ERRO_FATAL "ETAPA 4/6 - Dependencias" "Falha ao instalar pacotes NPM."
+    exit /b
 ) else (
     echo  -^> [OK] Todos os modulos instalados com sucesso!
 )
@@ -308,6 +302,10 @@ if exist "!TARGET_DIR!\instalador\install_service.js" (
 ) else if exist "!TARGET_DIR!\install_service.js" (
     call node "!TARGET_DIR!\install_service.js"
 )
+if %errorLevel% neq 0 (
+    call :ERRO_FATAL "ETAPA 6/6 - Servico Windows" "Falha ao registrar ou iniciar o servico do Infoboard."
+    exit /b
+)
 
 echo  -^> Criando atalhos uteis na Area de Trabalho...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $d1 = [Environment]::GetFolderPath('Desktop'); $d2 = [Environment]::GetFolderPath('CommonDesktopDirectory'); foreach($d in @($d1, $d2)) { if($d -and (Test-Path $d)) { $s = $ws.CreateShortcut((Join-Path $d 'Abrir Painel Infoboard.url')); $s.TargetPath = 'http://localhost:3000'; $s.Save(); } }" >nul 2>&1
@@ -337,3 +335,15 @@ echo O Infoboard TV ja esta rodando em segundo plano!
 echo ===============================================================================
 echo.
 pause
+goto :EOF
+
+:ERRO_FATAL
+echo.
+echo ===============================================================================
+echo [ERRO FATAL] O processo falhou na %~1.
+echo Motivo: %~2
+echo.
+echo Pressione qualquer tecla para sair...
+echo ===============================================================================
+pause >nul
+exit /b
