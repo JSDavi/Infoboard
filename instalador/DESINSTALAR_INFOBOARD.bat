@@ -12,6 +12,12 @@ cd /d "%~dp0"
 :: -----------------------------------------------------------------------------
 net session >nul 2>&1
 if %errorLevel% neq 0 (
+    echo ===============================================================================
+    echo [AVISO] Solicitando permissoes de Administrador...
+    echo Uma nova janela sera aberta em Modo Administrador.
+    echo Por favor, clique em "Sim" quando o Windows solicitar.
+    echo ===============================================================================
+    timeout /t 3 >nul
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs" 2>nul
     if !errorLevel! neq 0 (
         echo.
@@ -46,27 +52,42 @@ if /i not "!CONFIRMAR!"=="S" (
 )
 
 echo.
-echo [1/3] Removendo servico nativo do Windows (services.msc)...
+echo -------------------------------------------------------------------------------
+echo [ETAPA 1/3] Removendo servico nativo do Windows (services.msc)...
+echo -------------------------------------------------------------------------------
 cd /d "!APP_DIR!"
 if exist "!APP_DIR!\instalador\uninstall_service.js" (
     call node "!APP_DIR!\instalador\uninstall_service.js"
 ) else if exist "!APP_DIR!\uninstall_service.js" (
     call node "!APP_DIR!\uninstall_service.js"
+) else (
+    echo       - [AVISO] Arquivo de desinstalacao de servico nao encontrado.
 )
-
+if %errorLevel% neq 0 (
+    echo       - [AVISO] Ocorreram erros ao tentar remover o servico (ele pode nao existir).
+)
 echo.
-echo [2/3] Removendo regra do Firewall do Windows...
+
+echo -------------------------------------------------------------------------------
+echo [ETAPA 2/3] Removendo regra do Firewall do Windows...
+echo -------------------------------------------------------------------------------
 powershell -Command "Remove-NetFirewallRule -DisplayName 'Infoboard TV (Porta 3000)' -ErrorAction SilentlyContinue" >nul 2>&1
-echo       - Regra de firewall removida.
-
+echo       - Regra de firewall verificada/removida.
 echo.
-echo [3/3] Removendo atalhos da Area de Trabalho...
+
+echo -------------------------------------------------------------------------------
+echo [ETAPA 3/3] Removendo atalhos da Area de Trabalho...
+echo -------------------------------------------------------------------------------
 powershell -Command "Remove-Item -Path ([Environment]::GetFolderPath('Desktop') + '\Abrir Painel Infoboard.url') -ErrorAction SilentlyContinue; Remove-Item -Path ([Environment]::GetFolderPath('Desktop') + '\Atualizar Infoboard.lnk') -ErrorAction SilentlyContinue" >nul 2>&1
-echo       - Atalhos removidos.
-
+echo       - Atalhos verificados/removidos.
 echo.
+
 echo ===============================================================================
 echo                    DESINSTALACAO CONCLUIDA COM SUCESSO!
 echo ===============================================================================
 echo.
+echo Nota: Os arquivos do projeto na pasta "!APP_DIR!" foram mantidos. 
+echo Se desejar remove-los completamente, apague a pasta manualmente.
+echo.
 pause
+goto :EOF
