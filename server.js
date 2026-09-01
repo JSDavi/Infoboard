@@ -177,7 +177,7 @@ let lastPbxData = {};
 // Helper para carregar o mapeamento de analistas dinamicamente
 function loadAnalystsMap() {
   try {
-    const mapPath = path.join(__dirname, 'analysts_map.json');
+    const mapPath = path.join(__dirname, 'config', 'analysts_map.json');
     if (fs.existsSync(mapPath)) {
       return JSON.parse(fs.readFileSync(mapPath, 'utf8'));
     }
@@ -1300,16 +1300,27 @@ async function fetchSefazStatus() {
 
     const $ = cheerio.load(data);
     let svrsStatus = 'OK';
+    let ceStatus = 'OK';
 
     $('table.tabelaListagemDados tr').each((i, row) => {
       const cols = $(row).find('td');
       if (cols.length > 0) {
         const autorizador = $(cols[0]).text().trim();
+        
+        // Coleta status SVRS
         if (autorizador === 'SVRS') {
           const statServ = $(cols[4]).find('img').attr('src') || $(cols[5]).find('img').attr('src') || '';
           if (statServ.includes('amarela')) svrsStatus = 'WARNING';
           else if (statServ.includes('vermelha')) svrsStatus = 'DANGER';
           else svrsStatus = 'OK';
+        }
+        
+        // Coleta status Ceará (CE)
+        if (autorizador === 'CE') {
+          const statServ = $(cols[4]).find('img').attr('src') || $(cols[5]).find('img').attr('src') || '';
+          if (statServ.includes('amarela')) ceStatus = 'WARNING';
+          else if (statServ.includes('vermelha')) ceStatus = 'DANGER';
+          else ceStatus = 'OK';
         }
       }
     });
@@ -1317,14 +1328,14 @@ async function fetchSefazStatus() {
     sefazDataCache = {
       nfe: {
         doc: 'NFe',
-        status: svrsStatus,
+        status: ceStatus,
         latency: latencyGov,
         state: 'CE',
         label: 'SEFAZ CE'
       },
       nfce: {
         doc: 'NFCe',
-        status: svrsStatus,
+        status: ceStatus,
         latency: Math.round(latencyGov * 1.1),
         state: 'CE',
         label: 'SEFAZ CE'

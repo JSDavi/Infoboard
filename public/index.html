@@ -4,6 +4,132 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NPX & PrixChat Omnichannel Wallboard</title>
+  <!-- Intro.js CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/introjs.min.css">
+  <style>
+    /* Customização Premium do Onboarding (Intro.js) */
+    .introjs-tooltip {
+      background: rgba(30, 30, 36, 0.95) !important;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px !important;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5) !important;
+      color: #ffffff !important;
+      font-family: 'Outfit', sans-serif !important;
+      max-width: 400px !important;
+      padding: 15px !important;
+    }
+    .introjs-tooltip-title {
+      font-size: 1.25rem !important;
+      font-weight: 700 !important;
+      color: #4facfe !important;
+      margin-bottom: 10px !important;
+      text-align: left !important;
+    }
+    .introjs-tooltiptext {
+      font-size: 1rem !important;
+      font-weight: 300 !important;
+      line-height: 1.6 !important;
+      color: #d1d5db !important;
+      text-align: left !important;
+      margin-bottom: 20px !important;
+      padding: 0 !important;
+    }
+    .introjs-arrow.top { border-bottom-color: rgba(30, 30, 36, 0.95) !important; }
+    .introjs-arrow.bottom { border-top-color: rgba(30, 30, 36, 0.95) !important; }
+    .introjs-arrow.left { border-right-color: rgba(30, 30, 36, 0.95) !important; }
+    .introjs-arrow.right { border-left-color: rgba(30, 30, 36, 0.95) !important; }
+    
+    .introjs-tooltipbuttons {
+      display: flex !important;
+      justify-content: flex-end !important;
+      align-items: center !important;
+      gap: 12px !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+      padding-top: 15px !important;
+    }
+    .introjs-button {
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: none !important;
+      color: #fff !important;
+      text-shadow: none !important;
+      border-radius: 8px !important;
+      padding: 8px 16px !important;
+      font-family: 'Outfit', sans-serif !important;
+      font-weight: 500 !important;
+      transition: all 0.3s ease !important;
+    }
+    .introjs-button:hover {
+      background: rgba(255, 255, 255, 0.2) !important;
+      box-shadow: none !important;
+    }
+    .introjs-nextbutton, .introjs-donebutton {
+      background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%) !important;
+      color: #000 !important;
+      font-weight: 600 !important;
+    }
+    .introjs-nextbutton:hover, .introjs-donebutton:hover {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4) !important;
+    }
+    .introjs-bullets ul li a {
+      background: rgba(255, 255, 255, 0.3) !important;
+    }
+    .introjs-bullets ul li a.active {
+      background: #4facfe !important;
+      box-shadow: 0 0 10px rgba(79, 172, 254, 0.8) !important;
+    }
+    .introjs-skipbutton {
+      position: absolute !important;
+      top: 10px !important;
+      right: 15px !important;
+      color: rgba(255, 255, 255, 0.5) !important;
+      font-size: 0.9rem !important;
+      font-weight: 600 !important;
+      text-decoration: none !important;
+      font-family: 'Outfit', sans-serif !important;
+      background: transparent !important;
+      border: none !important;
+      padding: 5px !important;
+      transition: color 0.3s ease !important;
+      z-index: 9999 !important;
+    }
+    .introjs-skipbutton:hover {
+      color: #fff !important;
+    }
+    
+    /* Correção de Layout: Evitar que chamadas em espera empurrem o rodapé */
+    .dept-column {
+      display: flex !important;
+      flex-direction: column !important;
+      height: 100% !important;
+      overflow: hidden !important;
+    }
+    .analysts-section {
+      flex: 1 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      min-height: 0 !important;
+    }
+    .analysts-list {
+      flex: 1 !important;
+      overflow-y: auto !important;
+      padding-right: 4px !important;
+    }
+    /* Scrollbar minimalista */
+    .analysts-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    .analysts-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .analysts-list::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.15);
+      border-radius: 10px;
+    }
+  </style>
   <!-- Google Fonts: Outfit -->
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- FontAwesome para ícones -->
@@ -330,5 +456,54 @@
 
   <!-- Script JS -->
   <script src="app.js?v=3.7.0"></script>
+  <!-- Intro.js JS e Logica do Onboarding -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/intro.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!localStorage.getItem('onboardingCompleted')) {
+        var tour = introJs();
+        tour.setOptions({
+          nextLabel: 'Próximo',
+          prevLabel: 'Voltar',
+          skipLabel: 'Pular',
+          doneLabel: 'Concluir',
+          steps: [
+            {
+              title: 'Bem-vindo ao Infoboard Omnichannel!',
+              intro: 'Este é o seu painel unificado de monitoramento. Vamos fazer um tour rápido.'
+            },
+            {
+              element: document.querySelector('.main-header') || document.body,
+              intro: 'Aqui em cima ficam os status de conexão com as APIs (NPX, PrixChat, PBX) e o relógio em tempo real.'
+            },
+            {
+              element: document.querySelector('#voice-half') || document.body,
+              intro: 'Aqui ficam as métricas e acompanhamentos de Voz do PBX (NossaTelecom) e NPX.'
+            },
+            {
+              element: document.querySelector('#chat-half') || document.body,
+              intro: 'Aqui é o acompanhamento do PRIX (Chat). Você pode ver o Kanban com a fila de atendimentos em tempo real.'
+            },
+            {
+              element: document.querySelector('#ticker-bar') || document.body,
+              intro: 'Aqui embaixo passam os avisos importantes como escalas de sábado e sobreaviso.'
+            }
+          ]
+        });
+        
+        tour.oncomplete(function() {
+          localStorage.setItem('onboardingCompleted', 'true');
+        });
+        
+        tour.onexit(function() {
+          localStorage.setItem('onboardingCompleted', 'true');
+        });
+        
+        setTimeout(function() {
+          tour.start();
+        }, 1500);
+      }
+    });
+  </script>
 </body>
 </html>
