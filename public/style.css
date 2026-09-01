@@ -2564,15 +2564,17 @@ body.dark-mode .radar-bar-container {
    AJUSTES: SEFAZ CARD (Fundo Gradiente e Alinhamento no Rodapé)
    ======================================================== */
 .dept-column {
-  /* Garante que a coluna funcione como flexbox para o margin-top: auto funcionar */
-  display: flex;
-  flex-direction: column;
+  /* Garante que a coluna funcione como flexbox para o margin-top: auto funcionar e que preencha toda a altura da tela */
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  height: 100% !important;
 }
 
 .sefaz-radar-card {
   margin-top: auto !important; /* Descola dos ramais e empurra para o limite inferior da coluna */
-  background: linear-gradient(145deg, #f1f5f9, #e2e8f0) !important; /* Cinza claro bem mais perceptível */
+  background: #f1f5f9 !important; /* Cinza claro sólido para garantir contraste visível */
   border: 1px solid #cbd5e1 !important;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.8);
-  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.8) !important;
+  border-radius: 8px !important;
 }
