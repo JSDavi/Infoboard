@@ -1193,26 +1193,49 @@ async function fetchHorariosData() {
       apoioFixoArr.push($(tec).find('.card-nome').text().trim());
     });
 
-    // Filtra férias ativas (somente quem ainda NÃO retornou)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Extrai todas as ausências, férias e licenças cadastradas na ordem exata do card
+    let $ausenciasCard = null;
+    $('.card').each((_, card) => {
+      const text = $(card).find('h1, h2, h3, h4, h5, h6, .card-header, .card-title, table th').text().toLowerCase();
+      if (text.includes('ausências') || text.includes('ausencias') || text.includes('licenças') || text.includes('licencas')) {
+        $ausenciasCard = $(card);
+        return false;
+      }
+    });
+    if (!$ausenciasCard) {
+      $ausenciasCard = $('.card').eq(2);
+    }
 
     const ausenciasArr = [];
-    $('.card').eq(2).find('tr').slice(1).each((i, tr) => {
+    const ausenciasHtmlArr = [];
+
+    $ausenciasCard.find('table tr').slice(1).each((i, tr) => {
       const row = $(tr).find('td').map((c, td) => $(td).text().trim()).get();
-      if (row.length >= 6) {
+      if (row.length >= 5) {
         const nome = row[0];
         const motivo = row[1];
+        const dataInicio = row[2];
         const dataFim = row[4];
-        if (motivo.toLowerCase().includes('férias') || motivo.toLowerCase().includes('ferias')) {
-          const parts = dataFim.split('/');
-          if (parts.length === 3) {
-            const endDate = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
-            endDate.setHours(23, 59, 59, 999);
-            if (endDate >= today) {
-              ausenciasArr.push(`${nome} (até ${dataFim})`);
-            }
+        if (nome) {
+          const inicioParts = (dataInicio || '').split('/');
+          const fimParts = (dataFim || '').split('/');
+          const inicioShort = inicioParts.length >= 2 ? `${inicioParts[0]}/${inicioParts[1]}` : dataInicio;
+          const fimShort = fimParts.length >= 2 ? `${fimParts[0]}/${fimParts[1]}` : dataFim;
+
+          let periodo = '';
+          if (inicioShort && fimShort) {
+            periodo = `${inicioShort} a ${fimShort}`;
+          } else if (fimShort) {
+            periodo = `até ${fimShort}`;
+          } else if (inicioShort) {
+            periodo = `a partir de ${inicioShort}`;
           }
+
+          const motivoStr = motivo ? ` - ${motivo}` : '';
+          const periodoStr = periodo ? ` (${periodo})` : '';
+
+          ausenciasArr.push(`${nome}${motivoStr}${periodoStr}`);
+          ausenciasHtmlArr.push(`<strong>${escapeHtml(nome)}</strong>${escapeHtml(motivoStr)}${escapeHtml(periodoStr)}`);
         }
       }
     });
@@ -1220,15 +1243,16 @@ async function fetchHorariosData() {
     const turnosStr = turnos.length > 0 ? turnos.join('  •  ') : 'Sem escala cadastrada';
     const sobreavisoStr = sobreavisoArr.length > 0 ? sobreavisoArr.join(', ') : 'Nenhum';
     const apoioFixoStr = apoioFixoArr.length > 0 ? apoioFixoArr.join(', ') : 'Nenhum';
-    const ausenciasStr = ausenciasArr.length > 0 ? ausenciasArr.join(', ') : 'Nenhuma';
+    const ausenciasStr = ausenciasArr.length > 0 ? ausenciasArr.join(' • ') : 'Nenhuma';
+    const ausenciasHtmlStr = ausenciasHtmlArr.length > 0 ? ausenciasHtmlArr.join(' • ') : 'Nenhuma';
 
     const pillEscala = `<span class="ticker-pill pill-escala"><i class="fa-solid fa-calendar-days"></i> <strong>SÁBADO (${formattedSatDate}):</strong> ${turnosStr}</span>`;
     const pillSobreaviso = `<span class="ticker-pill pill-sobreaviso"><i class="fa-solid fa-triangle-exclamation"></i> <strong>SOBREAVISO:</strong> ${sobreavisoStr}</span>`;
     const pillApoio = `<span class="ticker-pill pill-apoio"><i class="fa-solid fa-wrench"></i> <strong>APOIO FIXO (08h-12h):</strong> ${apoioFixoStr}</span>`;
-    const pillFerias = `<span class="ticker-pill pill-ferias"><i class="fa-solid fa-umbrella-beach"></i> <strong>FÉRIAS ATIVAS:</strong> ${ausenciasStr}</span>`;
+    const pillFerias = `<span class="ticker-pill pill-ferias"><i class="fa-solid fa-umbrella-beach"></i> <strong>AUSÊNCIAS E FÉRIAS:</strong> ${ausenciasHtmlStr}</span>`;
 
     const tickerHtml = `${pillEscala} ${pillSobreaviso} ${pillApoio} ${pillFerias}`;
-    const fullTicker = `📅 ESCALA DE SÁBADO (${formattedSatDate}): ${turnosStr}  |  🚨 SOBREAVISO: ${sobreavisoStr}  |  🛠️ APOIO FIXO: ${apoioFixoStr}  |  🏖️ FÉRIAS ATIVAS: ${ausenciasStr}`;
+    const fullTicker = `📅 ESCALA DE SÁBADO (${formattedSatDate}): ${turnosStr}  |  🚨 SOBREAVISO: ${sobreavisoStr}  |  🛠️ APOIO FIXO: ${apoioFixoStr}  |  🏖️ AUSÊNCIAS E FÉRIAS: ${ausenciasStr}`;
 
     horariosCache = {
       formattedDate: formattedSatDate,
