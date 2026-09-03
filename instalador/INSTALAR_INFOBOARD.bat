@@ -335,7 +335,7 @@ echo ---------------------------------------------------------------------------
 if exist "!TARGET_DIR!\.env" (
     echo   !C_GREEN![OK] Arquivo .env existente detectado em '!TARGET_DIR!\.env'.!C_RESET!
     echo.
-    set /p "RECONF_ENV=Deseja manter as configuracoes atuais do .env? (S/N) [S]: "
+    set /p "RECONF_ENV=Deseja manter as configuracoes atuais do .env? [S/N] [S]: "
     if "!RECONF_ENV!"=="" set "RECONF_ENV=S"
     if /i "!RECONF_ENV!"=="S" (
         echo   !C_GREEN![OK] Credenciais e configuracoes atuais preservadas.!C_RESET!
