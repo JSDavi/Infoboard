@@ -167,7 +167,11 @@ if defined DETECTED_DIR (
     echo   !C_WHITE![   M   ]!C_RESET! Digitar um caminho diferente manualmente
     echo.
     set /p "CONFIRM_LOC=Deseja atualizar em '!DETECTED_DIR!'? [ENTER/G/M]: "
+    if defined CONFIRM_LOC set "CONFIRM_LOC=!CONFIRM_LOC: =!"
     if "!CONFIRM_LOC!"=="" set "CONFIRM_LOC=S"
+    if /i "!CONFIRM_LOC!"=="SIM" set "CONFIRM_LOC=S"
+    if /i "!CONFIRM_LOC!"=="Y" set "CONFIRM_LOC=S"
+    if /i "!CONFIRM_LOC!"=="YES" set "CONFIRM_LOC=S"
     if /i "!CONFIRM_LOC!"=="S" (
         set "APP_DIR=!DETECTED_DIR!"
         goto :VALIDAR_APP_DIR
@@ -220,7 +224,7 @@ if not exist "!APP_DIR!\server.js" (
     echo.
     echo !C_RED!!C_BOLD![ERRO] Pasta invalida! O arquivo 'server.js' nao foi encontrado em '!APP_DIR!'.!C_RESET!
     echo.
-    echo Deseja tentar novamente? (S/N) [S]:
+    echo Deseja tentar novamente? [S/N] [S]:
     set /p "RETRY_DIR=> "
     if "!RETRY_DIR!"=="" set "RETRY_DIR=S"
     if /i "!RETRY_DIR!"=="S" goto :ETAPA_1
@@ -280,48 +284,57 @@ echo.
 :: Comparacao SemVer via PowerShell
 set "COMPARE_RESULT=EQUAL"
 for /f "usebackq delims=" %%c in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$clean1 = ('!INSTALLED_VER!' -replace '[^\d.]','').Trim('.'); "^
-    "$clean2 = ('!NEW_VER!' -replace '[^\d.]','').Trim('.'); "^
-    "$v1 = [System.Version]::Parse(($clean1 + '.0.0.0').Split('.')[0..2] -join '.'); "^
-    "$v2 = [System.Version]::Parse(($clean2 + '.0.0.0').Split('.')[0..2] -join '.'); "^
-    "if ($v2 -gt $v1) { Write-Output 'UPGRADE' } elseif ($v2 -lt $v1) { Write-Output 'DOWNGRADE' } else { Write-Output 'EQUAL' }"`) do (
+    "try { "^
+    "    $v1 = [System.Version]::Parse('!INSTALLED_VER!'.Trim()); "^
+    "    $v2 = [System.Version]::Parse('!NEW_VER!'.Trim()); "^
+    "    if ($v2 -gt $v1) { 'UPGRADE' } elseif ($v2 -lt $v1) { 'DOWNGRADE' } else { 'EQUAL' } "^
+    "} catch { 'EQUAL' }"`) do (
     set "COMPARE_RESULT=%%c"
 )
 
-if "!COMPARE_RESULT!"=="UPGRADE" (
-    echo   !C_GREEN!!C_BOLD![UPGRADE DETECTADO] Atualizacao recomendada: v!INSTALLED_VER! -> v!NEW_VER!!C_RESET!
+if "!COMPARE_RESULT!"=="UPGRADE" goto :VERSAO_UPGRADE
+if "!COMPARE_RESULT!"=="DOWNGRADE" goto :VERSAO_DOWNGRADE
+goto :VERSAO_EQUAL
+
+:VERSAO_UPGRADE
+echo   !C_GREEN!!C_BOLD![UPGRADE DETECTADO] Atualizacao recomendada: v!INSTALLED_VER! -> v!NEW_VER!!C_RESET!
+echo.
+goto :FIM_CHECK_VERSAO
+
+:VERSAO_EQUAL
+echo   !C_YELLOW![AVISO] O sistema ja se encontra na versao v!INSTALLED_VER!.!C_RESET!
+set /p "FORCE_UPD=Deseja forcar a reinstalacao/atualizacao dos arquivos? [S/N] [S]: "
+if "!FORCE_UPD!"=="" set "FORCE_UPD=S"
+if /i not "!FORCE_UPD!"=="S" (
     echo.
-) else if "!COMPARE_RESULT!"=="EQUAL" (
-    echo   !C_YELLOW![AVISO] O sistema ja se encontra na versao v!INSTALLED_VER!.!C_RESET!
-    set /p "FORCE_UPD=Deseja forcar a reinstalacao/atualizacao dos arquivos? (S/N) [S]: "
-    if "!FORCE_UPD!"=="" set "FORCE_UPD=S"
-    if /i not "!FORCE_UPD!"=="S" (
-        echo.
-        echo !C_YELLOW!Atualizacao cancelada pelo usuario.!C_RESET!
-        pause
-        exit /b 0
-    )
-    echo.
-) else if "!COMPARE_RESULT!"=="DOWNGRADE" (
-    echo ===============================================================================
-    echo !C_RED!!C_BOLD![ALERTA CRITICO DE DOWNGRADE]!C_RESET!
-    echo -------------------------------------------------------------------------------
-    echo  A versao instalada (!C_CYAN!v!INSTALLED_VER!!C_RESET!) e !C_RED!!C_BOLD!MAIS RECENTE!C_RESET! que o pacote a instalar (!C_YELLOW!v!NEW_VER!!C_RESET!).
-    echo  Realizar o downgrade pode causar incompatibilidade no banco ou configuracoes.
-    echo ===============================================================================
-    echo.
-    set /p "DOWNGRADE_CONFIRM=Deseja REALMENTE prosseguir com o DOWNGRADE para a versao v!NEW_VER!? (S/N) [N]: "
-    if "!DOWNGRADE_CONFIRM!"=="" set "DOWNGRADE_CONFIRM=N"
-    if /i not "!DOWNGRADE_CONFIRM!"=="S" (
-        echo.
-        echo !C_GREEN![CANCELADO] Operacao de downgrade abortada com seguranca pelo usuario.!C_RESET!
-        pause
-        exit /b 0
-    )
-    echo.
-    echo   !C_YELLOW![AVISO] Downgrade confirmado pelo operador. Prosseguindo com cautela...!C_RESET!
-    echo.
+    echo !C_YELLOW!Atualizacao cancelada pelo usuario.!C_RESET!
+    pause
+    exit /b 0
 )
+echo.
+goto :FIM_CHECK_VERSAO
+
+:VERSAO_DOWNGRADE
+echo ===============================================================================
+echo !C_RED!!C_BOLD![ALERTA CRITICO DE DOWNGRADE]!C_RESET!
+echo -------------------------------------------------------------------------------
+echo  A versao instalada [!C_CYAN!v!INSTALLED_VER!!C_RESET!] e !C_RED!!C_BOLD!MAIS RECENTE!C_RESET! que o pacote a instalar [!C_YELLOW!v!NEW_VER!!C_RESET!].
+echo  Realizar o downgrade pode causar incompatibilidade no banco ou configuracoes.
+echo ===============================================================================
+echo.
+set /p "DOWNGRADE_CONFIRM=Deseja REALMENTE prosseguir com o DOWNGRADE para a versao v!NEW_VER!? [S/N] [N]: "
+if "!DOWNGRADE_CONFIRM!"=="" set "DOWNGRADE_CONFIRM=N"
+if /i not "!DOWNGRADE_CONFIRM!"=="S" (
+    echo.
+    echo !C_GREEN![CANCELADO] Operacao de downgrade abortada com seguranca pelo usuario.!C_RESET!
+    pause
+    exit /b 0
+)
+echo.
+echo   !C_YELLOW![AVISO] Downgrade confirmado pelo operador. Prosseguindo com cautela...!C_RESET!
+echo.
+
+:FIM_CHECK_VERSAO
 
 :: =============================================================================
 :: ETAPA 3/6: ENCERRAMENTO SEGURO DE SERVICOS E PROCESSOS ATIVOS
@@ -500,16 +513,19 @@ echo !C_CYAN!!C_BOLD![ ETAPA 6/6 ] Reinicializacao do Servico e Validacao!C_RESE
 echo -------------------------------------------------------------------------------
 echo   !C_GRAY!* Iniciando o servico nativo 'Infoboard TV' no Windows...!C_RESET!
 
-net start "Infoboard TV" >nul 2>&1
+net start "InfoboardService" >nul 2>&1
 if !errorLevel! neq 0 (
-    net start "InfoboardService" >nul 2>&1
+    net start "Infoboard TV" >nul 2>&1
 )
 
 :: Se o servico ainda nao estiver ativo, tentar registrar/iniciar via install_service.js
-sc query "Infoboard TV" | findstr /i "RUNNING" >nul 2>&1
+sc query "InfoboardService" | findstr /i "RUNNING" >nul 2>&1
 if !errorLevel! neq 0 (
-    if exist "!APP_DIR!\instalador\install_service.js" (
-        node "!APP_DIR!\instalador\install_service.js" >nul 2>&1
+    sc query "Infoboard TV" | findstr /i "RUNNING" >nul 2>&1
+    if !errorLevel! neq 0 (
+        if exist "!APP_DIR!\instalador\install_service.js" (
+            node "!APP_DIR!\instalador\install_service.js" >nul 2>&1
+        )
     )
 )
 
