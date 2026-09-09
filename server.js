@@ -1268,7 +1268,28 @@ async function fetchHorariosData() {
     const ausenciasStr = ausenciasArr.length > 0 ? ausenciasArr.join(' • ') : 'Nenhuma';
     const ausenciasHtmlStr = ausenciasHtmlArr.length > 0 ? ausenciasHtmlArr.join(' • ') : 'Nenhuma';
 
-    const pillEscala = `<span class="ticker-pill pill-escala"><i class="fa-solid fa-calendar-days"></i> <strong>SÁBADO (${formattedSatDate}):</strong> ${turnosStr}</span>`;
+    // Detecta a cor da equipe de plantão no sábado (Amarela ou Verde)
+    let equipeCorClass = '';
+    const pdfHeader = $('.pdf-header');
+    if (pdfHeader.length > 0) {
+      const headerClass = (pdfHeader.attr('class') || '').toLowerCase();
+      const headerText = pdfHeader.text().toLowerCase();
+      if (headerClass.includes('tema-amarela') || headerText.includes('amarela')) {
+        equipeCorClass = 'pill-escala-amarela';
+      } else if (headerClass.includes('tema-verde') || headerText.includes('verde')) {
+        equipeCorClass = 'pill-escala-verde';
+      }
+    } else {
+      const pageText = $('body').text().toLowerCase();
+      if (pageText.includes('time amarela')) {
+        equipeCorClass = 'pill-escala-amarela';
+      } else if (pageText.includes('time verde')) {
+        equipeCorClass = 'pill-escala-verde';
+      }
+    }
+
+    const pillEscalaClass = equipeCorClass ? `pill-escala ${equipeCorClass}` : 'pill-escala';
+    const pillEscala = `<span class="ticker-pill ${pillEscalaClass}"><i class="fa-solid fa-calendar-days"></i> <strong>SÁBADO (${formattedSatDate}):</strong> ${turnosStr}</span>`;
     const pillSobreaviso = `<span class="ticker-pill pill-sobreaviso"><i class="fa-solid fa-triangle-exclamation"></i> <strong>SOBREAVISO:</strong> ${sobreavisoStr}</span>`;
     const pillApoio = `<span class="ticker-pill pill-apoio"><i class="fa-solid fa-wrench"></i> <strong>APOIO FIXO (08h-12h):</strong> ${apoioFixoStr}</span>`;
     const pillFerias = `<span class="ticker-pill pill-ferias"><i class="fa-solid fa-umbrella-beach"></i> <strong>AUSÊNCIAS E FÉRIAS:</strong> ${ausenciasHtmlStr}</span>`;
