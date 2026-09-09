@@ -1206,6 +1206,18 @@ async function fetchHorariosData() {
       $ausenciasCard = $('.card').eq(2);
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const parseDateBR = (str) => {
+      if (!str) return null;
+      const parts = str.split('/');
+      if (parts.length === 3) {
+        return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+      }
+      return null;
+    };
+
     const ausenciasArr = [];
     const ausenciasHtmlArr = [];
 
@@ -1217,18 +1229,28 @@ async function fetchHorariosData() {
         const dataInicio = row[2];
         const dataFim = row[4];
         if (nome) {
+          // Checa se o evento está ativo hoje (hoje entre Data Início e Data Fim)
+          const startDate = parseDateBR(dataInicio);
+          const endDate = parseDateBR(dataFim);
+
+          if (startDate) startDate.setHours(0, 0, 0, 0);
+          if (endDate) endDate.setHours(23, 59, 59, 999);
+
+          const isAtivoHoje = (startDate ? today >= startDate : true) && (endDate ? today <= endDate : true);
+          if (!isAtivoHoje) return; // Ignora eventos que já expiraram ou que ainda não começaram
+
           const inicioParts = (dataInicio || '').split('/');
           const fimParts = (dataFim || '').split('/');
           const inicioShort = inicioParts.length >= 2 ? `${inicioParts[0]}/${inicioParts[1]}` : dataInicio;
           const fimShort = fimParts.length >= 2 ? `${fimParts[0]}/${fimParts[1]}` : dataFim;
 
           let periodo = '';
-          if (inicioShort && fimShort) {
+          if (inicioShort && fimShort && inicioShort !== fimShort) {
             periodo = `${inicioShort} a ${fimShort}`;
           } else if (fimShort) {
-            periodo = `até ${fimShort}`;
+            periodo = `${fimShort}`;
           } else if (inicioShort) {
-            periodo = `a partir de ${inicioShort}`;
+            periodo = `${inicioShort}`;
           }
 
           const motivoStr = motivo ? ` - ${motivo}` : '';
