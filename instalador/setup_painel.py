@@ -296,7 +296,7 @@ class SetupGUI(tk.Tk):
     def on_env_config(self):
         top = tk.Toplevel(self)
         top.title("Configurar Variáveis (.env)")
-        top.geometry("450x380")
+        top.geometry("500x560")
         top.transient(self)
         top.grab_set()
         
@@ -306,13 +306,18 @@ class SetupGUI(tk.Tk):
         frame.pack(fill="both", expand=True)
         
         fields = [
-            ("PBX_BASE_URL", "URL do PBX:"),
-            ("PBX_API_TOKEN", "PBX Token:"),
-            ("PBX_API_KEY", "PBX Key:"),
             ("NPX_EMAIL", "Email NPX:"),
             ("NPX_PASSWORD", "Senha NPX:"),
             ("PRIXCHAT_EMAIL", "Email PrixChat:"),
-            ("PRIXCHAT_PASSWORD", "Senha PrixChat:")
+            ("PRIXCHAT_PASSWORD", "Senha PrixChat:"),
+            ("PRIXCHAT_BACKEND", "Backend PrixChat:"),
+            ("PBX_BASE_URL", "URL do PBX:"),
+            ("PBX_API_TOKEN", "PBX Token:"),
+            ("PBX_API_KEY", "PBX Key:"),
+            ("ENABLE_TELEGRAM_ALERTS", "Alertas Telegram (true/false):"),
+            ("TELEGRAM_BOT_TOKEN", "Telegram Bot Token:"),
+            ("TELEGRAM_CHAT_ID", "Telegram Chat ID:"),
+            ("TELEGRAM_SLA_LIMIT_SEC", "Telegram SLA Limite (seg):")
         ]
         
         entries = {}
