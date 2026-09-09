@@ -272,8 +272,9 @@ echo !C_CYAN!!C_BOLD![ ETAPA 2/5 ] Parada e Remocao de Servicos do Windows (serv
 echo -------------------------------------------------------------------------------
 echo   !C_GRAY!* Interrompendo servicos em execucao ('Infoboard TV' e 'InfoboardService')...!C_RESET!
 
-net stop "Infoboard TV" >nul 2>&1
+net stop "infoboardservice.exe" >nul 2>&1
 net stop "InfoboardService" >nul 2>&1
+net stop "Infoboard TV" >nul 2>&1
 
 echo   !C_GRAY!* Executando desinstalador oficial via node-windows...!C_RESET!
 where node >nul 2>&1
@@ -286,13 +287,17 @@ if %errorLevel% equ 0 (
 )
 
 echo   !C_GRAY!* Garantindo exclusao direta do servico via sc.exe (Registro do Windows)...!C_RESET!
-sc query "Infoboard TV" >nul 2>&1
+sc.exe query "infoboardservice.exe" >nul 2>&1
 if %errorLevel% equ 0 (
-    sc delete "Infoboard TV" >nul 2>&1
+    sc.exe delete "infoboardservice.exe" >nul 2>&1
 )
-sc query "InfoboardService" >nul 2>&1
+sc.exe query "InfoboardService" >nul 2>&1
 if %errorLevel% equ 0 (
-    sc delete "InfoboardService" >nul 2>&1
+    sc.exe delete "InfoboardService" >nul 2>&1
+)
+sc.exe query "Infoboard TV" >nul 2>&1
+if %errorLevel% equ 0 (
+    sc.exe delete "Infoboard TV" >nul 2>&1
 )
 
 echo   !C_GRAY!* Encerrando daemons e processos orfaos...!C_RESET!

@@ -345,8 +345,9 @@ echo !C_CYAN!!C_BOLD![ ETAPA 3/6 ] Encerramento Seguro de Servicos e Processos A
 echo -------------------------------------------------------------------------------
 echo   !C_GRAY!* Interrompendo servicos do Windows para liberar arquivos em uso...!C_RESET!
 
-net stop "Infoboard TV" >nul 2>&1
+net stop "infoboardservice.exe" >nul 2>&1
 net stop "InfoboardService" >nul 2>&1
+net stop "Infoboard TV" >nul 2>&1
 
 echo   !C_GRAY!* Finalizando processos em segundo plano (daemons e node.exe na porta 3000)...!C_RESET!
 taskkill /F /IM "infoboardservice.exe" >nul 2>&1
@@ -513,18 +514,24 @@ echo !C_CYAN!!C_BOLD![ ETAPA 6/6 ] Reinicializacao do Servico e Validacao!C_RESE
 echo -------------------------------------------------------------------------------
 echo   !C_GRAY!* Iniciando o servico nativo 'Infoboard TV' no Windows...!C_RESET!
 
-net start "InfoboardService" >nul 2>&1
+net start "infoboardservice.exe" >nul 2>&1
+if !errorLevel! neq 0 (
+    net start "InfoboardService" >nul 2>&1
+)
 if !errorLevel! neq 0 (
     net start "Infoboard TV" >nul 2>&1
 )
 
 :: Se o servico ainda nao estiver ativo, tentar registrar/iniciar via install_service.js
-sc query "InfoboardService" | findstr /i "RUNNING" >nul 2>&1
+sc.exe query "infoboardservice.exe" | findstr /i "RUNNING" >nul 2>&1
 if !errorLevel! neq 0 (
-    sc query "Infoboard TV" | findstr /i "RUNNING" >nul 2>&1
+    sc.exe query "InfoboardService" | findstr /i "RUNNING" >nul 2>&1
     if !errorLevel! neq 0 (
-        if exist "!APP_DIR!\instalador\install_service.js" (
-            node "!APP_DIR!\instalador\install_service.js" >nul 2>&1
+        sc.exe query "Infoboard TV" | findstr /i "RUNNING" >nul 2>&1
+        if !errorLevel! neq 0 (
+            if exist "!APP_DIR!\instalador\install_service.js" (
+                node "!APP_DIR!\instalador\install_service.js" >nul 2>&1
+            )
         )
     )
 )
