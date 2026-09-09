@@ -15,7 +15,7 @@ const svc = new Service({
   env: [
     {
       name: "PORT",
-      value: "3000"
+      value: process.env.PORT || "3000"
     }
   ],
   wait: 2,
