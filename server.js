@@ -1124,6 +1124,23 @@ async function runUpdateCycle() {
 // --- INTEGRAÇÃO COM PORTAL DE HORÁRIOS E ESCALAS (SRV-ADS002) ---
 let horariosCache = null;
 
+function rebuildTicker() {
+  if (!horariosCache) return;
+  const partsHtml = [
+    horariosCache.pillEscala,
+    horariosCache.pillSobreaviso,
+    horariosCache.pillApoio,
+    horariosCache.pillFerias,
+    hospedagensCache.tickerHtml
+  ].filter(Boolean);
+
+  horariosCache.tickerHtml = partsHtml.join(' ');
+  horariosCache.tickerText = [
+    horariosCache.baseTickerText,
+    hospedagensCache.tickerText
+  ].filter(Boolean).join('  |  ');
+}
+
 function getNextSaturdayString() {
   const d = new Date();
   const day = d.getDay();
@@ -1293,10 +1310,7 @@ async function fetchHorariosData() {
     const pillSobreaviso = `<span class="ticker-pill pill-sobreaviso"><i class="fa-solid fa-triangle-exclamation"></i> <strong>SOBREAVISO:</strong> ${sobreavisoStr}</span>`;
     const pillApoio = `<span class="ticker-pill pill-apoio"><i class="fa-solid fa-wrench"></i> <strong>APOIO FIXO (08h-12h):</strong> ${apoioFixoStr}</span>`;
     const pillFerias = `<span class="ticker-pill pill-ferias"><i class="fa-solid fa-umbrella-beach"></i> <strong>AUSÊNCIAS E FÉRIAS:</strong> ${ausenciasHtmlStr}</span>`;
-    const pillHospedagens = hospedagensCache.tickerHtml || '';
-
-    const tickerHtml = [pillEscala, pillSobreaviso, pillApoio, pillFerias, pillHospedagens].filter(Boolean).join(' ');
-    const fullTicker = `📅 ESCALA DE SÁBADO (${formattedSatDate}): ${turnosStr}  |  🚨 SOBREAVISO: ${sobreavisoStr}  |  🛠️ APOIO FIXO: ${apoioFixoStr}  |  🏖️ AUSÊNCIAS E FÉRIAS: ${ausenciasStr}${hospedagensCache.tickerText ? '  |  ' + hospedagensCache.tickerText : ''}`;
+    const baseTickerText = `📅 ESCALA DE SÁBADO (${formattedSatDate}): ${turnosStr}  |  🚨 SOBREAVISO: ${sobreavisoStr}  |  🛠️ APOIO FIXO: ${apoioFixoStr}  |  🏖️ AUSÊNCIAS E FÉRIAS: ${ausenciasStr}`;
 
     horariosCache = {
       formattedDate: formattedSatDate,
@@ -1304,9 +1318,15 @@ async function fetchHorariosData() {
       sobreaviso: sobreavisoArr,
       apoioFixo: apoioFixoArr,
       ausencias: ausenciasArr,
-      tickerText: fullTicker,
-      tickerHtml: tickerHtml
+      pillEscala,
+      pillSobreaviso,
+      pillApoio,
+      pillFerias,
+      baseTickerText,
+      tickerText: '',
+      tickerHtml: ''
     };
+    rebuildTicker();
     console.log(`[Horarios Scraper] Escala atualizada para ${formattedSatDate}`);
   } catch (err) {
     console.error('[Horarios Scraper] Erro ao processar HTML de horários:', err.message);
@@ -1380,14 +1400,8 @@ async function fetchHospedagensData() {
       };
       console.log(`[Hospedagens Scraper] ${items.length} novos clientes carregados`);
 
-      // Se o ticker de horários já foi montado, anexa ou atualiza a pílula de hospedagens
-      if (horariosCache && horariosCache.tickerHtml) {
-        if (!horariosCache.tickerHtml.includes('pill-hospedagens')) {
-          horariosCache.tickerHtml += ' ' + pillHtml;
-        } else {
-          horariosCache.tickerHtml = horariosCache.tickerHtml.replace(/<span class="ticker-pill pill-hospedagens">.*?<\/span>/, pillHtml);
-        }
-      }
+      // Atualiza a montagem do letreiro de forma limpa e sem regex
+      rebuildTicker();
     }
   } catch (err) {
     console.error('[Hospedagens Scraper] Erro ao processar HTML:', err.message);
