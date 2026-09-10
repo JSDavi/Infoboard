@@ -1293,9 +1293,10 @@ async function fetchHorariosData() {
     const pillSobreaviso = `<span class="ticker-pill pill-sobreaviso"><i class="fa-solid fa-triangle-exclamation"></i> <strong>SOBREAVISO:</strong> ${sobreavisoStr}</span>`;
     const pillApoio = `<span class="ticker-pill pill-apoio"><i class="fa-solid fa-wrench"></i> <strong>APOIO FIXO (08h-12h):</strong> ${apoioFixoStr}</span>`;
     const pillFerias = `<span class="ticker-pill pill-ferias"><i class="fa-solid fa-umbrella-beach"></i> <strong>AUSÊNCIAS E FÉRIAS:</strong> ${ausenciasHtmlStr}</span>`;
+    const pillHospedagens = hospedagensCache.tickerHtml || '';
 
-    const tickerHtml = `${pillEscala} ${pillSobreaviso} ${pillApoio} ${pillFerias}`;
-    const fullTicker = `📅 ESCALA DE SÁBADO (${formattedSatDate}): ${turnosStr}  |  🚨 SOBREAVISO: ${sobreavisoStr}  |  🛠️ APOIO FIXO: ${apoioFixoStr}  |  🏖️ AUSÊNCIAS E FÉRIAS: ${ausenciasStr}`;
+    const tickerHtml = [pillEscala, pillSobreaviso, pillApoio, pillFerias, pillHospedagens].filter(Boolean).join(' ');
+    const fullTicker = `📅 ESCALA DE SÁBADO (${formattedSatDate}): ${turnosStr}  |  🚨 SOBREAVISO: ${sobreavisoStr}  |  🛠️ APOIO FIXO: ${apoioFixoStr}  |  🏖️ AUSÊNCIAS E FÉRIAS: ${ausenciasStr}${hospedagensCache.tickerText ? '  |  ' + hospedagensCache.tickerText : ''}`;
 
     horariosCache = {
       formattedDate: formattedSatDate,
@@ -1312,6 +1313,84 @@ async function fetchHorariosData() {
     if (!horariosCache) {
       setTimeout(fetchHorariosData, 5000);
     }
+  }
+}
+
+// --- INTEGRAÇÃO COM SERVIDOR DE HOSPEDAGENS (SRV-ADS002) ---
+let hospedagensCache = {
+  items: [],
+  tickerHtml: '',
+  tickerText: '',
+  lastUpdate: null
+};
+
+async function fetchHospedagensData() {
+  const urlsToTry = [
+    'http://srv-ads002:8888/todos?busca=',
+    'http://192.168.243.2:8888/todos?busca='
+  ];
+
+  let res = null;
+  for (const url of urlsToTry) {
+    try {
+      res = await axios.get(url, { timeout: 6000 });
+      if (res && res.data) break;
+    } catch (err) {
+      // Tenta a próxima URL
+    }
+  }
+
+  if (!res || !res.data) {
+    console.error('[Hospedagens Scraper] Não foi possível conectar ao servidor de hospedagens (srv-ads002 / 192.168.243.2).');
+    return;
+  }
+
+  try {
+    const $ = cheerio.load(res.data);
+    const items = [];
+
+    $('.top5-container').each((i, el) => {
+      const title = $(el).find('.top5-title').text();
+      if (title.includes('Últimos Clientes') || title.includes('Ultimos Clientes')) {
+        $(el).find('.top5-item').each((j, item) => {
+          const nome = $(item).find('strong').text().trim();
+          const spans = $(item).find('span').map((s, sp) => $(sp).text().trim()).get();
+          const dbRaw = spans.find(t => t.startsWith('(') && t.endsWith(')')) || '';
+          const db = dbRaw.replace(/[()]/g, '').trim();
+          const dataStr = spans.find(t => /\d{2}\/\d{2}\/\d{4}/.test(t)) || '';
+          const dataShort = dataStr.length >= 5 ? dataStr.slice(0, 5) : dataStr;
+          if (nome) {
+            items.push({ nome, db, dataShort });
+          }
+        });
+      }
+    });
+
+    if (items.length > 0) {
+      const itemsHtml = items.map(it => `<strong>${escapeHtml(it.nome)}</strong> <span class="hosp-tag">(${escapeHtml(it.db)} - ${escapeHtml(it.dataShort)})</span>`).join(' • ');
+      const itemsText = items.map(it => `${it.nome} (${it.db} - ${it.dataShort})`).join(' • ');
+
+      const pillHtml = `<span class="ticker-pill pill-hospedagens"><i class="fa-solid fa-cloud-arrow-up"></i> <strong>NOVAS HOSPEDAGENS:</strong> ${itemsHtml}</span>`;
+
+      hospedagensCache = {
+        items,
+        tickerHtml: pillHtml,
+        tickerText: `🚀 NOVAS HOSPEDAGENS: ${itemsText}`,
+        lastUpdate: new Date().toISOString()
+      };
+      console.log(`[Hospedagens Scraper] ${items.length} novos clientes carregados`);
+
+      // Se o ticker de horários já foi montado, anexa ou atualiza a pílula de hospedagens
+      if (horariosCache && horariosCache.tickerHtml) {
+        if (!horariosCache.tickerHtml.includes('pill-hospedagens')) {
+          horariosCache.tickerHtml += ' ' + pillHtml;
+        } else {
+          horariosCache.tickerHtml = horariosCache.tickerHtml.replace(/<span class="ticker-pill pill-hospedagens">.*?<\/span>/, pillHtml);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Hospedagens Scraper] Erro ao processar HTML:', err.message);
   }
 }
 
@@ -1436,6 +1515,10 @@ setTimeout(fetchSefazStatus, 1500);
 setInterval(fetchHorariosData, 5 * 60 * 1000);
 setTimeout(fetchHorariosData, 2000);
 
+// Atualiza novas hospedagens a cada 5 minutos
+setInterval(fetchHospedagensData, 5 * 60 * 1000);
+setTimeout(fetchHospedagensData, 2500);
+
 // Inicia o ciclo de atualizações
 setInterval(runUpdateCycle, UPDATE_INTERVAL);
 // Executa o primeiro ciclo imediatamente
@@ -1452,7 +1535,7 @@ app.get('/api/data', (req, res) => {
   if (!lastScrapedData) {
     return res.json(generateSimulatedData());
   }
-  const payload = { ...lastScrapedData, horarios: horariosCache };
+  const payload = { ...lastScrapedData, horarios: horariosCache, hospedagens: hospedagensCache };
   res.json(payload);
 });
 
