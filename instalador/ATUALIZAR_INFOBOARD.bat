@@ -70,11 +70,23 @@ if /i "!UAC_CONFIRM!"=="S" (
     exit /b 0
 )
 
+:: =============================================================================
+:: PROTECAO CONTRA AUTO-ATUALIZACAO (RUN FROM TEMP)
+:: =============================================================================
+if "%~1"=="--run-from-temp" (
+    set "SCRIPT_DIR=%~2"
+    goto :INICIAR_ATUALIZACAO
+)
+:: Copiar o script para a pasta temporaria para evitar crash durante sobrescrita
+copy /y "%~f0" "%TEMP%\%~nx0" >nul
+"%TEMP%\%~nx0" --run-from-temp "%~dp0"
+exit /b 0
+
 :INICIAR_ATUALIZACAO
 :: Ancorar diretorio atual no diretorio onde o script esta localizado
-cd /d "%~dp0"
-set "SCRIPT_DIR=%~dp0"
+if not defined SCRIPT_DIR set "SCRIPT_DIR=%~dp0"
 if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+cd /d "!SCRIPT_DIR!"
 
 :: =============================================================================
 :: CABECALHO PRINCIPAL E VISUAL DAS ETAPAS
@@ -167,24 +179,31 @@ if defined DETECTED_DIR (
     echo   !C_WHITE![   M   ]!C_RESET! Digitar um caminho diferente manualmente
     echo.
     set /p "CONFIRM_LOC=Deseja atualizar em '!DETECTED_DIR!'? [ENTER/G/M]: "
-    if defined CONFIRM_LOC set "CONFIRM_LOC=!CONFIRM_LOC: =!"
-    if "!CONFIRM_LOC!"=="" set "CONFIRM_LOC=S"
-    if /i "!CONFIRM_LOC!"=="SIM" set "CONFIRM_LOC=S"
-    if /i "!CONFIRM_LOC!"=="Y" set "CONFIRM_LOC=S"
-    if /i "!CONFIRM_LOC!"=="YES" set "CONFIRM_LOC=S"
-    if /i "!CONFIRM_LOC!"=="S" (
-        set "APP_DIR=!DETECTED_DIR!"
-        goto :VALIDAR_APP_DIR
-    )
-    if /i "!CONFIRM_LOC!"=="G" goto :SELECIONAR_GUI_UPD
-    if /i "!CONFIRM_LOC!"=="M" goto :SELECIONAR_MANUAL_UPD
     
-    :: Se o usuario colou um caminho diretamente:
-    set "APP_DIR=!CONFIRM_LOC!"
-    goto :VALIDAR_APP_DIR
+    set "TMP_CONF_LOC=!CONFIRM_LOC: =!"
+    if "!TMP_CONF_LOC!"=="" set "CONFIRM_LOC=S"
+    if /i "!TMP_CONF_LOC!"=="SIM" set "CONFIRM_LOC=S"
+    if /i "!TMP_CONF_LOC!"=="Y" set "CONFIRM_LOC=S"
+    if /i "!TMP_CONF_LOC!"=="YES" set "CONFIRM_LOC=S"
+    if /i "!TMP_CONF_LOC!"=="S" set "CONFIRM_LOC=S"
+    if /i "!TMP_CONF_LOC!"=="G" set "CONFIRM_LOC=G"
+    if /i "!TMP_CONF_LOC!"=="M" set "CONFIRM_LOC=M"
+
 ) else (
     echo   !C_YELLOW![AVISO] Nenhuma instalacao padrao foi encontrada automaticamente.!C_RESET!
+    set "CONFIRM_LOC=G"
 )
+
+if /i "!CONFIRM_LOC!"=="S" (
+    set "APP_DIR=!DETECTED_DIR!"
+    goto :VALIDAR_APP_DIR
+)
+if /i "!CONFIRM_LOC!"=="G" goto :SELECIONAR_GUI_UPD
+if /i "!CONFIRM_LOC!"=="M" goto :SELECIONAR_MANUAL_UPD
+
+:: Se o usuario colou um caminho diretamente:
+set "APP_DIR=!CONFIRM_LOC!"
+goto :VALIDAR_APP_DIR
 
 :SELECIONAR_GUI_UPD
 echo.
@@ -645,7 +664,7 @@ if exist "!BACKUP_FILE!" (
     echo Motivo: !RB_MSG!
     echo Backup Utilizado: !BACKUP_FILE!
     echo -------------------------------------------------------------------------------
-) >> "%~dp0atualizacao_erro.log" 2>nul
+) >> "!SCRIPT_DIR!\atualizacao_erro.log" 2>nul
 
 echo.
 echo Pressione qualquer tecla para encerrar...
@@ -684,9 +703,9 @@ echo.
     echo Mensagem: !ERR_MSG!
     echo Acao Recomendada: !ERR_FIX!
     echo -------------------------------------------------------------------------------
-) >> "%~dp0atualizacao_erro.log" 2>nul
+) >> "!SCRIPT_DIR!\atualizacao_erro.log" 2>nul
 
-echo !C_GRAY!Registro salvo em: '%~dp0atualizacao_erro.log'!C_RESET!
+echo !C_GRAY!Registro salvo em: '!SCRIPT_DIR!\atualizacao_erro.log'!C_RESET!
 echo.
 echo Pressione qualquer tecla para encerrar...
 pause >nul
