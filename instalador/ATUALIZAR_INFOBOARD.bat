@@ -71,22 +71,20 @@ if /i "!UAC_CONFIRM!"=="S" (
 )
 
 :: =============================================================================
-:: PROTECAO CONTRA AUTO-ATUALIZACAO (RUN FROM TEMP)
+:: PROTECAO CONTRA AUTO-ATUALIZACAO (LOCAL COPY)
 :: =============================================================================
-if "%~1"=="--run-from-temp" (
-    set "SCRIPT_DIR=%~2"
-    goto :INICIAR_ATUALIZACAO
+if "%~nx0"=="ATUALIZAR_INFOBOARD_RUNNER.bat" goto :INICIAR_ATUALIZACAO
+copy /y "%~f0" "%~dp0ATUALIZAR_INFOBOARD_RUNNER.bat" >nul 2>&1
+if exist "%~dp0ATUALIZAR_INFOBOARD_RUNNER.bat" (
+    "%~dp0ATUALIZAR_INFOBOARD_RUNNER.bat" %*
+    exit /b 0
 )
-:: Copiar o script para a pasta temporaria para evitar crash durante sobrescrita
-copy /y "%~f0" "%TEMP%\%~nx0" >nul
-"%TEMP%\%~nx0" --run-from-temp "%~dp0"
-exit /b 0
 
 :INICIAR_ATUALIZACAO
 :: Ancorar diretorio atual no diretorio onde o script esta localizado
-if not defined SCRIPT_DIR set "SCRIPT_DIR=%~dp0"
+set "SCRIPT_DIR=%~dp0"
 if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
-cd /d "!SCRIPT_DIR!"
+cd /d "%SCRIPT_DIR%"
 
 :: =============================================================================
 :: CABECALHO PRINCIPAL E VISUAL DAS ETAPAS
@@ -603,6 +601,9 @@ echo !C_GRAY!Pressione qualquer tecla para finalizar o assistente.!C_RESET!
 echo ===============================================================================
 echo.
 pause
+if "%~nx0"=="ATUALIZAR_INFOBOARD_RUNNER.bat" (
+    (goto) 2>nul & del "%~f0"
+)
 exit /b 0
 
 :: =============================================================================
@@ -669,6 +670,9 @@ if exist "!BACKUP_FILE!" (
 echo.
 echo Pressione qualquer tecla para encerrar...
 pause >nul
+if "%~nx0"=="ATUALIZAR_INFOBOARD_RUNNER.bat" (
+    (goto) 2>nul & del "%~f0"
+)
 exit /b 1
 
 :: =============================================================================
@@ -709,4 +713,7 @@ echo !C_GRAY!Registro salvo em: '!SCRIPT_DIR!\atualizacao_erro.log'!C_RESET!
 echo.
 echo Pressione qualquer tecla para encerrar...
 pause >nul
+if "%~nx0"=="ATUALIZAR_INFOBOARD_RUNNER.bat" (
+    (goto) 2>nul & del "%~f0"
+)
 exit /b 1
