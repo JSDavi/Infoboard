@@ -1856,6 +1856,135 @@ body.fullscreen-mode .ticker-pill {
   font-weight: 600;
 }
 
+.ticker-pill.pill-aniversariantes {
+  background: rgba(157, 23, 77, 0.65);
+  color: #fbcfe8;
+  border: 1px solid #ec4899;
+  box-shadow: 0 2px 10px rgba(236, 72, 153, 0.25);
+}
+
+.ticker-pill.pill-aniversariantes i {
+  color: #f472b6;
+}
+
+.rainbow-avatar-container {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #8000ff, #ff0080);
+  background-size: 400% 400%;
+  animation: rainbow-glow 3s linear infinite;
+  margin-right: 8px;
+  margin-left: 6px;
+  padding: 2.5px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+.rainbow-avatar-container img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  object-fit: cover;
+}
+
+@keyframes rainbow-glow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ===================================
+   BIRTHDAY MODE — TEMA DE FESTA
+   =================================== */
+
+/* Balões subindo */
+@keyframes balloon-float {
+  0%   { transform: translateY(0) rotate(-4deg); opacity: 0; }
+  5%   { opacity: 1; }
+  50%  { transform: translateY(-60vh) rotate(4deg); }
+  95%  { opacity: 0.8; }
+  100% { transform: translateY(-105vh) rotate(-2deg); opacity: 0; }
+}
+
+/* Fitas caindo */
+@keyframes streamer-fall {
+  0%   { transform: translateY(-30px) rotate(0deg); opacity: 0; }
+  5%   { opacity: 0.7; }
+  100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
+}
+
+/* Barra arco-íris deslizando */
+@keyframes banner-slide {
+  0%   { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Chapeuzinhos subindo */
+@keyframes hat-float-up {
+  0%   { transform: translateY(0)     rotate(var(--rot, -15deg)); opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 0.9; }
+  100% { transform: translateY(-110vh) rotate(calc(var(--rot, -15deg) + 20deg)); opacity: 0; }
+}
+
+/* Chapeuzinhos descendo */
+@keyframes hat-float-down {
+  0%   { transform: translateY(0)    rotate(var(--rot, 15deg)); opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 0.9; }
+  100% { transform: translateY(110vh) rotate(calc(var(--rot, 15deg) - 20deg)); opacity: 0; }
+}
+
+/* Pulso festivo na borda do ticker */
+body.birthday-mode .ticker-bar {
+  box-shadow: 0 0 0 2px rgba(255, 200, 0, 0.5),
+              0 -4px 15px rgba(255, 80, 120, 0.3);
+  transition: box-shadow 0.5s ease;
+}
+
+/* Borda arco-íris animada nos cards principais usando pseudo-elemento */
+@keyframes card-border-spin {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+body.birthday-mode .dept-column,
+body.birthday-mode .chat-metric-card,
+body.birthday-mode .sefaz-radar-card,
+body.birthday-mode .sub-sector-block {
+  position: relative;
+  border-color: transparent !important;
+}
+
+body.birthday-mode .dept-column::before,
+body.birthday-mode .chat-metric-card::before,
+body.birthday-mode .sefaz-radar-card::before,
+body.birthday-mode .sub-sector-block::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #ff0000, #ff8800, #ffff00, #00cc44, #0088ff, #aa00ff, #ff00aa, #ff0000);
+  background-size: 400% 400%;
+  animation: card-border-spin 4s linear infinite;
+  z-index: -1;
+  opacity: 0.7;
+}
+
+
+
+.central-birthday-person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
 /* Relógio Fixo no Lado Direito do Letreiro */
 .ticker-clock-widget {
   display: flex;

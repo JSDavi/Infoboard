@@ -1253,6 +1253,20 @@ function updateUI(data) {
         tickerTextEl.innerHTML = htmlContent;
       }
     }
+
+    // --- BIRTHDAY MODE: decora o painel inteiro ---
+    const hasToday = data.horarios.aniversariantesHojeData && data.horarios.aniversariantesHojeData.length > 0;
+    if (hasToday) {
+      if (!document.body.classList.contains('birthday-mode')) {
+        document.body.classList.add('birthday-mode');
+        startPartyDecorations(data.horarios.aniversariantesHojeData);
+      }
+    } else {
+      if (document.body.classList.contains('birthday-mode')) {
+        document.body.classList.remove('birthday-mode');
+        stopPartyDecorations();
+      }
+    }
   }
 
   // 7. Efeito Sonoro quando a fila total aumenta
@@ -1372,3 +1386,299 @@ window.addEventListener('resize', checkFullscreen);
 document.addEventListener('fullscreenchange', checkFullscreen);
 // Execução inicial
 checkFullscreen();
+
+// --- SISTEMA DE DECORAÇÃO DE FESTA (BIRTHDAY MODE) ---
+let _partyInterval = null;
+let _partyContainer = null;
+
+function startPartyDecorations(birthdayPeople) {
+  if (_partyContainer) return; // já ativo
+
+  // Container principal de decorações
+  _partyContainer = document.createElement('div');
+  _partyContainer.id = 'party-decorations';
+  _partyContainer.style.cssText = 'position:fixed;inset:0;z-index:5;pointer-events:none;overflow:hidden;';
+  document.body.appendChild(_partyContainer);
+
+  // Cria balões flutuantes
+  const balloons = ['🎈','🎈','🎈','🎈','🎈','🎈','🎈','🎈'];
+  const colors = ['#ff4d4d','#ff9900','#ffee00','#44cc44','#4499ff','#cc44ff','#ff44aa','#00cccc'];
+  balloons.forEach((b, i) => {
+    const el = document.createElement('div');
+    const left = 3 + (i / balloons.length) * 94;
+    const dur = 12 + Math.random() * 10;
+    const delay = -(Math.random() * dur);
+    const size = 28 + Math.random() * 16;
+    el.style.cssText = `
+      position:absolute;
+      bottom:-80px;
+      left:${left}%;
+      font-size:${size}px;
+      filter: hue-rotate(${i * 45}deg);
+      animation: balloon-float ${dur}s ease-in-out ${delay}s infinite;
+      user-select:none;
+      line-height:1;
+    `;
+    el.textContent = b;
+    _partyContainer.appendChild(el);
+  });
+
+  // Cria fitas/streamers caindo do topo
+  const streamerColors = ['#ff4d4d','#ffee00','#44cc44','#4499ff','#ff44aa','#ff9900','#cc44ff','#ffffff'];
+  for (let i = 0; i < 20; i++) {
+    const el = document.createElement('div');
+    const left = Math.random() * 100;
+    const dur = 4 + Math.random() * 5;
+    const delay = -(Math.random() * dur);
+    const width = 4 + Math.random() * 5;
+    const height = 18 + Math.random() * 20;
+    const color = streamerColors[i % streamerColors.length];
+    el.style.cssText = `
+      position:absolute;
+      top:-30px;
+      left:${left}%;
+      width:${width}px;
+      height:${height}px;
+      background:${color};
+      border-radius:2px;
+      opacity:0.7;
+      animation: streamer-fall ${dur}s linear ${delay}s infinite;
+    `;
+    _partyContainer.appendChild(el);
+  }
+
+  // Banner de aniversário no topo do painel
+  const names = birthdayPeople.map(p => p.nome).join(' & ');
+  const banner = document.createElement('div');
+  banner.id = 'birthday-banner';
+  banner.style.cssText = `
+    position:absolute;
+    top:0;left:0;right:0;
+    height:4px;
+    background: linear-gradient(90deg, #ff0000,#ff8800,#ffff00,#00cc44,#0088ff,#aa00ff,#ff00aa,#ff0000);
+    background-size: 200% auto;
+    animation: banner-slide 3s linear infinite;
+    z-index:10;
+  `;
+  _partyContainer.appendChild(banner);
+
+  // Segundo banner embaixo (espelhado)
+  const banner2 = banner.cloneNode();
+  banner2.style.top = 'auto';
+  banner2.style.bottom = '0';
+  _partyContainer.appendChild(banner2);
+
+  // Chapeuzinhos de festa flutuando pela tela (subindo e descendo)
+  const hatEmojis = ['🎉', '🎊', '🎉', '🎊', '🎉', '🎊'];
+  const hatDirections = ['up', 'down', 'up', 'down', 'up', 'down']; // alternados
+  hatEmojis.forEach((emoji, i) => {
+    const hat = document.createElement('div');
+    const left = 8 + (i / hatEmojis.length) * 84; // espalhados horizontalmente
+    const size = 30 + Math.random() * 20;
+    const dur = 10 + Math.random() * 8;
+    const delay = -(Math.random() * dur);
+    const rot = (Math.random() - 0.5) * 40;
+    const goUp = hatDirections[i] === 'up';
+    const anim = goUp ? 'hat-float-up' : 'hat-float-down';
+
+    hat.style.cssText = `
+      position: absolute;
+      left: ${left}%;
+      ${goUp ? 'bottom: -60px' : 'top: -60px'};
+      font-size: ${size}px;
+      transform: rotate(${rot}deg);
+      line-height: 1;
+      user-select: none;
+      animation: ${anim} ${dur}s ease-in-out ${delay}s infinite;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.35));
+      z-index: 6;
+    `;
+    hat.textContent = emoji;
+    _partyContainer.appendChild(hat);
+  });
+}
+
+function stopPartyDecorations() {
+  if (_partyContainer) {
+    _partyContainer.style.transition = 'opacity 1s ease';
+    _partyContainer.style.opacity = '0';
+    setTimeout(() => {
+      if (_partyContainer) { _partyContainer.remove(); _partyContainer = null; }
+    }, 1000);
+  }
+  clearInterval(_partyInterval);
+  _partyInterval = null;
+}
+
+// Confete em POPPERS LATERAIS — estoura das bordas esquerda e direita da foto
+function launchSideConfetti(photoLeft, photoTop, photoSize) {
+  const colors = ['#ff0000','#ff8800','#ffff00','#00cc44','#0088ff','#aa00ff','#ff00aa','#ffffff','#ffdd00','#ff69b4'];
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;inset:0;z-index:10001;pointer-events:none;overflow:hidden;';
+  document.body.appendChild(container);
+
+  const leftX  = photoLeft;                     // borda esquerda
+  const rightX = photoLeft + photoSize;          // borda direita
+  const midY   = photoTop  + photoSize * 0.45;  // altura do centro da foto
+
+  for (let i = 0; i < 100; i++) {
+    const fromRight = i >= 50;                  // metade de cada lado
+    const startX = fromRight ? rightX : leftX;
+    const startY = midY + (Math.random() - 0.5) * photoSize * 0.35;
+
+    // Ângulo: estoura para fora em leque de ±75° na horizontal
+    const spreadDeg = (Math.random() * 150) - 75;        // -75° a +75°
+    const rad = (spreadDeg * Math.PI) / 180;
+    const dist = 180 + Math.random() * 400;
+
+    // Direção base: para fora da foto + queda com gravidade
+    const dx = fromRight
+      ?  Math.cos(rad) * dist                            // direita: vai para direita
+      : -Math.cos(rad) * dist;                           // esquerda: vai para esquerda
+    const dy = Math.abs(Math.sin(rad)) * dist * 0.6      // spread vertical
+             + 150 + Math.random() * 200;                // gravidade para baixo
+
+    const piece    = document.createElement('div');
+    const color    = colors[Math.floor(Math.random() * colors.length)];
+    const sz       = 6 + Math.random() * 8;
+    const isCircle = Math.random() > 0.5;
+    const dur      = 1.5 + Math.random() * 1.8;
+    const delay    = Math.random() * 0.4;
+    const spin     = (Math.random() - 0.5) * 900;
+
+    piece.style.cssText = `
+      position:absolute;
+      left:${startX - sz/2}px;
+      top:${startY  - sz/2}px;
+      width:${sz}px;
+      height:${isCircle ? sz : sz * 0.35}px;
+      background:${color};
+      border-radius:${isCircle ? '50%' : '2px'};
+      opacity:1;
+    `;
+
+    const animName = `sc${i}_${Date.now()}`;
+    const styleEl  = document.createElement('style');
+    styleEl.textContent = `@keyframes ${animName}{0%{transform:translate(0,0) rotate(0deg);opacity:1;}75%{opacity:1;}100%{transform:translate(${dx}px,${dy}px) rotate(${spin}deg);opacity:0;}}`;
+    document.head.appendChild(styleEl);
+    piece.style.animation = `${animName} ${dur}s ease-out ${delay}s forwards`;
+    container.appendChild(piece);
+    setTimeout(() => styleEl.remove(), (dur + delay + 0.5) * 1000);
+  }
+  return container;
+}
+
+// --- ZOOM DO ANIVERSARIANTE QUANDO PASSAR NO LETREIRO ---
+(function initBirthdayZoom() {
+  let zooming = false;
+  let birthdayIndex = 0; // reveza entre os aniversariantes do dia
+
+  function checkBirthdayPillPosition() {
+    if (zooming) return;
+    const pill = document.querySelector('.pill-aniversariantes');
+    if (!pill) return;
+
+    // Usa a posição da 1ª foto para detectar o momento de disparar
+    const firstImg = pill.querySelector('strong img');
+    if (!firstImg) return;
+
+    const rect = firstImg.getBoundingClientRect();
+    const screenCenterX = window.innerWidth / 2;
+
+    if (rect.width > 0 && rect.left < screenCenterX + 80 && rect.right > screenCenterX - 80) {
+      // Pega todos os aniversariantes do dia e seleciona pelo índice atual
+      const allImgs = pill.querySelectorAll('strong img');
+      const imgToShow = allImgs[birthdayIndex % allImgs.length];
+      // Avança o índice para o próximo ciclo (revezamento)
+      birthdayIndex = (birthdayIndex + 1) % allImgs.length;
+      triggerBirthdayZoom(imgToShow);
+    }
+  }
+
+  function triggerBirthdayZoom(imgEl) {
+    zooming = true;
+
+    const strong = imgEl.closest('strong');
+    const rawText = strong ? strong.textContent : '';
+    const nome = rawText.replace(/🎉|🎂/g, '').replace(/Feliz Aniversário[,\s]*/i, '').trim();
+
+    const srcRect = imgEl.getBoundingClientRect();
+
+    // Overlay escuro
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0);pointer-events:none;transition:background 0.5s ease;';
+    document.body.appendChild(overlay);
+
+    // Avatar flutuante com chapeuzinho
+    const size = Math.min(window.innerWidth, window.innerHeight) * 0.32;
+    const cx = (window.innerWidth - size) / 2;
+    const cy = (window.innerHeight - size) / 2 - 50;
+
+    const flyEl = document.createElement('div');
+    flyEl.style.cssText = `position:fixed;left:${srcRect.left}px;top:${srcRect.top}px;width:${srcRect.width}px;height:${srcRect.height}px;border-radius:50%;z-index:9999;pointer-events:none;overflow:visible;`;
+    flyEl.innerHTML = `
+      <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;position:relative;z-index:1;background:#1e293b;display:flex;align-items:center;justify-content:center;">
+        <img src="${imgEl.src}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\'font-size:3.5rem;\'>🎂</span>';">
+      </div>
+      <div class="birthday-hat" style="position:absolute;top:-55%;left:50%;transform:translateX(-60%) rotate(-20deg);font-size:0;z-index:2;transition:font-size 0.5s ease;line-height:1;">🎩</div>`;
+    document.body.appendChild(flyEl);
+
+    // Texto "Parabéns!"
+    const nameEl = document.createElement('div');
+    nameEl.style.cssText = 'position:fixed;left:50%;top:calc(50% + 115px);transform:translateX(-50%);z-index:9999;color:#ffeb3b;font-size:2.2rem;font-weight:800;text-shadow:0 2px 15px rgba(255,235,59,0.6),0 0 30px rgba(255,235,59,0.3);opacity:0;transition:opacity 0.5s ease;pointer-events:none;white-space:nowrap;font-family:inherit;letter-spacing:1px;';
+    nameEl.textContent = `🎉 Parabéns, ${nome}! 🎂`;
+    document.body.appendChild(nameEl);
+
+    // Fase 1: expande para o centro
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      overlay.style.background = 'rgba(0,0,0,0.65)';
+
+      flyEl.style.transition = 'left 0.8s ease, top 0.8s ease, width 0.8s ease, height 0.8s ease';
+      flyEl.style.left = `${cx}px`;
+      flyEl.style.top = `${cy}px`;
+      flyEl.style.width = `${size}px`;
+      flyEl.style.height = `${size}px`;
+
+      // Anel arco-íris
+      flyEl.style.padding = '5px';
+      flyEl.style.background = 'linear-gradient(45deg,#ff0000,#ff8000,#ffff00,#00ff00,#0000ff,#8000ff,#ff0080)';
+      flyEl.style.backgroundSize = '400% 400%';
+      flyEl.style.animation = 'rainbow-glow 2s linear infinite';
+      flyEl.style.boxShadow = '0 0 50px rgba(255,255,255,0.5)';
+
+      // Chapeuzinho e nome aparecem após expansão
+      setTimeout(() => {
+        const hat = flyEl.querySelector('.birthday-hat');
+        if (hat) hat.style.fontSize = '70%';
+        nameEl.style.opacity = '1';
+      }, 800);
+    }));
+
+    // Fase 2: encolhe de volta para o rodapé após 10s
+    setTimeout(() => {
+      nameEl.style.opacity = '0';
+      const hat = flyEl.querySelector('.birthday-hat');
+      if (hat) hat.style.fontSize = '0';
+      flyEl.style.transition = 'left 0.8s ease, top 0.8s ease, width 0.8s ease, height 0.8s ease, opacity 0.6s ease';
+      flyEl.style.left = `${srcRect.left}px`;
+      flyEl.style.top = `${srcRect.top}px`;
+      flyEl.style.width = `${srcRect.width}px`;
+      flyEl.style.height = `${srcRect.height}px`;
+      flyEl.style.opacity = '0';
+      overlay.style.background = 'rgba(0,0,0,0)';
+    }, 10000);
+
+    // Fase 3: limpa tudo
+    setTimeout(() => {
+      flyEl.remove();
+      overlay.remove();
+      nameEl.remove();
+      // Aguarda ~15 minutos antes de permitir o próximo disparo
+      // O trigger só acontece quando a foto passar no centro do ticker novamente
+      setTimeout(() => { zooming = false; }, 15 * 60 * 1000 - 11000);
+    }, 11000);
+  }
+
+  setInterval(checkBirthdayPillPosition, 300);
+})();
+

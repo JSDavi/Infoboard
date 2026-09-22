@@ -12,6 +12,14 @@ const rateLimit = require('express-rate-limit');
 // Carrega variáveis de ambiente
 dotenv.config();
 
+// Previne quedas do processo por erros não tratados de rede/rejeições de Promise
+process.on('uncaughtException', (err) => {
+  console.error('[Process Error] Exceção não capturada:', err.message || err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[Process Error] Rejeição de Promise não tratada:', reason?.message || reason);
+});
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 const UPDATE_INTERVAL = (process.env.UPDATE_INTERVAL_SECONDS || 6) * 1000;
@@ -1131,6 +1139,7 @@ function rebuildTicker() {
     horariosCache.pillSobreaviso,
     horariosCache.pillApoio,
     horariosCache.pillFerias,
+    horariosCache.pillAniversariantes,
     hospedagensCache.tickerHtml
   ].filter(Boolean);
 
@@ -1279,6 +1288,77 @@ async function fetchHorariosData() {
       }
     });
 
+    // --- ANIVERSARIANTES DO MÊS ---
+    const aniversariantesMes = [];
+    const aniversariantesHoje = [];
+    const mesAtual = String(today.getMonth() + 1).padStart(2, '0');
+    const diaAtual = String(today.getDate()).padStart(2, '0');
+
+    let $equipeTable = null;
+    $('.card').each((_, card) => {
+      const text = $(card).find('h1, h2, h3, h4, h5, h6, .card-header, .card-title').text().toLowerCase();
+      if (text.includes('equipe e jornadas') || text.includes('jornadas cadastradas')) {
+        $equipeTable = $(card).find('table');
+        return false;
+      }
+    });
+
+    if ($equipeTable) {
+      $equipeTable.find('tr').slice(1).each((i, tr) => {
+        const $tds = $(tr).find('td');
+        if ($tds.length >= 8) {
+          const status = $tds.eq(0).text().trim().toUpperCase();
+          const nome = $tds.eq(2).text().trim();
+          
+          let fotoSrc = $tds.eq(2).find('img').attr('src');
+          if (fotoSrc && fotoSrc.startsWith('/')) {
+            fotoSrc = 'http://192.168.243.2:8888' + fotoSrc;
+          }
+
+          const nascimento = $tds.eq(7).text().trim(); // DD/MM/YYYY
+          if (status === 'ATIVO' && nascimento && nascimento.includes('/')) {
+            const parts = nascimento.split('/');
+            if (parts.length >= 2) {
+              const d = parts[0];
+              const m = parts[1];
+              if (m === mesAtual) {
+                if (d === diaAtual) {
+                  aniversariantesHoje.push({ nome, dia: d, foto: fotoSrc });
+                } else {
+                  aniversariantesMes.push({ nome, dia: d, foto: fotoSrc });
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    aniversariantesMes.sort((a, b) => parseInt(a.dia, 10) - parseInt(b.dia, 10));
+
+    const aniversariantesParts = [];
+    const aniversariantesTextParts = [];
+    
+    aniversariantesHoje.forEach(item => {
+      const imgHtml = item.foto ? `<img src="${item.foto}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; margin-right:4px;">` : '';
+      aniversariantesParts.push(`<strong style="color: #ffeb3b; display:inline-flex; align-items:center;">🎉 Feliz Aniversário, ${imgHtml} ${escapeHtml(item.nome)}! 🎂</strong>`);
+      aniversariantesTextParts.push(`🎉 Feliz Aniversário, ${item.nome}! 🎂`);
+    });
+
+    aniversariantesMes.forEach(item => {
+      const imgHtml = item.foto ? `<img src="${item.foto}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; margin-right:4px;">` : '';
+      aniversariantesParts.push(`<span style="display:inline-flex; align-items:center;">${imgHtml} ${escapeHtml(item.nome)} (${item.dia}/${mesAtual})</span>`);
+      aniversariantesTextParts.push(`${item.nome} (${item.dia}/${mesAtual})`);
+    });
+
+    const pillAniversariantes = aniversariantesParts.length > 0 
+      ? `<span class="ticker-pill pill-aniversariantes" style="display:inline-flex; align-items:center; gap:6px;"><i class="fa-solid fa-gift"></i> <strong>ANIVERSARIANTES DO MÊS:</strong> ${aniversariantesParts.join(' • ')}</span>`
+      : '';
+    const textAniversariantes = aniversariantesTextParts.length > 0
+      ? ` | 🎁 ANIVERSARIANTES DO MÊS: ${aniversariantesTextParts.join(' • ')}`
+      : '';
+    // --------------------------------
+
     const turnosStr = turnos.length > 0 ? turnos.join('  •  ') : 'Sem escala cadastrada';
     const sobreavisoStr = sobreavisoArr.length > 0 ? sobreavisoArr.join(', ') : 'Nenhum';
     const apoioFixoStr = apoioFixoArr.length > 0 ? apoioFixoArr.join(', ') : 'Nenhum';
@@ -1305,12 +1385,37 @@ async function fetchHorariosData() {
       }
     }
 
+    // --- PILLS: só aparecem se tiverem conteúdo real ---
     const pillEscalaClass = equipeCorClass ? `pill-escala ${equipeCorClass}` : 'pill-escala';
-    const pillEscala = `<span class="ticker-pill ${pillEscalaClass}"><i class="fa-solid fa-calendar-days"></i> <strong>SÁBADO (${formattedSatDate}):</strong> ${turnosStr}</span>`;
-    const pillSobreaviso = `<span class="ticker-pill pill-sobreaviso"><i class="fa-solid fa-triangle-exclamation"></i> <strong>SOBREAVISO:</strong> ${sobreavisoStr}</span>`;
-    const pillApoio = `<span class="ticker-pill pill-apoio"><i class="fa-solid fa-wrench"></i> <strong>APOIO FIXO (08h-12h):</strong> ${apoioFixoStr}</span>`;
-    const pillFerias = `<span class="ticker-pill pill-ferias"><i class="fa-solid fa-umbrella-beach"></i> <strong>AUSÊNCIAS E FÉRIAS:</strong> ${ausenciasHtmlStr}</span>`;
-    const baseTickerText = `📅 ESCALA DE SÁBADO (${formattedSatDate}): ${turnosStr}  |  🚨 SOBREAVISO: ${sobreavisoStr}  |  🛠️ APOIO FIXO: ${apoioFixoStr}  |  🏖️ AUSÊNCIAS E FÉRIAS: ${ausenciasStr}`;
+
+    // Escala: só mostra se houver turnos cadastrados
+    const pillEscala = turnos.length > 0
+      ? `<span class="ticker-pill ${pillEscalaClass}"><i class="fa-solid fa-calendar-days"></i> <strong>SÁBADO (${formattedSatDate}):</strong> ${turnos.join('  •  ')}</span>`
+      : '';
+
+    // Sobreaviso: só mostra se houver alguém de sobreaviso
+    const pillSobreaviso = sobreavisoArr.length > 0
+      ? `<span class="ticker-pill pill-sobreaviso"><i class="fa-solid fa-triangle-exclamation"></i> <strong>SOBREAVISO:</strong> ${sobreavisoArr.join(', ')}</span>`
+      : '';
+
+    // Apoio fixo: só mostra se houver alguém de apoio
+    const pillApoio = apoioFixoArr.length > 0
+      ? `<span class="ticker-pill pill-apoio"><i class="fa-solid fa-wrench"></i> <strong>APOIO FIXO (08h-12h):</strong> ${apoioFixoArr.join(', ')}</span>`
+      : '';
+
+    // Férias/Ausências: só mostra se houver alguma ausência
+    const pillFerias = ausenciasHtmlArr.length > 0
+      ? `<span class="ticker-pill pill-ferias"><i class="fa-solid fa-umbrella-beach"></i> <strong>AUSÊNCIAS E FÉRIAS:</strong> ${ausenciasHtmlArr.join(' • ')}</span>`
+      : '';
+
+    // Texto base do ticker (sem pills — fallback para browsers sem suporte a HTML)
+    const partsTexto = [];
+    if (turnos.length > 0)       partsTexto.push(`📅 ESCALA DE SÁBADO (${formattedSatDate}): ${turnos.join('  •  ')}`);
+    if (sobreavisoArr.length > 0) partsTexto.push(`🚨 SOBREAVISO: ${sobreavisoArr.join(', ')}`);
+    if (apoioFixoArr.length > 0)  partsTexto.push(`🛠️ APOIO FIXO: ${apoioFixoArr.join(', ')}`);
+    if (ausenciasArr.length > 0)  partsTexto.push(`🏖️ AUSÊNCIAS E FÉRIAS: ${ausenciasArr.join(' • ')}`);
+    if (textAniversariantes)      partsTexto.push(textAniversariantes.replace(/^\s*\|\s*/, ''));
+    const baseTickerText = partsTexto.join('  |  ');
 
     horariosCache = {
       formattedDate: formattedSatDate,
@@ -1322,6 +1427,8 @@ async function fetchHorariosData() {
       pillSobreaviso,
       pillApoio,
       pillFerias,
+      pillAniversariantes,
+      aniversariantesHojeData: aniversariantesHoje,
       baseTickerText,
       tickerText: '',
       tickerHtml: ''
