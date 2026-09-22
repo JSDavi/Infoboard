@@ -578,6 +578,15 @@ for /f "tokens=2 delims=:" %%i in ('ipconfig ^| findstr /c:"IPv4" 2^>nul') do (
 set "LOCAL_IP=127.0.0.1"
 :IP_UPD_ENCONTRADO
 
+:: Re-ler a versao efetivamente gravada no package.json apos a copia
+set "FINAL_VER=!NEW_VER!"
+if exist "!APP_DIR!\package.json" (
+    for /f "usebackq delims=" %%v in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+        "try { (Get-Content -LiteralPath '!APP_DIR!\package.json' -Raw | ConvertFrom-Json).version } catch { '' }"`) do (
+        if not "%%v"=="" set "FINAL_VER=%%v"
+    )
+)
+
 :: =============================================================================
 :: FINALIZACAO E SUMARIO ANALITICO DE ATUALIZACAO
 :: =============================================================================
@@ -587,7 +596,8 @@ echo            !C_GREEN!!C_BOLD!ATUALIZACAO DO INFOBOARD CONCLUIDA COM SUCESSO!
 echo ===============================================================================
 echo.
 echo !C_WHITE!!C_BOLD!Relatorio da Atualizacao:!C_RESET!
-echo   !C_CYAN!* Versao Aplicada:!C_RESET!   v!NEW_VER!
+echo   !C_CYAN!* Versao Anterior:!C_RESET!   v!INSTALLED_VER!
+echo   !C_CYAN!* Versao Atualizada:!C_RESET! !C_GREEN!!C_BOLD!v!FINAL_VER!!C_RESET!
 echo   !C_CYAN!* Diretorio:!C_RESET!         !APP_DIR!
 echo   !C_CYAN!* Servico Windows:!C_RESET!   'Infoboard TV' (Status: Ativo / Em Execucao)
 echo   !C_CYAN!* Backup de Seguranca:!C_RESET! !BACKUP_FILE!
