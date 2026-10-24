@@ -1,0 +1,2372 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Beatrix — contrato parcial reconstruído da documentação",
+    "version": "0.0.0-documental",
+    "description": "[DOCUMENTADO] Fonte Postman pública. Esquemas refletem exemplos, não validação em produção. [INFERIDO] Organização desta especificação. Campos sem required não têm obrigatoriedade documentada. HTTP desconhecido usa default. Nenhuma chamada Beatrix executada."
+  },
+  "servers": [
+    {
+      "url": "https://app.npxtech.com.br",
+      "description": "[DOCUMENTADO] Host presente nas rotas; ambiente de homologação desconhecido."
+    }
+  ],
+  "security": [
+    {
+      "AccessToken": []
+    }
+  ],
+  "paths": {
+    "/api/v2/agents/{agent_code}/pause": {
+      "post": {
+        "summary": "Colocar um agente em pausa",
+        "operationId": "E01",
+        "tags": [
+          "🔹Agents"
+        ],
+        "description": "[DOCUMENTADO] 👤O campo agent_code é código do agente dentro do Beatrix. [SENSÍVEL] Altera operação.",
+        "x-source-pointer": "/item/0/item/0",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": true,
+        "x-read-only": false,
+        "parameters": [
+          {
+            "name": "agent_code",
+            "in": "path",
+            "required": true,
+            "description": "[DOCUMENTADO] Placeholder na rota.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Retorno de sucesso. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/E01Response0"
+                },
+                "examples": {
+                  "E01Example0": {
+                    "summary": "[DOCUMENTADO] Retorno de sucesso; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "message": "Sucesso",
+                      "status": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "description": "[DOCUMENTADO] Corpo raw indicado como JSON. Comentários removidos para gerar JSON válido. Obrigatoriedade do corpo e dos campos desconhecida.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/E01Request"
+              },
+              "example": {
+                "pause_type_code": "[MASCARADO]"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/agents/{agent_code}/unpause": {
+      "post": {
+        "summary": "Retira um agente em pausa",
+        "operationId": "E02",
+        "tags": [
+          "🔹Agents"
+        ],
+        "description": "[DOCUMENTADO] 👤O campo agent_code é código do agente dentro do Beatrix [SENSÍVEL] Altera operação.",
+        "x-source-pointer": "/item/0/item/1",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": true,
+        "x-read-only": false,
+        "parameters": [
+          {
+            "name": "agent_code",
+            "in": "path",
+            "required": true,
+            "description": "[DOCUMENTADO] Placeholder na rota.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Retorno de sucesso. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/E02Response0"
+                },
+                "examples": {
+                  "E02Example0": {
+                    "summary": "[DOCUMENTADO] Retorno de sucesso; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "message": "Sucesso",
+                      "status": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/agents/{agent_code}/add_to_queue": {
+      "post": {
+        "summary": "Inserir agente na fila",
+        "operationId": "E03",
+        "tags": [
+          "🔹Agents"
+        ],
+        "description": "[DOCUMENTADO] 👤O campo agent_code é código do agente dentro do Beatrix [SENSÍVEL] Altera operação.",
+        "x-source-pointer": "/item/0/item/2",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": true,
+        "x-read-only": false,
+        "parameters": [
+          {
+            "name": "agent_code",
+            "in": "path",
+            "required": true,
+            "description": "[DOCUMENTADO] Placeholder na rota.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Retorno com sucesso. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/E03Response0"
+                },
+                "examples": {
+                  "E03Example0": {
+                    "summary": "[DOCUMENTADO] Retorno com sucesso; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "message": "Sucesso",
+                      "status": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "description": "[DOCUMENTADO] Corpo raw indicado como JSON. Comentários removidos para gerar JSON válido. Obrigatoriedade do corpo e dos campos desconhecida.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/E03Request"
+              },
+              "example": {
+                "queue_id": "[MASCARADO]",
+                "extension": "[MASCARADO]",
+                "penalty": "X"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/agents/{agent_code}/remove_to_queue": {
+      "post": {
+        "summary": "Remover agente da fila",
+        "operationId": "E04",
+        "tags": [
+          "🔹Agents"
+        ],
+        "description": "[DOCUMENTADO] 👤O campo agent_code é código do agente dentro do Beatrix [SENSÍVEL] Altera operação.",
+        "x-source-pointer": "/item/0/item/3",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": true,
+        "x-read-only": false,
+        "parameters": [
+          {
+            "name": "agent_code",
+            "in": "path",
+            "required": true,
+            "description": "[DOCUMENTADO] Placeholder na rota.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Sem exemplo de resposta. Código HTTP, corpo, mídia e erros desconhecidos."
+          }
+        },
+        "requestBody": {
+          "description": "[DOCUMENTADO] Corpo raw indicado como JSON. Comentários removidos para gerar JSON válido. Obrigatoriedade do corpo e dos campos desconhecida.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/E04Request"
+              },
+              "example": {
+                "queue_id": "[MASCARADO]"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/audios/download": {
+      "get": {
+        "summary": "Solicita o download de uma chamada",
+        "operationId": "E05",
+        "tags": [
+          "🔉Audios"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos.",
+        "x-source-pointer": "/item/1/item/0",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [
+          {
+            "name": "callid",
+            "in": "query",
+            "required": false,
+            "description": "Insira o CallerId de uma ligação [DOCUMENTADO] Obrigatoriedade desconhecida.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "Opcional, caso não preenchido o formato será ogg",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ogg",
+                "wav"
+              ],
+              "default": "ogg",
+              "x-certainty": "DOCUMENTADO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Sem exemplo de resposta. Código HTTP, corpo, mídia e erros desconhecidos."
+          }
+        }
+      }
+    },
+    "/api/call_center_reports/report_register_points_details": {
+      "get": {
+        "summary": "Detalhes de pontos de registro de agentes",
+        "operationId": "E06",
+        "tags": [
+          "☎️Call center reports"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos.",
+        "x-source-pointer": "/item/2/item/0",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Exemplo de retorno com sucesso. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/E06Response0"
+                },
+                "examples": {
+                  "E06Example0": {
+                    "summary": "[DOCUMENTADO] Exemplo de retorno com sucesso; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "current_page": 1,
+                      "per_page": 3,
+                      "total_count": 3,
+                      "total_pages": 1,
+                      "report_data": [
+                        {
+                          "ramal": "[MASCARADO]",
+                          "code": "[MASCARADO]",
+                          "agent_name": "[MASCARADO]",
+                          "queue": "[MASCARADO]",
+                          "logon_date": "2025-09-17T16:00:17.716-03:00",
+                          "logoff_date": null
+                        },
+                        {
+                          "ramal": "[MASCARADO]",
+                          "code": "[MASCARADO]",
+                          "agent_name": "[MASCARADO]",
+                          "queue": "[MASCARADO]",
+                          "logon_date": "2025-09-17T16:00:17.716-03:00",
+                          "logoff_date": null
+                        },
+                        {
+                          "ramal": "[MASCARADO]",
+                          "code": "[MASCARADO]",
+                          "agent_name": "[MASCARADO]",
+                          "queue": "[MASCARADO]",
+                          "logon_date": "2025-09-17T16:00:17.716-03:00",
+                          "logoff_date": null
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/call_center_reports/report_pause_details": {
+      "get": {
+        "summary": "Detalhes de pausas de agentes",
+        "operationId": "E07",
+        "tags": [
+          "☎️Call center reports"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos.",
+        "x-source-pointer": "/item/2/item/1",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Exemplo de retorno com sucesso. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/E07Response0"
+                },
+                "examples": {
+                  "E07Example0": {
+                    "summary": "[DOCUMENTADO] Exemplo de retorno com sucesso; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "current_page": 1,
+                      "per_page": 3,
+                      "total_count": 3,
+                      "total_pages": 1,
+                      "report_data": [
+                        {
+                          "ramal": "[MASCARADO]",
+                          "code": "[MASCARADO]",
+                          "agent_name": "[MASCARADO]",
+                          "queue": "[MASCARADO]",
+                          "pause": "[MASCARADO]",
+                          "pause_start": "2025-09-17T07:59:37.275-03:00",
+                          "pause_finish": "2025-09-17T08:06:14.998-03:00",
+                          "max_minutes": null,
+                          "pause_duration_minutes": "6.6287025166666667",
+                          "approved_by_supervisor": "NÃO"
+                        },
+                        {
+                          "ramal": "[MASCARADO]",
+                          "code": "[MASCARADO]",
+                          "agent_name": "[MASCARADO]",
+                          "queue": "[MASCARADO]",
+                          "pause": "[MASCARADO]",
+                          "pause_start": "2025-09-17T07:59:37.275-03:00",
+                          "pause_finish": "2025-09-17T08:06:14.998-03:00",
+                          "max_minutes": null,
+                          "pause_duration_minutes": "6.6287025166666667",
+                          "approved_by_supervisor": "NÃO"
+                        },
+                        {
+                          "ramal": "[MASCARADO]",
+                          "code": "[MASCARADO]",
+                          "agent_name": "[MASCARADO]",
+                          "queue": "[MASCARADO]",
+                          "pause": "[MASCARADO]",
+                          "pause_start": "2025-09-17T07:59:37.275-03:00",
+                          "pause_finish": "2025-09-17T08:06:14.998-03:00",
+                          "max_minutes": null,
+                          "pause_duration_minutes": "6.6287025166666667",
+                          "approved_by_supervisor": "NÃO"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/callcenter/{id}": {
+      "get": {
+        "summary": "Retorna o status de uma chamada",
+        "operationId": "E08",
+        "tags": [
+          "📞Callcenter"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos.",
+        "x-source-pointer": "/item/3/item/0",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Colocar o ID da chamada",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Retorna o status de uma chamada. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/E08Response0"
+                },
+                "examples": {
+                  "E08Example0": {
+                    "summary": "[DOCUMENTADO] Retorna o status de uma chamada; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "status": -1,
+                      "message": "[MASCARADO]"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/callcenter/logon": {
+      "post": {
+        "summary": "Faz o login do agente na fila",
+        "operationId": "E09",
+        "tags": [
+          "📞Callcenter"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos. [SENSÍVEL] Altera operação.",
+        "x-source-pointer": "/item/3/item/1",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": true,
+        "x-read-only": false,
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Faz o login do agente na fila. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/E09Response0"
+                },
+                "examples": {
+                  "E09Example0": {
+                    "summary": "[DOCUMENTADO] Faz o login do agente na fila; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "status": -1,
+                      "message": "[MASCARADO]"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "description": "[DOCUMENTADO] Corpo raw indicado como JSON. Comentários removidos para gerar JSON válido. Obrigatoriedade do corpo e dos campos desconhecida.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/E09Request"
+              },
+              "example": {
+                "code": "[MASCARADO]",
+                "password": "[SEGREDO_REMOVIDO]",
+                "queue": "[MASCARADO]",
+                "extension": "[MASCARADO]"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/callcenter/{id}/logoff": {
+      "post": {
+        "summary": "Faz o logoff do agente na fila",
+        "operationId": "E10",
+        "tags": [
+          "📞Callcenter"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos. [SENSÍVEL] Altera operação.",
+        "x-source-pointer": "/item/3/item/2",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": true,
+        "x-read-only": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Insira o valor do agente na fila",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Sem exemplo de resposta. Código HTTP, corpo, mídia e erros desconhecidos."
+          }
+        }
+      }
+    },
+    "/api/callcenter/{id}/info": {
+      "get": {
+        "summary": "Retorna os dados da chamada (Atendimento)",
+        "operationId": "E11",
+        "tags": [
+          "📞Callcenter"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos.",
+        "x-source-pointer": "/item/3/item/3",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Coloque o id da chamada",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Como deve retornar com sucesso. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/E11Response0"
+                },
+                "examples": {
+                  "E11Example0": {
+                    "summary": "[DOCUMENTADO] Como deve retornar com sucesso; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "id": 1,
+                      "agent_code": "[MASCARADO]",
+                      "queue": "[MASCARADO]",
+                      "linkedid": "[MASCARADO]",
+                      "call_datetime": "2000-01-01T00:00:00-03:00",
+                      "client_name": "[MASCARADO]",
+                      "client_extra_info": "[MASCARADO]",
+                      "call_motive": "[MASCARADO]",
+                      "call_obs": "[MASCARADO]",
+                      "protocol": "[MASCARADO]",
+                      "cpf_cnpj": "[MASCARADO]",
+                      "call_status": "[MASCARADO]"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/callcenter/report": {
+      "post": {
+        "summary": "Retorna os dados do relatório de chamada do CallCenter",
+        "operationId": "E12",
+        "tags": [
+          "📞Callcenter"
+        ],
+        "description": "[DOCUMENTADO] Como a ligação foi finalizada: -1 Abandono 0 Fila 1 Cliente 2 Transferido. ⚠️Campos obrigratórios: report_type, queues, date_started_at, time_started_at, date_ended_at, time_ended_at",
+        "x-source-pointer": "/item/3/item/4",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Dados Sinteticos. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso. [DOCUMENTADO] Dados Analíticos. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/E12Response0"
+                    },
+                    {
+                      "$ref": "#/components/schemas/E12Response1"
+                    }
+                  ]
+                },
+                "examples": {
+                  "E12Example0": {
+                    "summary": "[DOCUMENTADO] Dados Sinteticos; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "queue_name": "[MASCARADO]",
+                      "agent_code": "[MASCARADO]",
+                      "agent_name": "[MASCARADO]",
+                      "total_answered": 69,
+                      "total_time_answered": 7197,
+                      "total_not_answered": 54,
+                      "total_time_not_answered": 448,
+                      "total_not_answered_agent": 0,
+                      "total_time_not_answered_agent": 0,
+                      "total_time_wait": 1330,
+                      "total_busy": 0,
+                      "total": 123,
+                      "total_complete_agent": 60,
+                      "total_complete_caller": 63,
+                      "total_transfer": 0
+                    }
+                  },
+                  "E12Example1": {
+                    "summary": "[DOCUMENTADO] Dados Analíticos; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "calldatetime": "2000-01-01T00:00:00-03:00",
+                      "billsec": 20,
+                      "wait": 20,
+                      "agent_code": "[MASCARADO]",
+                      "src": "[MASCARADO]",
+                      "dst": "[MASCARADO]",
+                      "queue_name": "[MASCARADO]",
+                      "operator_name": "[MASCARADO]",
+                      "trunk": 1,
+                      "bound": 4,
+                      "call_type_name": "Celular Local",
+                      "status": "NOT ANSWERED",
+                      "linkedid": "[MASCARADO]",
+                      "file": "[MASCARADO]",
+                      "record": "1",
+                      "hangupcause": 1,
+                      "event": "CDR",
+                      "campaign_name": null,
+                      "protocol": "[MASCARADO]"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "description": "[DOCUMENTADO] Corpo raw indicado como JSON. Comentários removidos para gerar JSON válido. Campos obrigatórios explicitados na descrição.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/E12Request"
+              },
+              "example": {
+                "interval": "yes",
+                "report_type": "synthetic",
+                "queues": "[MASCARADO]",
+                "date_started_at": "2019-01-01",
+                "time_started_at": "00:00:00",
+                "date_ended_at": "2019-06-06",
+                "time_ended_at": "23:59:59",
+                "status": "ANSWERED",
+                "call_type": "OUTBOUND",
+                "hangupcause": "NORMAL_CLEARING",
+                "agent_code": "[MASCARADO]",
+                "agent_name": "[MASCARADO]",
+                "src": "[MASCARADO]",
+                "dst": "[MASCARADO]",
+                "call": "voice",
+                "ddd_src": "85",
+                "ddd_dst": "85",
+                "operator_id": "[MASCARADO]",
+                "queue": "[MASCARADO]",
+                "group_by": "npx_sup",
+                "billsec": "30",
+                "wait": "10"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/campaigns/sms": {
+      "post": {
+        "summary": "Envio de SMS",
+        "operationId": "E13",
+        "tags": [
+          "📣Campaings"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos. [SENSÍVEL] Altera operação.",
+        "x-source-pointer": "/item/4/item/0",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": true,
+        "x-read-only": false,
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Envio de SMS. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/E13Response0"
+                },
+                "examples": {
+                  "E13Example0": {
+                    "summary": "[DOCUMENTADO] Envio de SMS; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "status": 1,
+                      "messages_returns": [
+                        {
+                          "number": "[MASCARADO]",
+                          "message_id": "[MASCARADO]"
+                        },
+                        {
+                          "number": "[MASCARADO]",
+                          "message_id": "[MASCARADO]",
+                          "send": "false"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "description": "[DOCUMENTADO] Corpo raw indicado como JSON. Comentários removidos para gerar JSON válido. Obrigatoriedade do corpo e dos campos desconhecida.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/E13Request"
+              },
+              "example": {
+                "campaign_id": 1,
+                "messages": [
+                  {
+                    "number": "[MASCARADO]",
+                    "message": "[MASCARADO]"
+                  },
+                  {
+                    "number": "[MASCARADO]",
+                    "message": "[MASCARADO]"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/extensions": {
+      "get": {
+        "summary": "Listar ramais",
+        "operationId": "E15",
+        "tags": [
+          "🔧Extensions"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos.",
+        "x-source-pointer": "/item/5/item/0",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Retorno com sucesso. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/E15Response0"
+                },
+                "examples": {
+                  "E15Example0": {
+                    "summary": "[DOCUMENTADO] Retorno com sucesso; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "current_page": 1,
+                      "per_page": 3,
+                      "total_count": 125,
+                      "total_pages": 3,
+                      "extensions": [
+                        {
+                          "category": "[MASCARADO]",
+                          "callerid": "[MASCARADO]",
+                          "ddr": "[MASCARADO]",
+                          "secret": "[SEGREDO_REMOVIDO]",
+                          "context_name": "[MASCARADO]",
+                          "cost_center_name": "[MASCARADO]",
+                          "company_name": "[MASCARADO]",
+                          "operator_name": "[MASCARADO]"
+                        },
+                        {
+                          "category": "[MASCARADO]",
+                          "callerid": "[MASCARADO]",
+                          "ddr": "[MASCARADO]",
+                          "secret": "[SEGREDO_REMOVIDO]",
+                          "context_name": "[MASCARADO]",
+                          "cost_center_name": "[MASCARADO]",
+                          "company_name": "[MASCARADO]",
+                          "operator_name": "[MASCARADO]"
+                        },
+                        {
+                          "category": "[MASCARADO]",
+                          "callerid": "[MASCARADO]",
+                          "ddr": "[MASCARADO]",
+                          "secret": "[SEGREDO_REMOVIDO]",
+                          "context_name": "[MASCARADO]",
+                          "cost_center_name": "[MASCARADO]",
+                          "company_name": "[MASCARADO]",
+                          "operator_name": "[MASCARADO]"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pabx": {
+      "post": {
+        "summary": "Iniciar uma chamada",
+        "operationId": "E16",
+        "tags": [
+          "🏢PABX"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos. [SENSÍVEL] Altera operação. [DOCUMENTADO] Exemplo denominado Desabilitado.",
+        "x-source-pointer": "/item/6/item/0",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": true,
+        "x-read-only": false,
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "[DOCUMENTADO] Iniciar uma chamada (Desabilitado). HTTP 200 no exemplo. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/E16Response0"
+                },
+                "examples": {
+                  "E16Example0": {
+                    "summary": "[DOCUMENTADO] Iniciar uma chamada (Desabilitado); dados pessoais/segredos mascarados.",
+                    "value": {
+                      "callid": "[MASCARADO]",
+                      "status": 5
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "description": "[DOCUMENTADO] Corpo raw indicado como JSON. Comentários removidos para gerar JSON válido. Obrigatoriedade do corpo e dos campos desconhecida.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/E16Request"
+              },
+              "example": {
+                "extension": "[MASCARADO]",
+                "number": "[MASCARADO]"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pabx/{id}": {
+      "get": {
+        "summary": "Retorna o status de uma chamada",
+        "operationId": "E17",
+        "tags": [
+          "🏢PABX"
+        ],
+        "description": "[DOCUMENTADO] no Header da chamada. Substituir o :id pelo “callid” que foi retornado. Status: 2 - Chamada em andamento 5 - Chamando 7 - Atendida (Chamada já finalizada) 8 - Não atendida (Chamada já finalizada) 9 - Ocupado (Chamada já finalizada)",
+        "x-source-pointer": "/item/6/item/1",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Coloque o ID da chamada",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Sem exemplo de resposta. Código HTTP, corpo, mídia e erros desconhecidos."
+          }
+        }
+      }
+    },
+    "/api/pabx/{id}/close": {
+      "post": {
+        "summary": "Encerra uma chamada",
+        "operationId": "E18",
+        "tags": [
+          "🏢PABX"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos. [SENSÍVEL] Altera operação.",
+        "x-source-pointer": "/item/6/item/2",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": true,
+        "x-read-only": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Coloque o ID da chamada",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Sem exemplo de resposta. Código HTTP, corpo, mídia e erros desconhecidos."
+          }
+        }
+      }
+    },
+    "/api/pabx/{id}/agent_status": {
+      "get": {
+        "summary": "Retorna o status do agente",
+        "operationId": "E19",
+        "tags": [
+          "🏢PABX"
+        ],
+        "description": "[DOCUMENTADO] Substituir o :id pelo código do agente na NPX Principais campos: paused -> indica se o agente está em pausa (0 - não / 1 - sim) status -> indica o status o agente * 0 - Offline * 1 - Livre * 2 - Ocupado * 5 - Ramal chamando * -1 - Em pausa current_call -> Chamada atual com as informações enviada para o discador.",
+        "x-source-pointer": "/item/6/item/3",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Coloque o ID do agente",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Sem exemplo de resposta. Código HTTP, corpo, mídia e erros desconhecidos."
+          }
+        }
+      }
+    },
+    "/api/pabx/unpause": {
+      "post": {
+        "summary": "Remove o agente da pause",
+        "operationId": "E20",
+        "tags": [
+          "🏢PABX"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos. [SENSÍVEL] Altera operação.",
+        "x-source-pointer": "/item/6/item/4",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": true,
+        "x-read-only": false,
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Sem exemplo de resposta. Código HTTP, corpo, mídia e erros desconhecidos."
+          }
+        },
+        "requestBody": {
+          "description": "[DOCUMENTADO] Corpo raw indicado como JSON. Comentários removidos para gerar JSON válido. Obrigatoriedade do corpo e dos campos desconhecida.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/E20Request"
+              },
+              "example": {
+                "id": "[MASCARADO]",
+                "campaign_id": "[MASCARADO]"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pabx/pause": {
+      "post": {
+        "summary": "Coloca o agente da pause",
+        "operationId": "E21",
+        "tags": [
+          "🏢PABX"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos. [SENSÍVEL] Altera operação.",
+        "x-source-pointer": "/item/6/item/5",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": true,
+        "x-read-only": false,
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Sem exemplo de resposta. Código HTTP, corpo, mídia e erros desconhecidos."
+          }
+        },
+        "requestBody": {
+          "description": "[DOCUMENTADO] Corpo raw indicado como JSON. Comentários removidos para gerar JSON válido. Obrigatoriedade do corpo e dos campos desconhecida.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/E21Request"
+              },
+              "example": {
+                "id": "[MASCARADO]",
+                "campaign_id": "[MASCARADO]"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/pabx/extensions": {
+      "post": {
+        "summary": "Retorna os status dos extensions (Pendente de teste)",
+        "operationId": "E22",
+        "tags": [
+          "🏢PABX"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos. [DOCUMENTADO] Pendente de teste. Corpo de originalRequest diverge do request principal.",
+        "x-source-pointer": "/item/6/item/6",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Como deve retornar. Código HTTP desconhecido. Esquema observado no exemplo; não garante sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/E22Response0"
+                },
+                "examples": {
+                  "E22Example0": {
+                    "summary": "[DOCUMENTADO] Como deve retornar; dados pessoais/segredos mascarados.",
+                    "value": {
+                      "extensions": [
+                        {
+                          "extension": "[MASCARADO]",
+                          "status": "OFFLINE"
+                        },
+                        {
+                          "extension": "[MASCARADO]",
+                          "status": "ONLINE"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/pabx/report": {
+      "post": {
+        "summary": "Retorna os dados do relatório de chamadas do PABX IP",
+        "operationId": "E23",
+        "tags": [
+          "🏢PABX"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos.",
+        "x-source-pointer": "/item/6/item/7",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "[DOCUMENTADO] Retorno Dados Analítico. HTTP 200 no exemplo. Esquema observado no exemplo; não garante sucesso."
+          }
+        },
+        "requestBody": {
+          "description": "[DOCUMENTADO] Corpo raw indicado como JSON. Comentários removidos para gerar JSON válido. Obrigatoriedade do corpo e dos campos desconhecida.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/E23Request"
+              },
+              "example": {
+                "report_type": "synthetic",
+                "group_by": "cost_center",
+                "date_started_at": "2019-01-01",
+                "time_started_at": "00:00:00",
+                "date_ended_at": "2019-06-06",
+                "time_ended_at": "23:59:59"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/queues/{queue_id}/wait_calls": {
+      "get": {
+        "summary": "Retorna as chamadas em espera de uma fila",
+        "operationId": "E24",
+        "tags": [
+          "⏳Queues"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos.",
+        "x-source-pointer": "/item/7/item/0",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [
+          {
+            "name": "queue_id",
+            "in": "path",
+            "required": true,
+            "description": "[DOCUMENTADO] Placeholder na rota.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Sem exemplo de resposta. Código HTTP, corpo, mídia e erros desconhecidos."
+          }
+        }
+      }
+    },
+    "/api/satisfaction_survey_generic_reports/graphic": {
+      "get": {
+        "summary": "Dados para gráfico de pesquisa de satisfação",
+        "operationId": "E26",
+        "tags": [
+          "🔍 Satisfaction Survey"
+        ],
+        "description": "[DOCUMENTADO] Contrato restrito ao request e exemplos salvos.",
+        "x-source-pointer": "/item/8/item/1",
+        "x-certainty": "DOCUMENTADO",
+        "x-sensitive": false,
+        "x-read-only": true,
+        "parameters": [
+          {
+            "name": "report_type",
+            "in": "query",
+            "required": false,
+            "description": "[DOCUMENTADO] Presente na URL; sem descrição separada. [DOCUMENTADO] Obrigatoriedade desconhecida.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          },
+          {
+            "name": "queue_name",
+            "in": "query",
+            "required": false,
+            "description": "[DOCUMENTADO] Presente na URL; sem descrição separada. [DOCUMENTADO] Obrigatoriedade desconhecida.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          },
+          {
+            "name": "agent_code",
+            "in": "query",
+            "required": false,
+            "description": "[DOCUMENTADO] Presente na URL; sem descrição separada. [DOCUMENTADO] Obrigatoriedade desconhecida.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          },
+          {
+            "name": "agent_name",
+            "in": "query",
+            "required": false,
+            "description": "[DOCUMENTADO] Presente na URL; sem descrição separada. [DOCUMENTADO] Obrigatoriedade desconhecida.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          },
+          {
+            "name": "date_started_at",
+            "in": "query",
+            "required": false,
+            "description": "[DOCUMENTADO] Presente na URL; sem descrição separada. [DOCUMENTADO] Obrigatoriedade desconhecida.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          },
+          {
+            "name": "date_ended_at",
+            "in": "query",
+            "required": false,
+            "description": "[DOCUMENTADO] Presente na URL; sem descrição separada. [DOCUMENTADO] Obrigatoriedade desconhecida.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          },
+          {
+            "name": "time_started_at",
+            "in": "query",
+            "required": false,
+            "description": "[DOCUMENTADO] Presente na URL; sem descrição separada. [DOCUMENTADO] Obrigatoriedade desconhecida.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          },
+          {
+            "name": "time_ended_at",
+            "in": "query",
+            "required": false,
+            "description": "[DOCUMENTADO] Presente na URL; sem descrição separada. [DOCUMENTADO] Obrigatoriedade desconhecida.",
+            "schema": {
+              "type": "string",
+              "x-certainty": "INFERIDO"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "[DOCUMENTADO] Sem exemplo de resposta. Código HTTP, corpo, mídia e erros desconhecidos."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "AccessToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Access-token",
+        "description": "[DOCUMENTADO] Token fornecido pelo suporte NPX. Expiração, renovação e escopos desconhecidos."
+      }
+    },
+    "schemas": {
+      "E01Request": {
+        "type": "object",
+        "properties": {
+          "pause_type_code": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E01Response0": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "status": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E02Response0": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "status": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E03Request": {
+        "type": "object",
+        "properties": {
+          "queue_id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "extension": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "penalty": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E03Response0": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "status": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E04Request": {
+        "type": "object",
+        "properties": {
+          "queue_id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E06Response0": {
+        "type": "object",
+        "properties": {
+          "current_page": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "per_page": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_count": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_pages": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "report_data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ramal": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "code": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "agent_name": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "queue": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "logon_date": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "logoff_date": {
+                  "description": "[DOCUMENTADO] Apenas null no exemplo; tipo não nulo desconhecido.",
+                  "x-observed-null-only": true
+                }
+              },
+              "additionalProperties": true,
+              "x-certainty": "DOCUMENTADO"
+            },
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E07Response0": {
+        "type": "object",
+        "properties": {
+          "current_page": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "per_page": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_count": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_pages": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "report_data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ramal": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "code": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "agent_name": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "queue": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "pause": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "pause_start": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "pause_finish": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "max_minutes": {
+                  "description": "[DOCUMENTADO] Apenas null no exemplo; tipo não nulo desconhecido.",
+                  "x-observed-null-only": true
+                },
+                "pause_duration_minutes": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "approved_by_supervisor": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                }
+              },
+              "additionalProperties": true,
+              "x-certainty": "DOCUMENTADO"
+            },
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E08Response0": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "message": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E09Request": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "password": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "writeOnly": true,
+            "x-sensitive": true,
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "queue": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "extension": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E09Response0": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "message": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E11Response0": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "agent_code": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "queue": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "linkedid": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "call_datetime": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "client_name": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "client_extra_info": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "call_motive": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "call_obs": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "protocol": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "cpf_cnpj": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "call_status": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E12Request": {
+        "type": "object",
+        "properties": {
+          "interval": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "report_type": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "queues": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "date_started_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "time_started_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "date_ended_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "time_ended_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "status": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "call_type": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "hangupcause": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "agent_code": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "agent_name": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "src": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "dst": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "call": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "ddd_src": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "ddd_dst": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "operator_id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "queue": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "group_by": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "billsec": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "wait": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO",
+        "required": [
+          "report_type",
+          "queues",
+          "date_started_at",
+          "time_started_at",
+          "date_ended_at",
+          "time_ended_at"
+        ]
+      },
+      "E12Response0": {
+        "type": "object",
+        "properties": {
+          "queue_name": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "agent_code": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "agent_name": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_answered": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_time_answered": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_not_answered": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_time_not_answered": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_not_answered_agent": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_time_not_answered_agent": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_time_wait": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_busy": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_complete_agent": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_complete_caller": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_transfer": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E12Response1": {
+        "type": "object",
+        "properties": {
+          "calldatetime": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "billsec": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "wait": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "agent_code": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "src": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "dst": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "queue_name": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "operator_name": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "trunk": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "bound": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "call_type_name": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "status": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "linkedid": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "file": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "record": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "hangupcause": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "event": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "campaign_name": {
+            "description": "[DOCUMENTADO] Apenas null no exemplo; tipo não nulo desconhecido.",
+            "x-observed-null-only": true
+          },
+          "protocol": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E13Request": {
+        "type": "object",
+        "properties": {
+          "campaign_id": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "message": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                }
+              },
+              "additionalProperties": true,
+              "x-certainty": "DOCUMENTADO"
+            },
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E13Response0": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "messages_returns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "message_id": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "send": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                }
+              },
+              "additionalProperties": true,
+              "x-certainty": "DOCUMENTADO"
+            },
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E15Response0": {
+        "type": "object",
+        "properties": {
+          "current_page": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "per_page": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_count": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "total_pages": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "extensions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "callerid": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "ddr": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "secret": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "writeOnly": false,
+                  "x-sensitive": true,
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "context_name": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "cost_center_name": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "company_name": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "operator_name": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                }
+              },
+              "additionalProperties": true,
+              "x-certainty": "DOCUMENTADO"
+            },
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E16Request": {
+        "type": "object",
+        "properties": {
+          "extension": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "number": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E16Response0": {
+        "type": "object",
+        "properties": {
+          "callid": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "status": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E20Request": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "campaign_id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E21Request": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "campaign_id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E22Response0": {
+        "type": "object",
+        "properties": {
+          "extensions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "extension": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "status": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                }
+              },
+              "additionalProperties": true,
+              "x-certainty": "DOCUMENTADO"
+            },
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "E23Request": {
+        "type": "object",
+        "properties": {
+          "report_type": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "group_by": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "date_started_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "time_started_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "date_ended_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "time_ended_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "KnownAgentStatus": {
+        "type": "number",
+        "description": "[DOCUMENTADO] Códigos descritos em E19: 0 Offline, 1 Livre, 2 Ocupado, 5 Ramal chamando, -1 Em pausa. Lista pode ser parcial; formato do payload desconhecido.",
+        "x-certainty": "DOCUMENTADO",
+        "x-source-pointer": "/item/6/item/3/request/description",
+        "x-known-values": [
+          -1,
+          0,
+          1,
+          2,
+          5
+        ]
+      },
+      "KnownPabxCallStatus": {
+        "type": "number",
+        "description": "[DOCUMENTADO] E17: 2 em andamento, 5 chamando, 7 atendida já finalizada, 8 não atendida já finalizada, 9 ocupado já finalizada. Formato do payload desconhecido.",
+        "x-certainty": "DOCUMENTADO",
+        "x-source-pointer": "/item/6/item/1/request/description",
+        "x-known-values": [
+          2,
+          5,
+          7,
+          8,
+          9
+        ]
+      }
+    }
+  },
+  "x-source": "https://documenter.getpostman.com/view/47894186/2sB3HjLgWE",
+  "x-certainty": "DOCUMENTADO",
+  "x-incomplete-items": [
+    {
+      "id": "E14",
+      "name": "Envio para URA (Desenvol.)",
+      "reason": "[DOCUMENTADO] Rota ausente; excluído de paths para não inventar endpoint.",
+      "parameters": []
+    },
+    {
+      "id": "E25",
+      "name": "Listar relatório de pesquisa de satisfação",
+      "reason": "[DOCUMENTADO] Rota ausente; excluído de paths para não inventar endpoint.",
+      "parameters": [
+        {
+          "name": "report_type",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "queue_name",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "agent_code",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "agent_name",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "date_started_at",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "date_ended_at",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "time_started_at",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "time_ended_at",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        }
+      ]
+    }
+  ],
+  "x-notes": [
+    "[INFERIDO] Parâmetros de URL representados como string por serialização HTTP; tipos semânticos não publicados ficam desconhecidos.",
+    "[DOCUMENTADO] Valores opcionais de query não têm obrigatoriedade publicada, salvo format explicitamente opcional. required=false nesses casos não comprova que o servidor aceite omissão."
+  ]
+}

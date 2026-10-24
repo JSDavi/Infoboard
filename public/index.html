@@ -135,7 +135,7 @@
   <!-- FontAwesome para ícones -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Estilos customizados (Omnichannel Split Screen) -->
-  <link rel="stylesheet" href="style.css?v=6.6.4">
+  <link rel="stylesheet" href="style.css?v=6.6.11">
 </head>
 <body>
   <div class="wallboard-container">
@@ -152,10 +152,18 @@
           <span class="logo-text">NPX &amp; PrixChat</span>
           <span class="badge-live">OMNICHANNEL</span>
         </div>
-        <h1 class="header-title">Monitoramento Unificado de Atendimento</h1>
+        <h1 class="header-title">Monitoramento Unificado de Atendimento <button onclick="startTutorial()" title="Ver Tutorial de Ajuda" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:50%;cursor:pointer;color:rgba(255,255,255,0.85);font-size:0.85rem;width:22px;height:22px;padding:0;vertical-align:middle;transition:all 0.2s;display:inline-flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(255,255,255,0.3)';this.style.color='white'" onmouseout="this.style.background='rgba(255,255,255,0.15)';this.style.color='rgba(255,255,255,0.85)'"><i class="fa-solid fa-question" style="font-size:0.7rem;"></i></button></h1>
       </div>
       
       <div class="header-right">
+        <a id="beatrix-login-btn" class="beatrix-login-btn"
+           href="https://agente.npx.app.br/agent_users/sign_in"
+           target="_blank" rel="noopener noreferrer"
+           title="Login no portal oficial Beatrix (abre em janela compacta)"
+           aria-label="Login no Beatrix oficial: login e seleção de fila">
+          <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+          <span class="beatrix-login-label">Login</span>
+        </a>
         <!-- Status de Conexão (Ordem: NPX, PRIX, PBX) -->
         <div id="connection-status-npx" class="status-indicator connected header-status" title="INFOBRASIL NPX">
           <span id="status-text-npx" class="status-label">NPX</span>
@@ -163,6 +171,7 @@
         <div id="connection-status-prix" class="status-indicator connected header-status" title="PRIXCHAT">
           <span id="status-text-prix" class="status-label">PRIX</span>
         </div>
+
         <div id="connection-status-pbx" class="status-indicator connected header-status" title="NOSSATEL PBX">
           <span id="status-text-pbx" class="status-label">PBX</span>
         </div>
@@ -192,19 +201,19 @@
           <div class="voice-zone" id="zone-1">
             <section id="InfoBrasil_Suporte" class="dept-column" draggable="true">
               <div class="dept-header">
-                <h2 class="suporte-theme"><i class="fa-solid fa-headset"></i> Suporte</h2>
+                <h2 class="suporte-theme" style="display:flex; align-items:center; gap:10px; margin:0;"><i class="fa-solid fa-headset"></i> Suporte</h2>
                 <span class="online-badge" id="suporte-online-badge">0 Online</span>
               </div>
               
               <!-- KPI de Fila e Espera -->
               <div class="queue-kpi-bar" id="suporte-queue-bar">
                 <div class="kpi-block kpi-fila">
-                  <span class="kpi-val" id="suporte-queue">0</span>
                   <span class="kpi-lbl">Fila</span>
+                  <span class="kpi-val" id="suporte-queue">0</span>
                 </div>
                 <div class="kpi-block kpi-tempo">
-                  <span class="kpi-val-time" id="suporte-wait">00:00</span>
                   <span class="kpi-lbl">Espera Média</span>
+                  <span class="kpi-val-time" id="suporte-wait">00:00</span>
                 </div>
               </div>
 
@@ -227,18 +236,15 @@
           <!-- Zona 2: Outros Setores (25% da tela, Bloco Unificado) -->
           <div class="voice-zone" id="zone-2">
             <section id="InfoBrasil_Outros_Setores" class="dept-column" draggable="true">
-              <div class="dept-header">
-                <h2 class="outros-theme"><i class="fa-solid fa-network-wired"></i> Outros Setores</h2>
-                <span class="online-badge" id="outros-online-badge">0 Online</span>
-              </div>
+
 
               <!-- Área de sub-setores agrupados -->
               <div class="sub-sectors-container">
                 
                 <!-- Sub-setor: Comercial -->
                 <div class="sub-sector-block" id="sub-comercial-block">
-                  <div class="sub-sector-header comercial-theme">
-                    <span class="sub-sector-title"><i class="fa-solid fa-comments-dollar"></i> Comercial</span>
+                  <div class="sub-sector-header comercial-theme"  >
+                    <span class="sub-sector-title"><i class="fa-solid fa-comments-dollar"></i><span class="sub-sector-name">Comercial</span></span>
                     <span class="sub-sector-kpis">
                       <span id="comercial-online-badge" class="sub-online">0 ON</span> | 
                       Fila: <strong id="comercial-queue">0</strong> (<span id="comercial-wait">00:00</span>)
@@ -254,8 +260,8 @@
 
                 <!-- Sub-setor: Financeiro -->
                 <div class="sub-sector-block" id="sub-financeiro-block">
-                  <div class="sub-sector-header financeiro-theme">
-                    <span class="sub-sector-title"><i class="fa-solid fa-file-invoice-dollar"></i> Financeiro</span>
+                  <div class="sub-sector-header financeiro-theme"  >
+                    <span class="sub-sector-title"><i class="fa-solid fa-file-invoice-dollar"></i><span class="sub-sector-name">Financeiro</span></span>
                     <span class="sub-sector-kpis">
                       <span id="finan-online-badge" class="sub-online">0 ON</span> | 
                       Fila: <strong id="finan-queue">0</strong> (<span id="finan-wait">00:00</span>)
@@ -271,7 +277,7 @@
                 <!-- Sub-setor: SPED Fiscal -->
                 <div class="sub-sector-block" id="sub-sped-block">
                   <div class="sub-sector-header sped-theme">
-                    <span class="sub-sector-title"><i class="fa-solid fa-scale-balanced"></i> SPED Fiscal</span>
+                    <span class="sub-sector-title"><i class="fa-solid fa-scale-balanced"></i><span class="sub-sector-name">SPED Fiscal</span></span>
                     <span class="sub-sector-kpis">
                       <span id="sped-online-badge" class="sub-online">0 ON</span> | 
                       Fila: <strong id="sped-queue">0</strong> (<span id="sped-wait">00:00</span>)
@@ -287,7 +293,7 @@
                 <!-- Sub-setor: Ponto -->
                 <div class="sub-sector-block" id="sub-ponto-block">
                   <div class="sub-sector-header ponto-theme">
-                    <span class="sub-sector-title"><i class="fa-solid fa-clock"></i> Ponto</span>
+                    <span class="sub-sector-title"><i class="fa-solid fa-clock"></i><span class="sub-sector-name">Ponto</span></span>
                     <span class="sub-sector-kpis">
                       <span id="ponto-online-badge" class="sub-online">0 ON</span> | 
                       Fila: <strong id="ponto-queue">0</strong> (<span id="ponto-wait">00:00</span>)
@@ -300,85 +306,68 @@
                   </div>
                 </div> <!-- Fim sub-ponto-block -->
               </div> <!-- Fim sub-sectors-container -->
-
-                  <!-- Widget SEFAZ Opção 3: Radar de Performance com Barras de Latência -->
-                  <div class="sefaz-radar-card" id="sefaz-radar-card">
-                    <div class="sefaz-radar-header">
-                      <div class="radar-header-left">
-                        <i class="fa-solid fa-building-columns radar-icon"></i>
-                        <span class="radar-title">SEFAZ</span>
-                      </div>
-                      <div class="radar-header-right">
-                        <span class="sefaz-global-badge status-ok" id="sefaz-global-badge"><i class="fa-solid fa-circle-check"></i> TUDO OK</span>
-                      </div>
-                    </div>
-
-                    <div class="sefaz-radar-list" id="sefaz-radar-list">
-                      <div class="sefaz-radar-row status-ok">
-                        <div class="radar-row-info">
-                          <span class="doc-badge">NF-e</span>
-                          <span class="uf-tag">CE</span>
-                        </div>
-                        <div class="radar-bar-container">
-                          <div class="radar-bar-fill bar-ok" style="width: 28%;"></div>
-                        </div>
-                        <div class="radar-row-val">
-                          <i class="fa-solid fa-circle-check val-icon"></i>
-                          <span class="latency-text">110ms</span>
-                        </div>
-                      </div>
-
-                      <div class="sefaz-radar-row status-ok">
-                        <div class="radar-row-info">
-                          <span class="doc-badge">NFC-e</span>
-                          <span class="uf-tag">CE</span>
-                        </div>
-                        <div class="radar-bar-container">
-                          <div class="radar-bar-fill bar-ok" style="width: 32%;"></div>
-                        </div>
-                        <div class="radar-row-val">
-                          <i class="fa-solid fa-circle-check val-icon"></i>
-                          <span class="latency-text">130ms</span>
-                        </div>
-                      </div>
-
-                      <div class="sefaz-radar-row status-ok">
-                        <div class="radar-row-info">
-                          <span class="doc-badge">CT-e</span>
-                          <span class="uf-tag">SVRS</span>
-                        </div>
-                        <div class="radar-bar-container">
-                          <div class="radar-bar-fill bar-ok" style="width: 24%;"></div>
-                        </div>
-                        <div class="radar-row-val">
-                          <i class="fa-solid fa-circle-check val-icon"></i>
-                          <span class="latency-text">95ms</span>
-                        </div>
-                      </div>
-
-                      <div class="sefaz-radar-row status-ok">
-                        <div class="radar-row-info">
-                          <span class="doc-badge">MDF-e</span>
-                          <span class="uf-tag">SVRS</span>
-                        </div>
-                        <div class="radar-bar-container">
-                          <div class="radar-bar-fill bar-ok" style="width: 26%;"></div>
-                        </div>
-                        <div class="radar-row-val">
-                          <i class="fa-solid fa-circle-check val-icon"></i>
-                          <span class="latency-text">102ms</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="sefaz-radar-footer">
-                      <span><i class="fa-solid fa-signal"></i> Servidores CE &amp; SVRS</span>
-                      <span id="sefaz-radar-time">Atualizado agora</span>
-                    </div>
-                  </div>
             </section>
           </div>
 
+        </div>
+
+        <!-- Indicadores SEFAZ ocupam toda a largura da área de Voz -->
+        <div class="sefaz-radar-card" id="sefaz-radar-card">
+          <div class="sefaz-radar-header">
+            <div class="radar-header-left">
+              <i class="fa-solid fa-building-columns radar-icon"></i>
+              <span class="radar-title">SEFAZ</span>
+            </div>
+            <div class="radar-header-right" style="display:flex; align-items:center;">
+              <span class="sefaz-global-badge status-unknown" id="sefaz-global-badge"><i class="fa-solid fa-circle-question"></i> SEM DADOS</span>
+            </div>
+          </div>
+
+          <div class="sefaz-radar-list" id="sefaz-radar-list">
+            <div class="sefaz-radar-row status-unknown" data-sefaz-document="nfe" title="NF-e (CE): Aguardando consulta ao monitor IntegraNotas" aria-label="NF-e CE: SEM DADOS">
+              <div class="radar-row-info">
+                <span class="doc-badge">NF-e</span>
+                <span class="uf-tag">(CE)</span>
+              </div>
+              <div class="radar-row-status">
+                <span class="sefaz-status-dot" aria-hidden="true"></span>
+                <span class="latency-text">SEM DADOS</span>
+              </div>
+            </div>
+
+            <div class="sefaz-radar-row status-unknown" data-sefaz-document="nfce" title="NFC-e (CE): Aguardando consulta ao monitor IntegraNotas" aria-label="NFC-e CE: SEM DADOS">
+              <div class="radar-row-info">
+                <span class="doc-badge">NFC-e</span>
+                <span class="uf-tag">(CE)</span>
+              </div>
+              <div class="radar-row-status">
+                <span class="sefaz-status-dot" aria-hidden="true"></span>
+                <span class="latency-text">SEM DADOS</span>
+              </div>
+            </div>
+
+            <div class="sefaz-radar-row status-unknown" data-sefaz-document="cte" title="CT-e (CE): Aguardando consulta ao monitor IntegraNotas" aria-label="CT-e CE: SEM DADOS">
+              <div class="radar-row-info">
+                <span class="doc-badge">CT-e</span>
+                <span class="uf-tag">(CE)</span>
+              </div>
+              <div class="radar-row-status">
+                <span class="sefaz-status-dot" aria-hidden="true"></span>
+                <span class="latency-text">SEM DADOS</span>
+              </div>
+            </div>
+
+            <div class="sefaz-radar-row status-unknown" data-sefaz-document="mdfe" title="MDF-e (CE): Aguardando consulta ao monitor IntegraNotas" aria-label="MDF-e CE: SEM DADOS">
+              <div class="radar-row-info">
+                <span class="doc-badge">MDF-e</span>
+                <span class="uf-tag">(CE)</span>
+              </div>
+              <div class="radar-row-status">
+                <span class="sefaz-status-dot" aria-hidden="true"></span>
+                <span class="latency-text">SEM DADOS</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -391,22 +380,8 @@
         
         <div class="channel-header chat-theme">
           <h2><i class="fa-brands fa-whatsapp"></i> Chat (PrixChat Atendimentos)</h2>
-          <span class="channel-summary-badge" id="chat-summary-count">0 Ativos</span>
-        </div>
-        
-        <!-- Métricas Rápidas do Chat -->
-        <div class="chat-metrics-bar">
-          <div class="chat-metric-card">
-            <span class="val" id="chat-kpi-pending">0</span>
-            <span class="lbl">Aguardando Fila</span>
-          </div>
-          <div class="chat-metric-card">
-            <span class="val" id="chat-kpi-active">0</span>
-            <span class="lbl">Em Atendimento</span>
-          </div>
-          <div class="chat-metric-card">
-            <span class="val" id="chat-kpi-tmr">00:00</span>
-            <span class="lbl">T.M.R. Médio</span>
+          <div class="chat-header-indicators">
+            <span class="channel-summary-badge" id="chat-summary-count">0 Ativos</span>
           </div>
         </div>
 
@@ -417,19 +392,6 @@
       </section>
 
     </main>
-
-    <!-- Rodapé com Metadados -->
-    <footer class="main-footer">
-      <div class="footer-left">
-        <span>Próxima atualização em <span id="countdown-label">5</span>s</span>
-      </div>
-      <div class="footer-center">
-        <span>Legenda: <span class="legend-dot status-1"></span> Livre | <span class="legend-dot status-2"></span> Ocupado | <span class="legend-dot status-5"></span> Pausa | <i class="fa-solid fa-up-down-left-right"></i> Arraste os blocos de Voz para inverter posições</span>
-      </div>
-      <div class="footer-right">
-        <!-- Espaço vazio à direita pois os elementos foram para o header -->
-      </div>
-    </footer>
 
     <!-- Ticker Bar Flutuante para Escala de Sábado, Sobreaviso e Férias -->
     <div id="ticker-bar" class="ticker-bar">
@@ -447,62 +409,204 @@
         <div id="connection-status-pbx-ticker" class="status-indicator connected header-status ticker-status-pill" title="NOSSATEL PBX (F11)">
           <span id="status-text-pbx-ticker" class="status-label">PBX</span>
         </div>
-        <i class="fa-regular fa-clock"></i>
         <span id="ticker-time">00:00:00</span>
       </div>
     </div>
   </div>
 
     <!-- Script JS -->
-    <script src="app.js?v=3.7.0"></script>
+    <script src="agent-state.js?v=1.0.4"></script>
+    <script src="chat-slots.js?v=1.0.1"></script>
+    <script src="app.js?v=3.8.0"></script>
+    <script src="beatrix-launcher.js?v=1.0.1"></script>
   <!-- Intro.js JS e Logica do Onboarding -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/intro.min.js"></script>
   <script>
+    function startTutorial() {
+      var tour = introJs();
+      tour.setOptions({
+        nextLabel: 'Pr&#243;ximo &#8594;',
+        prevLabel: '&#8592; Voltar',
+        skipLabel: '&#10005; Pular',
+        doneLabel: '&#10003; Concluir',
+        showBullets: true,
+        steps: [
+          {
+            title: '&#128075; Bem-vindo ao Infoboard!',
+            intro: 'Este &#233; o painel centralizado da equipe. Aqui voc&#234; acompanha os estados de atendimento em tempo real. As opera&#231;&#245;es de login e pausa acontecem no aplicativo oficial NPX. Vamos explorar as principais fun&#231;&#245;es!'
+          },
+          {
+            element: document.querySelector('.main-header') || document.body,
+            title: '&#128225; Cabe&#231;alho',
+            intro: 'Aqui ficam os indicadores de conex&#227;o (NPX, PRIX, PBX). Se algum ficar vermelho, h&#225; instabilidade. Este painel &#233; somente de leitura. O <b>&#9711;</b> abre este tutorial novamente.'
+          },
+          {
+            element: document.getElementById('beatrix-login-btn') || document.body,
+            title: '&#128274; Login',
+            intro: 'O bot&#227;o abre o portal oficial em uma janela compacta. Informe seu c&#243;digo e senha, entre e, na segunda tela, selecione seu ramal e fila e clique em <b>Logar em Fila</b>. O InfoBoard acompanha o estado automaticamente.'
+          },
+          {
+            element: document.querySelector('#voice-half') || document.body,
+            title: '&#128222; Painel de Voz (NPX + PBX)',
+            intro: '<b>Painel esquerdo:</b> fila ativa do NPX (Suporte, Comercial, etc.) com os analistas logados, status de pausa e tempo em espera.<br><br><b>Painel direito:</b> indicadores das demais filas para acompanhamento. Abaixo fica o painel SEFAZ com o status dos servidores da Receita Federal.'
+          },
+          {
+            element: document.querySelector('.analyst-card .info-icon') || document.querySelector('#voice-half') || document.body,
+            title: '&#9432; &#205;cone de Informa&#231;&#245;es (i)',
+            intro: 'O &#237;cone <b>(i)</b> mostra m&#233;tricas de atendimento no card. Pausas, cores e tempos refletem os dados coletados do NPX/PBX. Para operar, utilize o aplicativo oficial NPX.'
+          },
+          {
+            element: document.querySelector('#sefaz-section') || document.querySelector('#voice-half') || document.body,
+            title: '&#127963;&#65039; Painel SEFAZ',
+            intro: 'Disponibilidade dos serviços fiscais nos portais oficiais, atualizada a cada 60 segundos: <b>verde = ONLINE</b>, <b>amarelo = OSCILANDO</b>, <b>vermelho = OFFLINE</b> e <b>cinza = SEM DADOS</b> (sem confirmação recente). A NF-e do Ceará é atendida pela SVRS. Uma verificação normal e recente confirma ONLINE, desde que nenhum outro serviço consultado tenha falha/alerta recente. Passe o mouse sobre um indicador para ver detalhes e fonte oficial.<br><br>Clique na <b>setinha &#8743;</b> para recolher ou expandir os indicadores.'
+          },
+          {
+            element: document.querySelector('#chat-half') || document.body,
+            title: '&#128172; Painel de Chat (PRIX)',
+            intro: 'Aqui ficam os cards de atendimento do PRIX em tempo real, organizados em colunas.<br><br>&#128204; <b>Fixar card:</b> clique no ícone de pino para manter um atendimento sempre vis&#237;vel no topo.<br><br>&#128196; <b>Agrupar cards:</b> use o bot&#227;o de agrupamento para juntar atendimentos do mesmo analista.'
+          },
+          {
+            element: document.querySelector('.carousel-pause-btn') || document.querySelector('#chat-half') || document.body,
+            title: '&#9646;&#9646; Pausar Carrossel',
+            intro: 'O painel de chat roda automaticamente para mostrar todos os atendimentos. Clique no bot&#227;o <b>&#9646;&#9646; Pausar</b> para congelar o carrossel e analisar um atendimento com calma sem que a tela mude.'
+          }
+        ]
+      });
+      tour.oncomplete(function() { localStorage.setItem('onboardingCompleted', 'true'); });
+      tour.onexit(function() { localStorage.setItem('onboardingCompleted', 'true'); });
+      tour.start();
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       if (!localStorage.getItem('onboardingCompleted')) {
-        var tour = introJs();
-        tour.setOptions({
-          nextLabel: 'Próximo',
-          prevLabel: 'Voltar',
-          skipLabel: 'Pular',
-          doneLabel: 'Concluir',
-          steps: [
-            {
-              title: 'Bem-vindo ao Infoboard Omnichannel!',
-              intro: 'Este é o seu painel unificado de monitoramento. Vamos fazer um tour rápido.'
-            },
-            {
-              element: document.querySelector('.main-header') || document.body,
-              intro: 'Aqui em cima ficam os status de conexão com as APIs (NPX, PrixChat, PBX) e o relógio em tempo real.'
-            },
-            {
-              element: document.querySelector('#voice-half') || document.body,
-              intro: 'Aqui ficam as métricas e acompanhamentos de Voz do PBX (NossaTelecom) e NPX.'
-            },
-            {
-              element: document.querySelector('#chat-half') || document.body,
-              intro: 'Aqui é o acompanhamento do PRIX (Chat). Você pode ver o Kanban com a fila de atendimentos em tempo real.'
-            },
-            {
-              element: document.querySelector('#ticker-bar') || document.body,
-              intro: 'Aqui embaixo passam os avisos importantes como escalas de sábado e sobreaviso.'
-            }
-          ]
-        });
-        
-        tour.oncomplete(function() {
-          localStorage.setItem('onboardingCompleted', 'true');
-        });
-        
-        tour.onexit(function() {
-          localStorage.setItem('onboardingCompleted', 'true');
-        });
-        
-        setTimeout(function() {
-          tour.start();
-        }, 1500);
+        setTimeout(startTutorial, 1500);
       }
     });
   </script>
+
+  <!-- OVERLAY DE EVENTOS -->
+
+  <style>
+    .event-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);
+      z-index: 99999;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      color: white; font-family: 'Inter', sans-serif;
+      transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 0; pointer-events: none; transform: scale(1.1);
+    }
+
+    /* Padrão de fundo animado sutil */
+    .event-overlay::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+      background-size: 30px 30px;
+      opacity: 0.3; z-index: -1;
+      animation: panBg 20s linear infinite;
+    }
+    @keyframes panBg { from { background-position: 0 0; } to { background-position: 60px 60px; } }
+
+    .event-overlay.active {
+      opacity: 1; pointer-events: auto; transform: scale(1);
+    }
+
+    .event-overlay-content { text-align: center; max-width: 95%; position: relative; }
+
+    .event-icon i {
+      font-size: 5rem; color: #facc15; margin-bottom: 10px;
+      filter: drop-shadow(0 0 20px rgba(250, 204, 21, 0.5));
+      animation: tada 2s infinite;
+    }
+
+    .event-date-tag {
+      display: inline-block; background: rgba(255,255,255,0.1); padding: 5px 15px;
+      border-radius: 20px; font-weight: 600; color: #94a3b8; font-size: 1rem;
+      margin-bottom: 15px; letter-spacing: 2px; text-transform: uppercase;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .event-title-glow {
+      font-size: 4.5rem; color: #fff;
+      text-shadow: 0 0 40px rgba(255, 255, 255, 0.4), 0 0 10px rgba(250, 204, 21, 0.8);
+      margin: 0 0 15px 0; font-weight: 900;
+      background: linear-gradient(to right, #facc15, #f59e0b);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .event-overlay-details {
+      font-size: 1.4rem; color: #e2e8f0; margin-bottom: 5px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center; gap: 15px;
+    }
+    .event-overlay-details span { background: rgba(0,0,0,0.3); padding: 5px 15px; border-radius: 8px; }
+
+    .event-overlay-obs {
+      font-size: 1.3rem; color: #fcd34d; margin-top: 10px; margin-bottom: 40px;
+      font-weight: 600; font-style: italic;
+    }
+
+    .event-participants-grid {
+      display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;
+    }
+
+    .event-participant-badge {
+      display: flex; flex-direction: column; align-items: center;
+      background: linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%);
+      padding: 15px; border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.15); width: 110px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: floatIdle 4s ease-in-out infinite;
+    }
+
+    /* Staggering float animation */
+    .event-participant-badge:nth-child(even) { animation-delay: 1s; }
+    .event-participant-badge:nth-child(3n) { animation-delay: 2s; }
+
+    .event-participant-badge:hover {
+      transform: translateY(-10px) scale(1.05);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+      border-color: rgba(255,255,255,0.3);
+    }
+
+    .event-participant-badge img {
+      width: 75px; height: 75px; border-radius: 50%; object-fit: cover;
+      border: 3px solid #38bdf8; margin-bottom: 12px; background: #fff;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+    }
+    .event-participant-badge.convidado img {
+      border-color: #f43f5e; box-shadow: 0 0 15px rgba(244, 63, 94, 0.5);
+    }
+
+    .event-participant-badge span { font-size: 0.95rem; font-weight: 700; text-align: center; line-height: 1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.8);}
+    .event-participant-badge small {
+      font-size: 0.7rem; color: #f43f5e; margin-top: 5px; font-weight: bold;
+      background: rgba(244,63,94,0.15); padding: 2px 8px; border-radius: 10px;
+    }
+
+    @keyframes tada {
+      0% { transform: scale3d(1, 1, 1); }
+      10%, 20% { transform: scale3d(.9, .9, .9) rotate3d(0, 0, 1, -3deg); }
+      30%, 50%, 70%, 90% { transform: scale3d(1.1, 1.1, 1.1) rotate3d(0, 0, 1, 3deg); }
+      40%, 60%, 80% { transform: scale3d(1.1, 1.1, 1.1) rotate3d(0, 0, 1, -3deg); }
+      100% { transform: scale3d(1, 1, 1); }
+    }
+    @keyframes floatIdle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+  </style>
+
+  <div id="event-overlay" class="event-overlay">
+    <div class="event-overlay-content">
+      <div class="event-icon"><i class="fa-solid fa-champagne-glasses"></i></div>
+      <div id="event-overlay-date" class="event-date-tag"></div>
+      <h1 id="event-overlay-title" class="event-title-glow"></h1>
+      <h3 id="event-overlay-details"></h3>
+      <p id="event-overlay-obs"></p>
+      <div id="event-overlay-participants" class="event-participants-grid"></div>
+    </div>
+  </div>
+
 </body>
 </html>

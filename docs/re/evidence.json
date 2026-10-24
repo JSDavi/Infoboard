@@ -1,0 +1,2281 @@
+{
+  "source": "https://documenter.getpostman.com/view/47894186/2sB3HjLgWE",
+  "capturedAt": "2026-10-24T08:47:07.106Z",
+  "certainty": "DOCUMENTADO",
+  "scope": "Documentação pública apenas; nenhum request Beatrix executado.",
+  "rawSha256": "0af0bf1747f0f5d569425dc5e086963a8a2798f50d993e77b79c843bfcd0fa53",
+  "sourceSchema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+  "entries": [
+    {
+      "id": "E01",
+      "pointer": "/item/0/item/0",
+      "folder": "🔹Agents",
+      "name": "Colocar um agente em pausa",
+      "method": "POST",
+      "path": "/api/v2/agents/{agent_code}/pause",
+      "complete": true,
+      "sensitive": true,
+      "readOnly": false,
+      "description": "👤O campo agent_code é código do agente dentro do Beatrix.",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "agent_code",
+          "in": "path",
+          "description": "[DOCUMENTADO] Placeholder na rota.",
+          "required": true
+        }
+      ],
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "pause_type_code": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "requestExample": {
+        "pause_type_code": "[MASCARADO]"
+      },
+      "responses": [
+        {
+          "index": 0,
+          "name": "Retorno de sucesso",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "status": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "message": "Sucesso",
+            "status": 1
+          },
+          "headers": [
+            {
+              "name": "Access-token",
+              "value": "[SEGREDO_REMOVIDO]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E02",
+      "pointer": "/item/0/item/1",
+      "folder": "🔹Agents",
+      "name": "Retira um agente em pausa",
+      "method": "POST",
+      "path": "/api/v2/agents/{agent_code}/unpause",
+      "complete": true,
+      "sensitive": true,
+      "readOnly": false,
+      "description": "👤O campo agent_code é código do agente dentro do Beatrix",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "agent_code",
+          "in": "path",
+          "description": "[DOCUMENTADO] Placeholder na rota.",
+          "required": true
+        }
+      ],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": [
+        {
+          "index": 0,
+          "name": "Retorno de sucesso",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "status": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "message": "Sucesso",
+            "status": 1
+          },
+          "headers": [
+            {
+              "name": "Access-token",
+              "value": "[SEGREDO_REMOVIDO]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E03",
+      "pointer": "/item/0/item/2",
+      "folder": "🔹Agents",
+      "name": "Inserir agente na fila",
+      "method": "POST",
+      "path": "/api/v2/agents/{agent_code}/add_to_queue",
+      "complete": true,
+      "sensitive": true,
+      "readOnly": false,
+      "description": "👤O campo agent_code é código do agente dentro do Beatrix",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "agent_code",
+          "in": "path",
+          "description": "[DOCUMENTADO] Placeholder na rota.",
+          "required": true
+        }
+      ],
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "queue_id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "extension": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "penalty": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "requestExample": {
+        "queue_id": "[MASCARADO]",
+        "extension": "[MASCARADO]",
+        "penalty": "X"
+      },
+      "responses": [
+        {
+          "index": 0,
+          "name": "Retorno com sucesso",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "status": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "message": "Sucesso",
+            "status": 1
+          },
+          "headers": [
+            {
+              "name": "Acess-token",
+              "value": "[SEGREDO_REMOVIDO]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E04",
+      "pointer": "/item/0/item/3",
+      "folder": "🔹Agents",
+      "name": "Remover agente da fila",
+      "method": "POST",
+      "path": "/api/v2/agents/{agent_code}/remove_to_queue",
+      "complete": true,
+      "sensitive": true,
+      "readOnly": false,
+      "description": "👤O campo agent_code é código do agente dentro do Beatrix",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "agent_code",
+          "in": "path",
+          "description": "[DOCUMENTADO] Placeholder na rota.",
+          "required": true
+        }
+      ],
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "queue_id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "requestExample": {
+        "queue_id": "[MASCARADO]"
+      },
+      "responses": []
+    },
+    {
+      "id": "E05",
+      "pointer": "/item/1/item/0",
+      "folder": "🔉Audios",
+      "name": "Solicita o download de uma chamada",
+      "method": "GET",
+      "path": "/api/v2/audios/download",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "callid",
+          "in": "query",
+          "description": "Insira o CallerId de uma ligação",
+          "required": null
+        },
+        {
+          "name": "format",
+          "in": "query",
+          "description": "Opcional, caso não preenchido o formato será ogg",
+          "required": false
+        }
+      ],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": []
+    },
+    {
+      "id": "E06",
+      "pointer": "/item/2/item/0",
+      "folder": "☎️Call center reports",
+      "name": "Detalhes de pontos de registro de agentes",
+      "method": "GET",
+      "path": "/api/call_center_reports/report_register_points_details",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": [
+        {
+          "index": 0,
+          "name": "Exemplo de retorno com sucesso",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "current_page": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "per_page": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_count": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_pages": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "report_data": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "ramal": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "code": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "agent_name": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "queue": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "logon_date": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "logoff_date": {
+                      "description": "[DOCUMENTADO] Apenas null no exemplo; tipo não nulo desconhecido.",
+                      "x-observed-null-only": true
+                    }
+                  },
+                  "additionalProperties": true,
+                  "x-certainty": "DOCUMENTADO"
+                },
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "current_page": 1,
+            "per_page": 3,
+            "total_count": 3,
+            "total_pages": 1,
+            "report_data": [
+              {
+                "ramal": "[MASCARADO]",
+                "code": "[MASCARADO]",
+                "agent_name": "[MASCARADO]",
+                "queue": "[MASCARADO]",
+                "logon_date": "2025-09-17T16:00:17.716-03:00",
+                "logoff_date": null
+              },
+              {
+                "ramal": "[MASCARADO]",
+                "code": "[MASCARADO]",
+                "agent_name": "[MASCARADO]",
+                "queue": "[MASCARADO]",
+                "logon_date": "2025-09-17T16:00:17.716-03:00",
+                "logoff_date": null
+              },
+              {
+                "ramal": "[MASCARADO]",
+                "code": "[MASCARADO]",
+                "agent_name": "[MASCARADO]",
+                "queue": "[MASCARADO]",
+                "logon_date": "2025-09-17T16:00:17.716-03:00",
+                "logoff_date": null
+              }
+            ]
+          },
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E07",
+      "pointer": "/item/2/item/1",
+      "folder": "☎️Call center reports",
+      "name": "Detalhes de pausas de agentes",
+      "method": "GET",
+      "path": "/api/call_center_reports/report_pause_details",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": [
+        {
+          "index": 0,
+          "name": "Exemplo de retorno com sucesso",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "current_page": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "per_page": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_count": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_pages": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "report_data": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "ramal": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "code": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "agent_name": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "queue": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "pause": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "pause_start": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "pause_finish": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "max_minutes": {
+                      "description": "[DOCUMENTADO] Apenas null no exemplo; tipo não nulo desconhecido.",
+                      "x-observed-null-only": true
+                    },
+                    "pause_duration_minutes": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "approved_by_supervisor": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    }
+                  },
+                  "additionalProperties": true,
+                  "x-certainty": "DOCUMENTADO"
+                },
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "current_page": 1,
+            "per_page": 3,
+            "total_count": 3,
+            "total_pages": 1,
+            "report_data": [
+              {
+                "ramal": "[MASCARADO]",
+                "code": "[MASCARADO]",
+                "agent_name": "[MASCARADO]",
+                "queue": "[MASCARADO]",
+                "pause": "[MASCARADO]",
+                "pause_start": "2025-09-17T07:59:37.275-03:00",
+                "pause_finish": "2025-09-17T08:06:14.998-03:00",
+                "max_minutes": null,
+                "pause_duration_minutes": "6.6287025166666667",
+                "approved_by_supervisor": "NÃO"
+              },
+              {
+                "ramal": "[MASCARADO]",
+                "code": "[MASCARADO]",
+                "agent_name": "[MASCARADO]",
+                "queue": "[MASCARADO]",
+                "pause": "[MASCARADO]",
+                "pause_start": "2025-09-17T07:59:37.275-03:00",
+                "pause_finish": "2025-09-17T08:06:14.998-03:00",
+                "max_minutes": null,
+                "pause_duration_minutes": "6.6287025166666667",
+                "approved_by_supervisor": "NÃO"
+              },
+              {
+                "ramal": "[MASCARADO]",
+                "code": "[MASCARADO]",
+                "agent_name": "[MASCARADO]",
+                "queue": "[MASCARADO]",
+                "pause": "[MASCARADO]",
+                "pause_start": "2025-09-17T07:59:37.275-03:00",
+                "pause_finish": "2025-09-17T08:06:14.998-03:00",
+                "max_minutes": null,
+                "pause_duration_minutes": "6.6287025166666667",
+                "approved_by_supervisor": "NÃO"
+              }
+            ]
+          },
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E08",
+      "pointer": "/item/3/item/0",
+      "folder": "📞Callcenter",
+      "name": "Retorna o status de uma chamada",
+      "method": "GET",
+      "path": "/api/callcenter/{id}",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "Colocar o ID da chamada",
+          "required": true
+        }
+      ],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": [
+        {
+          "index": 0,
+          "name": "Retorna o status de uma chamada",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "message": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "status": -1,
+            "message": "[MASCARADO]"
+          },
+          "headers": [
+            {
+              "name": "Acess-token",
+              "value": "[SEGREDO_REMOVIDO]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E09",
+      "pointer": "/item/3/item/1",
+      "folder": "📞Callcenter",
+      "name": "Faz o login do agente na fila",
+      "method": "POST",
+      "path": "/api/callcenter/logon",
+      "complete": true,
+      "sensitive": true,
+      "readOnly": false,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [],
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "password": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "writeOnly": true,
+            "x-sensitive": true,
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "queue": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "extension": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "requestExample": {
+        "code": "[MASCARADO]",
+        "password": "<definir-localmente>",
+        "queue": "[MASCARADO]",
+        "extension": "[MASCARADO]"
+      },
+      "responses": [
+        {
+          "index": 0,
+          "name": "Faz o login do agente na fila",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "message": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "status": -1,
+            "message": "[MASCARADO]"
+          },
+          "headers": [
+            {
+              "name": "Acess-token",
+              "value": "[SEGREDO_REMOVIDO]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E10",
+      "pointer": "/item/3/item/2",
+      "folder": "📞Callcenter",
+      "name": "Faz o logoff do agente na fila",
+      "method": "POST",
+      "path": "/api/callcenter/{id}/logoff",
+      "complete": true,
+      "sensitive": true,
+      "readOnly": false,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "Insira o valor do agente na fila",
+          "required": true
+        }
+      ],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": []
+    },
+    {
+      "id": "E11",
+      "pointer": "/item/3/item/3",
+      "folder": "📞Callcenter",
+      "name": "Retorna os dados da chamada (Atendimento)",
+      "method": "GET",
+      "path": "/api/callcenter/{id}/info",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "Coloque o id da chamada",
+          "required": true
+        }
+      ],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": [
+        {
+          "index": 0,
+          "name": "Como deve retornar com sucesso",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "agent_code": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "queue": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "linkedid": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "call_datetime": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "client_name": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "client_extra_info": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "call_motive": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "call_obs": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "protocol": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "cpf_cnpj": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "call_status": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "id": 1,
+            "agent_code": "[MASCARADO]",
+            "queue": "[MASCARADO]",
+            "linkedid": "[MASCARADO]",
+            "call_datetime": "2000-01-01T00:00:00-03:00",
+            "client_name": "[MASCARADO]",
+            "client_extra_info": "[MASCARADO]",
+            "call_motive": "[MASCARADO]",
+            "call_obs": "[MASCARADO]",
+            "protocol": "[MASCARADO]",
+            "cpf_cnpj": "[MASCARADO]",
+            "call_status": "[MASCARADO]"
+          },
+          "headers": [
+            {
+              "name": "Acess-token",
+              "value": "[SEGREDO_REMOVIDO]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E12",
+      "pointer": "/item/3/item/4",
+      "folder": "📞Callcenter",
+      "name": "Retorna os dados do relatório de chamada do CallCenter",
+      "method": "POST",
+      "path": "/api/v2/callcenter/report",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "Como a ligação foi finalizada: -1 Abandono 0 Fila 1 Cliente 2 Transferido. ⚠️Campos obrigratórios: report_type, queues, date_started_at, time_started_at, date_ended_at, time_ended_at",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [],
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "interval": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "report_type": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "queues": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "date_started_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "time_started_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "date_ended_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "time_ended_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "status": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "call_type": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "hangupcause": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "agent_code": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "agent_name": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "src": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "dst": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "call": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "ddd_src": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "ddd_dst": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "operator_id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "queue": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "group_by": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "billsec": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "wait": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO",
+        "required": [
+          "report_type",
+          "queues",
+          "date_started_at",
+          "time_started_at",
+          "date_ended_at",
+          "time_ended_at"
+        ]
+      },
+      "requestExample": {
+        "interval": "yes",
+        "report_type": "synthetic",
+        "queues": "[MASCARADO]",
+        "date_started_at": "2019-01-01",
+        "time_started_at": "00:00:00",
+        "date_ended_at": "2019-06-06",
+        "time_ended_at": "23:59:59",
+        "status": "ANSWERED",
+        "call_type": "OUTBOUND",
+        "hangupcause": "NORMAL_CLEARING",
+        "agent_code": "[MASCARADO]",
+        "agent_name": "[MASCARADO]",
+        "src": "[MASCARADO]",
+        "dst": "[MASCARADO]",
+        "call": "voice",
+        "ddd_src": "85",
+        "ddd_dst": "85",
+        "operator_id": "[MASCARADO]",
+        "queue": "[MASCARADO]",
+        "group_by": "npx_sup",
+        "billsec": "30",
+        "wait": "10"
+      },
+      "responses": [
+        {
+          "index": 0,
+          "name": "Dados Sinteticos",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "queue_name": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "agent_code": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "agent_name": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_answered": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_time_answered": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_not_answered": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_time_not_answered": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_not_answered_agent": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_time_not_answered_agent": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_time_wait": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_busy": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_complete_agent": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_complete_caller": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_transfer": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "queue_name": "[MASCARADO]",
+            "agent_code": "[MASCARADO]",
+            "agent_name": "[MASCARADO]",
+            "total_answered": 69,
+            "total_time_answered": 7197,
+            "total_not_answered": 54,
+            "total_time_not_answered": 448,
+            "total_not_answered_agent": 0,
+            "total_time_not_answered_agent": 0,
+            "total_time_wait": 1330,
+            "total_busy": 0,
+            "total": 123,
+            "total_complete_agent": 60,
+            "total_complete_caller": 63,
+            "total_transfer": 0
+          },
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "name": "Dados Analíticos",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "calldatetime": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "billsec": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "wait": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "agent_code": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "src": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "dst": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "queue_name": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "operator_name": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "trunk": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "bound": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "call_type_name": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "status": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "linkedid": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "file": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "record": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "hangupcause": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "event": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "campaign_name": {
+                "description": "[DOCUMENTADO] Apenas null no exemplo; tipo não nulo desconhecido.",
+                "x-observed-null-only": true
+              },
+              "protocol": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "calldatetime": "2000-01-01T00:00:00-03:00",
+            "billsec": 20,
+            "wait": 20,
+            "agent_code": "[MASCARADO]",
+            "src": "[MASCARADO]",
+            "dst": "[MASCARADO]",
+            "queue_name": "[MASCARADO]",
+            "operator_name": "[MASCARADO]",
+            "trunk": 1,
+            "bound": 4,
+            "call_type_name": "Celular Local",
+            "status": "NOT ANSWERED",
+            "linkedid": "[MASCARADO]",
+            "file": "[MASCARADO]",
+            "record": "1",
+            "hangupcause": 1,
+            "event": "CDR",
+            "campaign_name": null,
+            "protocol": "[MASCARADO]"
+          },
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E13",
+      "pointer": "/item/4/item/0",
+      "folder": "📣Campaings",
+      "name": "Envio de SMS",
+      "method": "POST",
+      "path": "/api/campaigns/sms",
+      "complete": true,
+      "sensitive": true,
+      "readOnly": false,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [],
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "campaign_id": {
+            "type": "number",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                },
+                "message": {
+                  "type": "string",
+                  "x-certainty": "DOCUMENTADO",
+                  "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                }
+              },
+              "additionalProperties": true,
+              "x-certainty": "DOCUMENTADO"
+            },
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "requestExample": {
+        "campaign_id": 1,
+        "messages": [
+          {
+            "number": "[MASCARADO]",
+            "message": "[MASCARADO]"
+          },
+          {
+            "number": "[MASCARADO]",
+            "message": "[MASCARADO]"
+          }
+        ]
+      },
+      "responses": [
+        {
+          "index": 0,
+          "name": "Envio de SMS",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "messages_returns": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "number": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "message_id": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "send": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    }
+                  },
+                  "additionalProperties": true,
+                  "x-certainty": "DOCUMENTADO"
+                },
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "status": 1,
+            "messages_returns": [
+              {
+                "number": "[MASCARADO]",
+                "message_id": "[MASCARADO]"
+              },
+              {
+                "number": "[MASCARADO]",
+                "message_id": "[MASCARADO]",
+                "send": "false"
+              }
+            ]
+          },
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E14",
+      "pointer": "/item/4/item/1",
+      "folder": "📣Campaings",
+      "name": "Envio para URA (Desenvol.)",
+      "method": "GET",
+      "path": null,
+      "complete": false,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "",
+      "headers": [],
+      "parameters": [],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": []
+    },
+    {
+      "id": "E15",
+      "pointer": "/item/5/item/0",
+      "folder": "🔧Extensions",
+      "name": "Listar ramais",
+      "method": "GET",
+      "path": "/api/extensions",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": [
+        {
+          "index": 0,
+          "name": "Retorno com sucesso",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "current_page": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "per_page": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_count": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "total_pages": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "extensions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "category": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "callerid": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "ddr": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "secret": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "writeOnly": false,
+                      "x-sensitive": true,
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "context_name": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "cost_center_name": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "company_name": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "operator_name": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    }
+                  },
+                  "additionalProperties": true,
+                  "x-certainty": "DOCUMENTADO"
+                },
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "current_page": 1,
+            "per_page": 3,
+            "total_count": 125,
+            "total_pages": 3,
+            "extensions": [
+              {
+                "category": "[MASCARADO]",
+                "callerid": "[MASCARADO]",
+                "ddr": "[MASCARADO]",
+                "secret": "<definir-localmente>",
+                "context_name": "[MASCARADO]",
+                "cost_center_name": "[MASCARADO]",
+                "company_name": "[MASCARADO]",
+                "operator_name": "[MASCARADO]"
+              },
+              {
+                "category": "[MASCARADO]",
+                "callerid": "[MASCARADO]",
+                "ddr": "[MASCARADO]",
+                "secret": "<definir-localmente>",
+                "context_name": "[MASCARADO]",
+                "cost_center_name": "[MASCARADO]",
+                "company_name": "[MASCARADO]",
+                "operator_name": "[MASCARADO]"
+              },
+              {
+                "category": "[MASCARADO]",
+                "callerid": "[MASCARADO]",
+                "ddr": "[MASCARADO]",
+                "secret": "<definir-localmente>",
+                "context_name": "[MASCARADO]",
+                "cost_center_name": "[MASCARADO]",
+                "company_name": "[MASCARADO]",
+                "operator_name": "[MASCARADO]"
+              }
+            ]
+          },
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E16",
+      "pointer": "/item/6/item/0",
+      "folder": "🏢PABX",
+      "name": "Iniciar uma chamada",
+      "method": "POST",
+      "path": "/api/pabx",
+      "complete": true,
+      "sensitive": true,
+      "readOnly": false,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [],
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "extension": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "number": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "requestExample": {
+        "extension": "[MASCARADO]",
+        "number": "[MASCARADO]"
+      },
+      "responses": [
+        {
+          "index": 0,
+          "name": "Iniciar uma chamada (Desabilitado)",
+          "httpStatus": 200,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "callid": {
+                "type": "string",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              },
+              "status": {
+                "type": "number",
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "callid": "[MASCARADO]",
+            "status": 5
+          },
+          "headers": [
+            {
+              "name": "Access-Control-Allow-Headers",
+              "value": "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+            },
+            {
+              "name": "Access-Control-Allow-Methods",
+              "value": "POST, PUT, DELETE, GET"
+            },
+            {
+              "name": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "name": "Access-Control-Request-Method",
+              "value": "*"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "name": "Set-Cookie",
+              "value": "[SEGREDO_REMOVIDO]"
+            },
+            {
+              "name": "Vary",
+              "value": "Origin"
+            },
+            {
+              "name": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "name": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "name": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "name": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "name": "X-Request-Id",
+              "value": "6a6d07f3-85b1-4e6d-9dd8-759d8c143224"
+            },
+            {
+              "name": "X-Runtime",
+              "value": "0.831126"
+            },
+            {
+              "name": "X-Xss-Protection",
+              "value": "1; mode=block"
+            },
+            {
+              "name": "Date",
+              "value": "Wed, 22 Oct 2025 18:40:59 GMT"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E17",
+      "pointer": "/item/6/item/1",
+      "folder": "🏢PABX",
+      "name": "Retorna o status de uma chamada",
+      "method": "GET",
+      "path": "/api/pabx/{id}",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "no Header da chamada. Substituir o :id pelo “callid” que foi retornado. Status: 2 - Chamada em andamento 5 - Chamando 7 - Atendida (Chamada já finalizada) 8 - Não atendida (Chamada já finalizada) 9 - Ocupado (Chamada já finalizada)",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "Coloque o ID da chamada",
+          "required": true
+        }
+      ],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": []
+    },
+    {
+      "id": "E18",
+      "pointer": "/item/6/item/2",
+      "folder": "🏢PABX",
+      "name": "Encerra uma chamada",
+      "method": "POST",
+      "path": "/api/pabx/{id}/close",
+      "complete": true,
+      "sensitive": true,
+      "readOnly": false,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "Coloque o ID da chamada",
+          "required": true
+        }
+      ],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": []
+    },
+    {
+      "id": "E19",
+      "pointer": "/item/6/item/3",
+      "folder": "🏢PABX",
+      "name": "Retorna o status do agente",
+      "method": "GET",
+      "path": "/api/pabx/{id}/agent_status",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "Substituir o :id pelo código do agente na NPX Principais campos: paused -> indica se o agente está em pausa (0 - não / 1 - sim) status -> indica o status o agente * 0 - Offline * 1 - Livre * 2 - Ocupado * 5 - Ramal chamando * -1 - Em pausa current_call -> Chamada atual com as informações enviada para o discador.",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "Coloque o ID do agente",
+          "required": true
+        }
+      ],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": []
+    },
+    {
+      "id": "E20",
+      "pointer": "/item/6/item/4",
+      "folder": "🏢PABX",
+      "name": "Remove o agente da pause",
+      "method": "POST",
+      "path": "/api/pabx/unpause",
+      "complete": true,
+      "sensitive": true,
+      "readOnly": false,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [],
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "campaign_id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "requestExample": {
+        "id": "[MASCARADO]",
+        "campaign_id": "[MASCARADO]"
+      },
+      "responses": []
+    },
+    {
+      "id": "E21",
+      "pointer": "/item/6/item/5",
+      "folder": "🏢PABX",
+      "name": "Coloca o agente da pause",
+      "method": "POST",
+      "path": "/api/pabx/pause",
+      "complete": true,
+      "sensitive": true,
+      "readOnly": false,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [],
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "campaign_id": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "requestExample": {
+        "id": "[MASCARADO]",
+        "campaign_id": "[MASCARADO]"
+      },
+      "responses": []
+    },
+    {
+      "id": "E22",
+      "pointer": "/item/6/item/6",
+      "folder": "🏢PABX",
+      "name": "Retorna os status dos extensions (Pendente de teste)",
+      "method": "POST",
+      "path": "/api/v2/pabx/extensions",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": [
+        {
+          "index": 0,
+          "name": "Como deve retornar",
+          "httpStatus": null,
+          "emptyBody": false,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "extensions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "extension": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-certainty": "DOCUMENTADO",
+                      "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+                    }
+                  },
+                  "additionalProperties": true,
+                  "x-certainty": "DOCUMENTADO"
+                },
+                "x-certainty": "DOCUMENTADO",
+                "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+              }
+            },
+            "additionalProperties": true,
+            "x-certainty": "DOCUMENTADO"
+          },
+          "example": {
+            "extensions": [
+              {
+                "extension": "[MASCARADO]",
+                "status": "OFFLINE"
+              },
+              {
+                "extension": "[MASCARADO]",
+                "status": "ONLINE"
+              }
+            ]
+          },
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E23",
+      "pointer": "/item/6/item/7",
+      "folder": "🏢PABX",
+      "name": "Retorna os dados do relatório de chamadas do PABX IP",
+      "method": "POST",
+      "path": "/api/v2/pabx/report",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [],
+      "requestSchema": {
+        "type": "object",
+        "properties": {
+          "report_type": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "group_by": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "date_started_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "time_started_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "date_ended_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          },
+          "time_ended_at": {
+            "type": "string",
+            "x-certainty": "DOCUMENTADO",
+            "description": "[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida."
+          }
+        },
+        "additionalProperties": true,
+        "x-certainty": "DOCUMENTADO"
+      },
+      "requestExample": {
+        "report_type": "synthetic",
+        "group_by": "cost_center",
+        "date_started_at": "2019-01-01",
+        "time_started_at": "00:00:00",
+        "date_ended_at": "2019-06-06",
+        "time_ended_at": "23:59:59"
+      },
+      "responses": [
+        {
+          "index": 0,
+          "name": "Retorno Dados Analítico",
+          "httpStatus": 200,
+          "emptyBody": true,
+          "schema": null,
+          "example": null,
+          "headers": []
+        }
+      ]
+    },
+    {
+      "id": "E24",
+      "pointer": "/item/7/item/0",
+      "folder": "⏳Queues",
+      "name": "Retorna as chamadas em espera de uma fila",
+      "method": "GET",
+      "path": "/api/v2/queues/{queue_id}/wait_calls",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "description": "[DOCUMENTADO] Placeholder na rota.",
+          "required": true
+        }
+      ],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": []
+    },
+    {
+      "id": "E25",
+      "pointer": "/item/8/item/0",
+      "folder": "🔍 Satisfaction Survey",
+      "name": "Listar relatório de pesquisa de satisfação",
+      "method": "GET",
+      "path": null,
+      "complete": false,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-token",
+          "value": "{{token-beatrix}}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "report_type",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "queue_name",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "agent_code",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "agent_name",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "date_started_at",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "date_ended_at",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "time_started_at",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "time_ended_at",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        }
+      ],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": []
+    },
+    {
+      "id": "E26",
+      "pointer": "/item/8/item/1",
+      "folder": "🔍 Satisfaction Survey",
+      "name": "Dados para gráfico de pesquisa de satisfação",
+      "method": "GET",
+      "path": "/api/satisfaction_survey_generic_reports/graphic",
+      "complete": true,
+      "sensitive": false,
+      "readOnly": true,
+      "description": "",
+      "headers": [
+        {
+          "name": "Access-Token",
+          "value": "{{token-beatrix}}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "report_type",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "queue_name",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "agent_code",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "agent_name",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "date_started_at",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "date_ended_at",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "time_started_at",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        },
+        {
+          "name": "time_ended_at",
+          "in": "query",
+          "description": "[DOCUMENTADO] Presente na URL; sem descrição separada.",
+          "required": null
+        }
+      ],
+      "requestSchema": null,
+      "requestExample": null,
+      "responses": []
+    }
+  ]
+}

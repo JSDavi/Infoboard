@@ -125,6 +125,38 @@ body {
   gap: 15px;
 }
 
+/* Atalho para a autenticação verdadeira no portal Beatrix, sem coletar credenciais no InfoBoard. */
+.beatrix-login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  gap: 7px;
+  padding: 9px 12px;
+  border: 1px solid #1d4ed8;
+  border-radius: 9px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.79rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  box-shadow: 0 2px 5px rgb(37 99 235 / 15%);
+  transition: background-color 0.15s ease;
+}
+.beatrix-login-btn:hover,
+.beatrix-login-btn:focus-visible {
+  background: #1d4ed8;
+  color: #fff;
+}
+.beatrix-login-btn:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+
+@media (max-width: 1200px) {
+  .beatrix-login-label { display: none; }
+  .beatrix-login-btn { padding: 9px 11px; }
+}
+
 /* Indicador de Conexão (Botões Verdes Sólidos Limpos) */
 .status-container {
   display: flex;
@@ -267,6 +299,15 @@ body {
 .channel-header.voice-theme .channel-summary-badge { background-color: #2563eb; color: #fff; }
 .channel-header.chat-theme  .channel-summary-badge { background-color: #16a34a; color: #fff; }
 
+.chat-header-indicators {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-right: 29px; /* Reserva espaço para o botão flutuante do carrossel. */
+}
+
 /* --- SUBGRADE DE COLUNAS DE VOZ (Esquerda - 2 Colunas de 25%) --- */
 .voice-columns-grid {
   display: grid;
@@ -354,9 +395,19 @@ body {
 .sub-sector-header.ponto-theme { color: var(--ponto-color); border-bottom-color: var(--ponto-color); }
 
 .sub-sector-title {
-  display: flex;
+  display: grid;
+  grid-template-columns: 16px 85px max-content;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sub-sector-name {
+  white-space: nowrap;
+}
+
+.sub-sector-kpis {
+  white-space: nowrap;
 }
 
 .sub-sector-kpis {
@@ -380,53 +431,15 @@ body {
 }
 
 /* --- KANBAN DO PRIXCHAT --- */
-.chat-metrics-bar {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.chat-metric-card {
-  background: white;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 6px 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.01);
-}
-
-.chat-metric-card .val {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--chat-color);
-}
-
-.chat-metric-card.alert {
-  border-color: #fca5a5;
-  background-color: #fee2e2;
-  animation: pulse-bg-red 2s infinite;
-}
-
-.chat-metric-card.alert .val {
-  color: #dc2626;
-}
-
-.chat-metric-card .lbl {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--text-light);
-  text-transform: uppercase;
-}
 
 /* Kanban Board de WhatsApp */
 .chat-kanban-board {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 colunas de chat com minmax para evitar transbordamento */
   gap: 10px;
-  height: calc(100% - 70px);
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
   overflow: hidden; /* Trava o transbordamento para exibição simétrica */
 }
 
@@ -778,7 +791,7 @@ body {
   display: flex;
   flex-direction: column;
   transition: all 0.25s ease-in-out;
-  cursor: pointer;
+  cursor: default;
 }
 
 .analyst-card:hover {
@@ -792,6 +805,32 @@ body {
 .analyst-card.status-2 { background-color: var(--status-busy); border-color: var(--status-busy); color: white; }
 .analyst-card.status-5 { background-color: var(--status-paused); border-color: var(--status-paused); color: white; }
 .analyst-card.status-offline { background-color: var(--status-offline); border-color: var(--status-offline); color: white; }
+
+/* Homologacao SIP NPX: diferenciar estado desconhecido de desconexao confirmada. */
+.analyst-card.status-npx-unverified {
+  background-color: #fffbeb;
+  border-color: #d97706;
+  color: #78350f;
+}
+.analyst-card.status-npx-disconnected {
+  background-color: #fff1f2;
+  border-color: #e11d48;
+  color: #881337;
+}
+.analyst-card.status-npx-unverified .analyst-name,
+.analyst-card.status-npx-disconnected .analyst-name {
+  color: #334155;
+  font-weight: 800;
+  text-shadow: none;
+}
+.analyst-card.status-npx-unverified .analyst-ramal-center,
+.analyst-card.status-npx-disconnected .analyst-ramal-center {
+  color: #334155;
+  text-shadow: none;
+}
+.status-text-badge.status-npx-unverified { background-color: #fde68a; color: #78350f; }
+.status-text-badge.status-npx-disconnected { background-color: #fecdd3; color: #881337; }
+
 
 .analyst-card.status-1 .analyst-name,
 .analyst-card.status-2 .analyst-name,
@@ -899,15 +938,18 @@ body {
 
 .analyst-row-main {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
 }
 
 .analyst-name-info {
   display: flex;
   align-items: center;
   gap: 6px; /* Ajustado para deixar o P2 e o nome mais próximos */
-  flex-grow: 1;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 /* Dot de Status */
@@ -932,29 +974,23 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 0;
+  flex: 0 1 90px;
+  min-width: 0;
 }
 
-.analyst-extension {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-light);
-  width: 65px; /* Aumentado 55→65px proporcional ao ganho do split */
-  flex-shrink: 0;
-  white-space: nowrap;
-}
 
-/* Ramal centralizado no meio do cartão do analista */
+/* Ramal sempre fixo na extremidade direita, após pausa ou atendimento. */
 .analyst-ramal-center {
-  flex: 1;
-  text-align: center;
+  flex: 0 0 auto;
+  margin-left: auto;
+  text-align: right;
   font-weight: 800;
   font-size: 0.88rem;
   font-family: monospace, sans-serif;
   letter-spacing: 0.5px;
   color: #ffffff;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
-  padding: 0 4px;
+  padding: 0;
   white-space: nowrap;
 }
 
@@ -962,6 +998,16 @@ body {
 .analyst-card.status-pbx-free .analyst-ramal-center {
   color: #065f46 !important;
   text-shadow: none !important;
+}
+
+.analyst-card.status-pbx-busy .analyst-ramal-center {
+  color: #7f1d1d;
+  text-shadow: none;
+}
+
+.analyst-card.offline-card .analyst-ramal-center {
+  color: #334155;
+  text-shadow: none;
 }
 
 body.fullscreen-mode .analyst-ramal-center {
@@ -990,17 +1036,107 @@ body.fullscreen-mode .analyst-ramal-center {
   align-items: center;
   gap: 5px;
   white-space: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* Preserva o tempo da pausa/ligação e encurta somente o texto longo. */
+.status-text-badge .badge-detail-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.status-text-badge .badge-detail-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.status-text-badge .badge-detail-label .dir-badge,
+.status-text-badge .badge-detail-label > i,
+.status-text-badge .badge-divider,
+.status-text-badge .badge-time {
+  flex-shrink: 0;
 }
 
 .status-text-badge.status-1 { background-color: var(--status-free-bg); color: #065f46; }
 .status-text-badge.status-2 { background-color: var(--status-busy-bg); color: #991b1b; }
 .status-text-badge.status-5 { background-color: var(--status-paused-bg); color: #92400e; }
 
+/* Badge de pausa observada, sem interação */
+.status-text-badge.status-5.pause-status-pill {
+  background-color: var(--pause-pill-bg, #f0f9ff);
+  color: var(--pause-pill-text, #0c4a6e);
+  border: 1px solid var(--pause-pill-border, #7dd3fc);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-family: inherit;
+  line-height: 1.2;
+  cursor: default;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+}
+
+.status-text-badge.status-5.pause-status-pill.pause-cat-personal {
+  --pause-pill-bg: #fff7ed;
+  --pause-pill-border: #fdba74;
+  --pause-pill-text: #9a3412;
+  --pause-pill-accent: #ea580c;
+}
+
+.status-text-badge.status-5.pause-status-pill.pause-cat-operational {
+  --pause-pill-bg: #eff6ff;
+  --pause-pill-border: #93c5fd;
+  --pause-pill-text: #1e3a8a;
+  --pause-pill-accent: #2563eb;
+}
+
+.status-text-badge.status-5.pause-status-pill.pause-cat-external {
+  --pause-pill-bg: #f5f3ff;
+  --pause-pill-border: #c4b5fd;
+  --pause-pill-text: #4c1d95;
+  --pause-pill-accent: #7c3aed;
+}
+
+.status-text-badge.status-5.pause-status-pill.pause-cat-default {
+  --pause-pill-bg: #f0f9ff;
+  --pause-pill-border: #7dd3fc;
+  --pause-pill-text: #0c4a6e;
+  --pause-pill-accent: #0284c7;
+}
+
+.status-text-badge.status-5.pause-status-pill .pause-pill-icon {
+  color: var(--pause-pill-accent, currentColor);
+  font-size: 0.78rem;
+  margin-right: 1px;
+}
+
+.status-text-badge.status-5.pause-status-pill .badge-divider {
+  opacity: 0.45;
+  margin-inline: 1px;
+}
+
+.status-text-badge.status-5.pause-status-pill.alert {
+  background-color: #ef4444;
+  color: #ffffff;
+  border-color: #fecaca;
+}
+
+.status-text-badge.status-5.pause-status-pill.alert .pause-pill-icon {
+  color: #ffffff;
+}
+
 /* Para os analistas offline, o botão (badge) recebe a MESMA cor do nome */
 .analyst-card.offline-card .status-text-badge.status-offline { 
   background-color: #334155; 
   border: none; 
   color: #ffffff;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
 }
 
 .status-text-badge.alert {
@@ -1072,36 +1208,6 @@ body.fullscreen-mode .analyst-ramal-center {
   gap: 8px;
 }
 
-.footer-status {
-  padding: 2px 8px !important;
-  font-size: 0.7rem !important;
-  gap: 5px !important;
-  box-shadow: none !important;
-  border-radius: 20px !important;
-}
-
-.footer-status .status-label {
-  font-size: 0.7rem !important;
-}
-
-.footer-status .status-dot {
-  width: 7px !important;
-  height: 7px !important;
-}
-
-.footer-clock {
-  font-size: 0.85rem !important;
-  padding: 2px 10px !important;
-  gap: 5px !important;
-  box-shadow: none !important;
-  border-radius: 6px !important;
-}
-
-.footer-clock .date-label {
-  font-size: 0.7rem !important;
-  padding-left: 6px !important;
-  margin-left: 2px !important;
-}
 
 /* --- ANIMAÇÕES --- */
 @keyframes blink {
@@ -1140,7 +1246,6 @@ body.fullscreen-mode .analyst-ramal-center {
   .kpi-val { font-size: 1.8rem; }
   .kpi-val-time { font-size: 1.1rem; }
   .analyst-name { width: 78px; } /* Proporcional ao novo split 55/45 em telas menores */
-  .analyst-extension { width: 54px; }
   .status-text-badge { font-size: 0.7rem; padding: 2px 6px; }
 }
 
@@ -1218,7 +1323,7 @@ body.fullscreen-mode .analyst-ramal-center {
 
 /* --- AJUSTES DE EXPANSÃO PARA MODO TELA CHEIA (F11) --- */
 body.fullscreen-mode {
-  padding: 5px;
+  padding: 0;
 }
 
 body.fullscreen-mode .main-header {
@@ -1336,7 +1441,6 @@ body.fullscreen-mode .main-header .clock-widget .date-label {
 .chat-kanban-card.alert-card-sla .chat-kanban-time {
   background-color: #fee2e2 !important;
   color: #991b1b !important;
-}
 }
 
 /* Badges de Direção da Ligação (NPX) */
@@ -1767,7 +1871,7 @@ body.fullscreen-mode .ticker-bar {
   white-space: nowrap;
 }
 
-.ticker-text {
+.ticker-text { will-change: transform; transform: translateZ(0);
   display: inline-block;
   white-space: nowrap;
   padding-left: 100%;
@@ -1867,6 +1971,17 @@ body.fullscreen-mode .ticker-pill {
   color: #f472b6;
 }
 
+.ticker-pill.pill-evento {
+  background: rgba(30, 64, 175, 0.62);
+  color: #dbeafe;
+  border: 1px solid #818cf8;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.22);
+}
+
+.ticker-pill.pill-evento i {
+  color: #a5b4fc;
+}
+
 .rainbow-avatar-container {
   display: inline-flex;
   justify-content: center;
@@ -1954,7 +2069,6 @@ body.birthday-mode .ticker-bar {
 }
 
 body.birthday-mode .dept-column,
-body.birthday-mode .chat-metric-card,
 body.birthday-mode .sefaz-radar-card,
 body.birthday-mode .sub-sector-block {
   position: relative;
@@ -1962,7 +2076,6 @@ body.birthday-mode .sub-sector-block {
 }
 
 body.birthday-mode .dept-column::before,
-body.birthday-mode .chat-metric-card::before,
 body.birthday-mode .sefaz-radar-card::before,
 body.birthday-mode .sub-sector-block::before {
   content: '';
@@ -2135,418 +2248,7 @@ body.fullscreen-mode #ticker-time {
   background: rgba(0, 0, 0, 0.35);
 }
 
-/* --- OPÇÃO D: PÍLULA SPLIT BICOLOR (LIGAÇÃO EM PAUSA) --- */
-.status-split-badge {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 20px;
-  overflow: hidden;
-  font-size: 0.78rem;
-  font-weight: 700;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
 
-.split-pause-part {
-  background-color: #0288d1; /* Azul Pausa NPX */
-  color: #ffffff;
-  padding: 3px 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.split-call-part {
-  background-color: #d32f2f; /* Vermelho Ocupado NPX */
-  color: #ffffff;
-  padding: 3px 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.analyst-card.is-paused-call {
-  border-left: 5px solid #0288d1 !important;
-  background-color: #fff5f5 !important;
-}
-
-body.dark-mode .analyst-card.is-paused-call {
-  background-color: #1c1917 !important;
-  border-left-color: #0288d1 !important;
-}
-
-/* --- SEFAZ FISCAL MONITOR WIDGET (HEADER) --- */
-.sefaz-widget-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  padding: 4px 10px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.2s ease;
-  margin-right: 6px;
-}
-
-.sefaz-widget-container:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
-}
-
-.sefaz-header-title {
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: var(--text-light);
-  letter-spacing: 0.5px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border-right: 1px solid var(--border-color);
-  padding-right: 8px;
-  margin-right: 2px;
-}
-
-.sefaz-pills-group {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.sefaz-pill {
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.2s ease;
-}
-
-/* 🟢 Status Normal/OK */
-.sefaz-pill.sefaz-status-ok {
-  background-color: rgba(16, 185, 129, 0.12);
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-body.dark-mode .sefaz-pill.sefaz-status-ok {
-  background-color: rgba(16, 185, 129, 0.2);
-  color: #34d399;
-}
-
-/* 🟡 Status Instável/Lentidão */
-.sefaz-pill.sefaz-status-warning {
-  background-color: rgba(245, 158, 11, 0.15);
-  color: #d97706;
-  border: 1px solid rgba(245, 158, 11, 0.4);
-}
-
-body.dark-mode .sefaz-pill.sefaz-status-warning {
-  background-color: rgba(245, 158, 11, 0.25);
-  color: #fbbf24;
-}
-
-/* 🔴 Status Parada/Fora do Ar (Pisca suavemente) */
-.sefaz-pill.sefaz-status-danger {
-  background-color: #ef4444;
-  color: #ffffff;
-  border: 1px solid #dc2626;
-  animation: pulse-sefaz-danger 1.5s infinite alternate;
-}
-
-@keyframes pulse-sefaz-danger {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); transform: scale(1); }
-  100% { box-shadow: 0 0 8px 3px rgba(239, 68, 68, 0.7); transform: scale(1.03); }
-}
-
-/* 🔵 Status Contingência Ativa */
-.sefaz-pill.sefaz-status-contingency {
-  background-color: rgba(37, 99, 235, 0.15);
-  color: #2563eb;
-  border: 1px solid rgba(37, 99, 235, 0.4);
-}
-
-body.dark-mode .sefaz-pill.sefaz-status-contingency {
-  background-color: rgba(37, 99, 235, 0.3);
-  color: #60a5fa;
-}
-
-/* ⚪ Status Desconhecido/Carregando */
-.sefaz-pill.sefaz-status-unknown {
-  background-color: rgba(100, 116, 139, 0.12);
-  color: #64748b;
-  border: 1px solid rgba(100, 116, 139, 0.3);
-}
-
-/* Tooltip Popover Suspenso */
-.sefaz-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 280px;
-  background-color: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  padding: 10px 12px;
-  z-index: 100;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-5px);
-  transition: all 0.2s ease;
-}
-
-.sefaz-widget-container:hover .sefaz-popover {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-body.dark-mode .sefaz-popover {
-  background-color: #1e293b;
-  border-color: #334155;
-  color: #f8fafc;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-}
-
-.sefaz-popover-header {
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: var(--text-main);
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 6px;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.sefaz-popover-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.sefaz-pop-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.74rem;
-  font-weight: 600;
-}
-
-.pop-val.ok { color: #059669; }
-.pop-val.warning { color: #d97706; }
-.pop-val.danger { color: #dc2626; font-weight: 800; }
-.pop-val.contingency { color: #2563eb; font-weight: 800; }
-
-.sefaz-pop-footer {
-  font-size: 0.65rem;
-  color: var(--text-light);
-  margin-top: 8px;
-  border-top: 1px dashed var(--border-color);
-  padding-top: 4px;
-  text-align: right;
-}
-
-/* --- RADAR SEFAZ PERFORMANCE --- */
-.sefaz-radar-card {
-  margin-top: auto;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 10px 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-  transition: all 0.25s ease;
-}
-
-body.dark-mode .sefaz-radar-card {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  border-color: #334155;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-}
-
-.sefaz-radar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 6px;
-  margin-bottom: 8px;
-}
-
-.radar-header-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.76rem;
-  font-weight: 800;
-  color: var(--text-main);
-  letter-spacing: 0.5px;
-}
-
-.radar-icon {
-  color: #3b82f6;
-  font-size: 0.85rem;
-}
-
-.sefaz-global-badge {
-  font-size: 0.68rem;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.sefaz-global-badge.status-ok {
-  background-color: rgba(16, 185, 129, 0.12);
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-body.dark-mode .sefaz-global-badge.status-ok {
-  background-color: rgba(16, 185, 129, 0.2);
-  color: #34d399;
-}
-
-.sefaz-global-badge.status-warning {
-  background-color: rgba(245, 158, 11, 0.15);
-  color: #d97706;
-  border: 1px solid rgba(245, 158, 11, 0.4);
-}
-
-.sefaz-global-badge.status-danger {
-  background-color: #ef4444;
-  color: #ffffff;
-  border: 1px solid #dc2626;
-  animation: pulse-sefaz-danger 1.5s infinite alternate;
-}
-
-.sefaz-radar-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sefaz-radar-row {
-  display: grid;
-  grid-template-columns: 75px 1fr 75px;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.74rem;
-  font-weight: 700;
-}
-
-.radar-row-info {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.doc-badge {
-  color: var(--text-main);
-  font-weight: 800;
-}
-
-.uf-tag {
-  font-size: 0.62rem;
-  color: var(--text-light);
-  font-weight: 600;
-}
-
-.radar-bar-container {
-  height: 6px;
-  background-color: rgba(0, 0, 0, 0.06);
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-}
-
-body.dark-mode .radar-bar-container {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.radar-bar-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.4s ease;
-}
-
-.radar-bar-fill.bar-ok {
-  background: linear-gradient(90deg, #10b981, #34d399);
-}
-
-.radar-bar-fill.bar-warning {
-  background: linear-gradient(90deg, #f59e0b, #fbbf24);
-}
-
-.radar-bar-fill.bar-danger {
-  background: linear-gradient(90deg, #ef4444, #f87171);
-  animation: pulse-radar-bar 1s infinite alternate;
-}
-
-@keyframes pulse-radar-bar {
-  0% { opacity: 0.7; }
-  100% { opacity: 1; }
-}
-
-.radar-bar-fill.bar-contingency {
-  background: linear-gradient(90deg, #2563eb, #60a5fa);
-}
-
-.radar-row-val {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  font-family: monospace;
-  font-size: 0.72rem;
-}
-
-.sefaz-radar-row.status-ok .val-icon { color: #059669; }
-.sefaz-radar-row.status-warning .val-icon { color: #d97706; }
-.sefaz-radar-row.status-danger .val-icon { color: #dc2626; }
-.sefaz-radar-row.status-contingency .val-icon { color: #2563eb; }
-
-.sefaz-radar-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.63rem;
-  color: var(--text-light);
-  margin-top: 8px;
-  border-top: 1px dashed var(--border-color);
-  padding-top: 5px;
-  font-weight: 500;
-}
-.sefaz-pop-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.74rem;
-  font-weight: 600;
-}
-
-.pop-val.ok { color: #059669; }
-.pop-val.warning { color: #d97706; }
-.pop-val.danger { color: #dc2626; font-weight: 800; }
-.pop-val.contingency { color: #2563eb; font-weight: 800; }
-
-.sefaz-pop-footer {
-  font-size: 0.65rem;
-  color: var(--text-light);
-  margin-top: 8px;
-  border-top: 1px dashed var(--border-color);
-  padding-top: 4px;
-  text-align: right;
-}
 
 /* --- RADAR SEFAZ PERFORMANCE --- */
 .sefaz-radar-card {
@@ -2738,4 +2440,575 @@ body.dark-mode .radar-bar-container {
   border: 1px solid #cbd5e1 !important;
   box-shadow: 0 4px 6px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.8) !important;
   border-radius: 8px !important;
+}
+/* Estilo do icone de informacao das metricas */
+.details-btn {
+  font-size: 0.95rem;
+  opacity: 0.5;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.2s;
+  margin-left: 2px;
+}
+.details-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Cor do icone baseada no status do card para contraste */
+.analyst-card.status-1 .details-btn,
+.analyst-card.status-pbx-free .details-btn,
+.analyst-card.offline-card .details-btn {
+  color: #334155;
+}
+.analyst-card.status-2 .details-btn,
+.analyst-card.status-5 .details-btn,
+.analyst-card.status-pbx-busy .details-btn {
+  color: #ffffff;
+}
+
+/* Refinamento do wallboard: mantém a paleta operacional NPX/PBX intacta. */
+.wallboard-container {
+  min-height: 0;
+}
+
+.omnichannel-split-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+
+.channel-half,
+#voice-half,
+#voice-half .voice-zone,
+#voice-half .dept-column,
+#chat-half .chat-kanban-board {
+  min-height: 0;
+}
+
+/* As duas colunas compartilham o espaço restante com o radar SEFAZ. */
+#voice-half > .voice-columns-grid {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+#voice-half .sub-sectors-container,
+#voice-half .analysts-section {
+  min-height: 0;
+}
+
+/* Fila e espera média compactas, com rótulo e valor na mesma linha. */
+#suporte-queue-bar {
+  flex: 0 0 auto;
+  margin: 2px 0 5px;
+}
+
+#suporte-queue-bar .kpi-block {
+  flex-direction: row;
+  justify-content: center;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  padding: 5px 6px;
+}
+
+#suporte-queue-bar .kpi-lbl {
+  margin: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+#suporte-queue-bar .kpi-val,
+#suporte-queue-bar .kpi-val-time {
+  font-size: 0.95rem;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+/* SEFAZ na largura completa da área Voz, com quatro indicadores lado a lado. */
+#voice-half .sefaz-global-badge.status-unknown {
+  background: rgba(100, 116, 139, 0.12);
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.28);
+}
+
+body.dark-mode #voice-half .sefaz-global-badge.status-unknown {
+  color: #cbd5e1;
+}
+
+#voice-half .sefaz-radar-row.status-unknown .val-icon {
+  color: #94a3b8;
+}
+
+#voice-half .sefaz-radar-row.status-unknown .radar-bar-container {
+  background-color: rgba(100, 116, 139, 0.18);
+}
+
+#voice-half > .sefaz-radar-card {
+  flex: 0 0 auto;
+  min-width: 0;
+  margin-top: 8px !important;
+  padding: 7px 10px;
+}
+
+#voice-half .sefaz-radar-header {
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+}
+
+#voice-half .sefaz-radar-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#voice-half .sefaz-radar-list[hidden] {
+  display: none !important;
+}
+
+#voice-half .sefaz-radar-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'info value latency';
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 7px;
+  border-radius: 8px;
+  border: 1px solid rgba(100, 116, 139, 0.22);
+  background: rgba(100, 116, 139, 0.06);
+}
+
+#voice-half .sefaz-radar-row.status-ok {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.28);
+}
+
+#voice-half .sefaz-radar-row.status-warning {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.33);
+}
+
+#voice-half .sefaz-radar-row.status-danger {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.33);
+}
+
+#voice-half .radar-row-info {
+  grid-area: info;
+  min-width: 0;
+}
+
+#voice-half .radar-row-val {
+  grid-area: value;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+#voice-half .radar-row-info {
+  gap: 3px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1700px) {
+  #voice-half .sefaz-radar-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+#voice-half .sefaz-radar-row.status-ok .radar-row-val { color: #047857; }
+#voice-half .sefaz-radar-row.status-warning .radar-row-val { color: #b45309; }
+#voice-half .sefaz-radar-row.status-danger .radar-row-val { color: #b91c1c; }
+#voice-half .sefaz-radar-row.status-unknown .radar-row-val { color: #64748b; }
+body.dark-mode #voice-half .sefaz-radar-row.status-ok .radar-row-val { color: #34d399; }
+body.dark-mode #voice-half .sefaz-radar-row.status-warning .radar-row-val { color: #fbbf24; }
+body.dark-mode #voice-half .sefaz-radar-row.status-danger .radar-row-val { color: #f87171; }
+body.dark-mode #voice-half .sefaz-radar-row.status-unknown .radar-row-val { color: #cbd5e1; }
+
+#voice-half .radar-bar-container {
+  grid-area: bar;
+}
+
+#voice-half .sefaz-radar-footer {
+  margin-top: 5px;
+  padding-top: 4px;
+}
+
+/* Rodapé mais discreto, com ticker agrupado por categoria. */
+.main-footer {
+  flex: 0 0 auto;
+  height: 23px;
+  margin-top: 5px;
+  padding-top: 3px;
+  font-size: 0.7rem;
+}
+
+.ticker-bar {
+  margin-top: 5px;
+  border-radius: 12px;
+  padding-inline: 12px;
+}
+
+.ticker-content-wrap {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.ticker-text {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.ticker-pill {
+  border-radius: 9px;
+  margin-right: 12px;
+  padding: 5px 11px;
+  letter-spacing: 0;
+}
+
+body.fullscreen-mode #voice-half > .voice-columns-grid {
+  height: auto !important;
+}
+
+body.fullscreen-mode .wallboard-container {
+  padding: 6px;
+}
+
+body.fullscreen-mode .omnichannel-split-container {
+  height: auto !important;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+body.fullscreen-mode .ticker-pill {
+  margin-right: 16px;
+  padding: 6px 12px;
+}
+
+/* Mantém marca, título e indicadores em uma linha em monitores de 1366 px. */
+@media (min-width: 769px) and (max-width: 1500px) {
+  .main-header {
+    gap: 12px;
+  }
+
+  .header-left {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .logo-wrapper {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    gap: 6px;
+  }
+
+  .logo-text {
+    font-size: 1.7rem;
+  }
+
+  .badge-live {
+    font-size: 0.65rem;
+    padding-inline: 5px;
+  }
+
+  .header-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-left: 10px;
+    font-size: 1rem;
+  }
+
+  .header-right {
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+
+  .header-clock {
+    gap: 5px;
+    padding-inline: 8px !important;
+  }
+}
+
+@media (max-width: 1220px) {
+  #voice-half .sefaz-radar-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    overflow: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .wallboard-container {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .omnichannel-split-container,
+  #voice-half > .voice-columns-grid {
+    flex: 0 0 auto;
+    height: auto;
+  }
+
+  #voice-half .voice-zone,
+  #voice-half .dept-column {
+    height: auto !important;
+  }
+
+  #voice-half .sefaz-radar-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #voice-half > .sefaz-radar-card {
+    margin-top: 10px !important;
+  }
+
+  .main-footer {
+    height: auto;
+    padding-block: 5px;
+  }
+}
+
+/* SEFAZ em faixa horizontal: opção 1 minimalista */
+#voice-half > .sefaz-radar-card {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  grid-template-areas: "label checks summary";
+  align-items: center;
+  column-gap: 8px;
+  padding: 5px 8px 4px;
+}
+
+#voice-half .sefaz-radar-header {
+  display: contents;
+}
+
+#voice-half .radar-header-left {
+  grid-area: label;
+  gap: 5px;
+  white-space: nowrap;
+  font-size: 0.72rem;
+}
+
+#voice-half .radar-header-right {
+  grid-area: summary;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+#voice-half .sefaz-radar-list {
+  grid-area: checks;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+#voice-half .sefaz-radar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  min-width: 0;
+  min-height: 24px;
+  height: 24px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  text-decoration: none;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+#voice-half .radar-row-info {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+#voice-half .doc-badge {
+  font-size: 0.69rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+#voice-half .uf-tag {
+  font-size: 0.58rem;
+  font-weight: 600;
+  opacity: 0.8;
+  line-height: 1;
+}
+
+#voice-half .radar-row-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+#voice-half .sefaz-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+#voice-half .radar-row-status .latency-text {
+  font-size: 0.64rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* Estado NORMAL: verde com fundo verde suave */
+#voice-half .sefaz-radar-row.status-ok {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+#voice-half .sefaz-radar-row.status-ok .doc-badge { color: #065f46; }
+#voice-half .sefaz-radar-row.status-ok .uf-tag { color: #047857; }
+#voice-half .sefaz-radar-row.status-ok .sefaz-status-dot {
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+#voice-half .sefaz-radar-row.status-ok .latency-text { color: #047857; }
+
+/* Estado INSTÁVEL: amarelo com fundo amarelo suave */
+#voice-half .sefaz-radar-row.status-warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+#voice-half .sefaz-radar-row.status-warning .doc-badge { color: #92400e; }
+#voice-half .sefaz-radar-row.status-warning .uf-tag { color: #b45309; }
+#voice-half .sefaz-radar-row.status-warning .sefaz-status-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+}
+#voice-half .sefaz-radar-row.status-warning .latency-text { color: #b45309; }
+
+/* Estado INDISPONÍVEL: vermelho com fundo vermelho suave */
+#voice-half .sefaz-radar-row.status-danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+#voice-half .sefaz-radar-row.status-danger .doc-badge { color: #991b1b; }
+#voice-half .sefaz-radar-row.status-danger .uf-tag { color: #b91c1c; }
+#voice-half .sefaz-radar-row.status-danger .sefaz-status-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+}
+#voice-half .sefaz-radar-row.status-danger .latency-text { color: #b91c1c; }
+
+/* Estados neutros (desconhecido, desatualizado, sem dados) */
+#voice-half .sefaz-radar-row.status-unknown {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+#voice-half .sefaz-radar-row.status-unknown .doc-badge { color: #334155; }
+#voice-half .sefaz-radar-row.status-unknown .uf-tag { color: #64748b; }
+#voice-half .sefaz-radar-row.status-unknown .sefaz-status-dot {
+  background: #94a3b8;
+}
+#voice-half .sefaz-radar-row.status-unknown .latency-text { color: #64748b; }
+
+/* Modo escuro (Dark Mode) */
+body.dark-mode #voice-half .sefaz-radar-row.status-ok {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+body.dark-mode #voice-half .sefaz-radar-row.status-ok .doc-badge { color: #a7f3d0; }
+body.dark-mode #voice-half .sefaz-radar-row.status-ok .uf-tag { color: #6ee7b7; }
+body.dark-mode #voice-half .sefaz-radar-row.status-ok .latency-text { color: #34d399; }
+
+body.dark-mode #voice-half .sefaz-radar-row.status-warning {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #fde047;
+}
+body.dark-mode #voice-half .sefaz-radar-row.status-warning .doc-badge { color: #fde68a; }
+body.dark-mode #voice-half .sefaz-radar-row.status-warning .uf-tag { color: #fde047; }
+body.dark-mode #voice-half .sefaz-radar-row.status-warning .latency-text { color: #fbbf24; }
+
+body.dark-mode #voice-half .sefaz-radar-row.status-danger {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+body.dark-mode #voice-half .sefaz-radar-row.status-danger .doc-badge { color: #fecaca; }
+body.dark-mode #voice-half .sefaz-radar-row.status-danger .uf-tag { color: #fca5a5; }
+body.dark-mode #voice-half .sefaz-radar-row.status-danger .latency-text { color: #f87171; }
+
+body.dark-mode #voice-half .sefaz-radar-row.status-unknown {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #cbd5e1;
+}
+body.dark-mode #voice-half .sefaz-radar-row.status-unknown .doc-badge { color: #e2e8f0; }
+body.dark-mode #voice-half .sefaz-radar-row.status-unknown .uf-tag { color: #94a3b8; }
+body.dark-mode #voice-half .sefaz-radar-row.status-unknown .latency-text { color: #94a3b8; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-text {
+    animation: none;
+    transform: none;
+  }
+}
+
+#voice-half .sefaz-global-badge {
+  padding: 2px 6px;
+  font-size: 0.61rem;
+}
+
+@media (min-width: 1101px) and (max-width: 1500px) {
+  #voice-half .sefaz-radar-row .uf-tag { display: none; }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  #voice-half > .sefaz-radar-card {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    grid-template-areas:
+      "label summary"
+      "checks checks";
+  }
+  #voice-half .sefaz-radar-row .uf-tag { display: none; }
+}
+
+@media (max-width: 768px) {
+  #voice-half > .sefaz-radar-card {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    grid-template-areas:
+      "label summary"
+      "checks checks";
+  }
+  #voice-half .sefaz-radar-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+#voice-half .sefaz-radar-list[hidden],
+#voice-half .sefaz-global-badge[hidden] {
+  display: none !important;
 }

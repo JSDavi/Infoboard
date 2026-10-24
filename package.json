@@ -4,18 +4,28 @@
   "description": "Infoboard - Servidor integrador local e Wallboard para TV NPX",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node scripts/dev-3001.cjs",
+    "test": "node --test tests/*.test.js",
+    "check": "node scripts/check-syntax.cjs",
+    "audit:publication": "node scripts/audit-publication.cjs",
+    "audit:history": "node scripts/audit-publication.cjs --history",
+    "release:local": "node scripts/create-source-release.cjs",
+    "test:browser": "node tests/run-browser-smoke.cjs"
   },
   "dependencies": {
-    "axios": "^1.7.2",
+    "axios": "^1.20.0",
     "cheerio": "1.0.0-rc.12",
-    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "express": "^4.22.3",
     "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
     "node-windows": "^1.0.0-beta.8"
   },
   "author": "Antigravity",
-  "license": "ISC"
+  "license": "ISC",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  }
 }

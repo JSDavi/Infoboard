@@ -1,0 +1,793 @@
+{
+  "info": {
+    "name": "Beatrix — testes de contrato para mock local",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "[INFERIDO] Harness de validação de exemplos documentados. NUNCA executado contra Beatrix. Confirmar mock local em mock_confirmed. Não testa estado real, credenciais ou autorização."
+  },
+  "variable": [
+    {
+      "key": "mock_base_url",
+      "value": "http://127.0.0.1:4010"
+    },
+    {
+      "key": "mock_confirmed",
+      "value": "false"
+    },
+    {
+      "key": "mock_token",
+      "value": "MOCK_ONLY"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const u = pm.variables.replaceIn(pm.request.url.toString());",
+          "if (pm.collectionVariables.get(\"mock_confirmed\") !== \"true\" || !new RegExp(\"^http://(127[.]0[.]0[.]1|localhost):4010/\").test(u)) { throw new Error(\"Bloqueado: habilite apenas um mock local confirmado na porta 4010.\"); }"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "E01 [SENSÍVEL] Colocar um agente em pausa",
+      "description": "[DOCUMENTADO] /item/0/item/0. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/v2/agents/MOCK_ID/pause",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pause_type_code\": \"[MASCARADO]\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"status\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E02 [SENSÍVEL] Retira um agente em pausa",
+      "description": "[DOCUMENTADO] /item/0/item/1. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/v2/agents/MOCK_ID/unpause"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"status\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E03 [SENSÍVEL] Inserir agente na fila",
+      "description": "[DOCUMENTADO] /item/0/item/2. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/v2/agents/MOCK_ID/add_to_queue",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"queue_id\": \"[MASCARADO]\",\n  \"extension\": \"[MASCARADO]\",\n  \"penalty\": \"X\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"status\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E04 [SENSÍVEL] Remover agente da fila",
+      "description": "[DOCUMENTADO] /item/0/item/3. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/v2/agents/MOCK_ID/remove_to_queue",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"queue_id\": \"[MASCARADO]\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Resposta desconhecida; nenhuma asserção de corpo\", function () { pm.expect(true).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E05 Solicita o download de uma chamada",
+      "description": "[DOCUMENTADO] /item/1/item/0. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/v2/audios/download?callid=MOCK_VALUE&format=ogg"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Resposta desconhecida; nenhuma asserção de corpo\", function () { pm.expect(true).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E06 Detalhes de pontos de registro de agentes",
+      "description": "[DOCUMENTADO] /item/2/item/0. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/call_center_reports/report_register_points_details"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"type\":\"object\",\"properties\":{\"current_page\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"per_page\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_count\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_pages\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"report_data\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"ramal\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"code\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"agent_name\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"queue\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"logon_date\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"logoff_date\":{\"description\":\"[DOCUMENTADO] Apenas null no exemplo; tipo não nulo desconhecido.\",\"x-observed-null-only\":true}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"},\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E07 Detalhes de pausas de agentes",
+      "description": "[DOCUMENTADO] /item/2/item/1. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/call_center_reports/report_pause_details"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"type\":\"object\",\"properties\":{\"current_page\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"per_page\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_count\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_pages\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"report_data\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"ramal\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"code\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"agent_name\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"queue\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"pause\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"pause_start\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"pause_finish\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"max_minutes\":{\"description\":\"[DOCUMENTADO] Apenas null no exemplo; tipo não nulo desconhecido.\",\"x-observed-null-only\":true},\"pause_duration_minutes\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"approved_by_supervisor\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"},\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E08 Retorna o status de uma chamada",
+      "description": "[DOCUMENTADO] /item/3/item/0. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/callcenter/MOCK_ID"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"type\":\"object\",\"properties\":{\"status\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"message\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E09 [SENSÍVEL] Faz o login do agente na fila",
+      "description": "[DOCUMENTADO] /item/3/item/1. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/callcenter/logon",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"[MASCARADO]\",\n  \"password\": \"[SEGREDO_REMOVIDO]\",\n  \"queue\": \"[MASCARADO]\",\n  \"extension\": \"[MASCARADO]\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"type\":\"object\",\"properties\":{\"status\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"message\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E10 [SENSÍVEL] Faz o logoff do agente na fila",
+      "description": "[DOCUMENTADO] /item/3/item/2. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/callcenter/MOCK_ID/logoff"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Resposta desconhecida; nenhuma asserção de corpo\", function () { pm.expect(true).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E11 Retorna os dados da chamada (Atendimento)",
+      "description": "[DOCUMENTADO] /item/3/item/3. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/callcenter/MOCK_ID/info"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"agent_code\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"queue\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"linkedid\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"call_datetime\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"client_name\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"client_extra_info\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"call_motive\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"call_obs\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"protocol\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"cpf_cnpj\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"call_status\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E12 Retorna os dados do relatório de chamada do CallCenter",
+      "description": "[DOCUMENTADO] /item/3/item/4. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/v2/callcenter/report",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"interval\": \"yes\",\n  \"report_type\": \"synthetic\",\n  \"queues\": \"[MASCARADO]\",\n  \"date_started_at\": \"2019-01-01\",\n  \"time_started_at\": \"00:00:00\",\n  \"date_ended_at\": \"2019-06-06\",\n  \"time_ended_at\": \"23:59:59\",\n  \"status\": \"ANSWERED\",\n  \"call_type\": \"OUTBOUND\",\n  \"hangupcause\": \"NORMAL_CLEARING\",\n  \"agent_code\": \"[MASCARADO]\",\n  \"agent_name\": \"[MASCARADO]\",\n  \"src\": \"[MASCARADO]\",\n  \"dst\": \"[MASCARADO]\",\n  \"call\": \"voice\",\n  \"ddd_src\": \"85\",\n  \"ddd_dst\": \"85\",\n  \"operator_id\": \"[MASCARADO]\",\n  \"queue\": \"[MASCARADO]\",\n  \"group_by\": \"npx_sup\",\n  \"billsec\": \"30\",\n  \"wait\": \"10\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"anyOf\":[{\"type\":\"object\",\"properties\":{\"queue_name\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"agent_code\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"agent_name\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_answered\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_time_answered\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_not_answered\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_time_not_answered\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_not_answered_agent\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_time_not_answered_agent\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_time_wait\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_busy\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_complete_agent\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_complete_caller\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_transfer\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"},{\"type\":\"object\",\"properties\":{\"calldatetime\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"billsec\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"wait\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"agent_code\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"src\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"dst\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"queue_name\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"operator_name\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"trunk\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"bound\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"call_type_name\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"status\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"linkedid\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"file\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"record\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"hangupcause\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"event\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"campaign_name\":{\"description\":\"[DOCUMENTADO] Apenas null no exemplo; tipo não nulo desconhecido.\",\"x-observed-null-only\":true},\"protocol\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"}]});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E13 [SENSÍVEL] Envio de SMS",
+      "description": "[DOCUMENTADO] /item/4/item/0. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/campaigns/sms",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"campaign_id\": 1,\n  \"messages\": [\n    {\n      \"number\": \"[MASCARADO]\",\n      \"message\": \"[MASCARADO]\"\n    },\n    {\n      \"number\": \"[MASCARADO]\",\n      \"message\": \"[MASCARADO]\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"type\":\"object\",\"properties\":{\"status\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"messages_returns\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"number\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"message_id\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"send\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"},\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E15 Listar ramais",
+      "description": "[DOCUMENTADO] /item/5/item/0. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/extensions"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"type\":\"object\",\"properties\":{\"current_page\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"per_page\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_count\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"total_pages\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"extensions\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"category\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"callerid\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"ddr\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"secret\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"writeOnly\":false,\"x-sensitive\":true,\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"context_name\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"cost_center_name\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"company_name\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"operator_name\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"},\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E16 [SENSÍVEL] Iniciar uma chamada",
+      "description": "[DOCUMENTADO] /item/6/item/0. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/pabx",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"extension\": \"[MASCARADO]\",\n  \"number\": \"[MASCARADO]\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"type\":\"object\",\"properties\":{\"callid\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"status\":{\"type\":\"number\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"});",
+              "});",
+              "pm.test(\"[DOCUMENTADO] HTTP explícito no exemplo\", function () { pm.expect([200]).to.include(pm.response.code); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E17 Retorna o status de uma chamada",
+      "description": "[DOCUMENTADO] /item/6/item/1. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/pabx/MOCK_ID"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Resposta desconhecida; nenhuma asserção de corpo\", function () { pm.expect(true).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E18 [SENSÍVEL] Encerra uma chamada",
+      "description": "[DOCUMENTADO] /item/6/item/2. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/pabx/MOCK_ID/close"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Resposta desconhecida; nenhuma asserção de corpo\", function () { pm.expect(true).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E19 Retorna o status do agente",
+      "description": "[DOCUMENTADO] /item/6/item/3. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/pabx/MOCK_ID/agent_status"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Resposta desconhecida; nenhuma asserção de corpo\", function () { pm.expect(true).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E20 [SENSÍVEL] Remove o agente da pause",
+      "description": "[DOCUMENTADO] /item/6/item/4. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/pabx/unpause",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"[MASCARADO]\",\n  \"campaign_id\": \"[MASCARADO]\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Resposta desconhecida; nenhuma asserção de corpo\", function () { pm.expect(true).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E21 [SENSÍVEL] Coloca o agente da pause",
+      "description": "[DOCUMENTADO] /item/6/item/5. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/pabx/pause",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"[MASCARADO]\",\n  \"campaign_id\": \"[MASCARADO]\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Resposta desconhecida; nenhuma asserção de corpo\", function () { pm.expect(true).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E22 Retorna os status dos extensions (Pendente de teste)",
+      "description": "[DOCUMENTADO] /item/6/item/6. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/v2/pabx/extensions"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Forma observada em exemplo; propriedades não garantidas\", function () {",
+              "  pm.response.to.have.jsonSchema({\"type\":\"object\",\"properties\":{\"extensions\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"extension\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"},\"status\":{\"type\":\"string\",\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"},\"x-certainty\":\"DOCUMENTADO\",\"description\":\"[DOCUMENTADO] Campo e tipo observados no exemplo; obrigatoriedade desconhecida.\"}},\"additionalProperties\":true,\"x-certainty\":\"DOCUMENTADO\"});",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E23 Retorna os dados do relatório de chamadas do PABX IP",
+      "description": "[DOCUMENTADO] /item/6/item/7. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/v2/pabx/report",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"report_type\": \"synthetic\",\n  \"group_by\": \"cost_center\",\n  \"date_started_at\": \"2019-01-01\",\n  \"time_started_at\": \"00:00:00\",\n  \"date_ended_at\": \"2019-06-06\",\n  \"time_ended_at\": \"23:59:59\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Resposta desconhecida; nenhuma asserção de corpo\", function () { pm.expect(true).to.eql(true); });",
+              "pm.test(\"[DOCUMENTADO] HTTP explícito no exemplo\", function () { pm.expect([200]).to.include(pm.response.code); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E24 Retorna as chamadas em espera de uma fila",
+      "description": "[DOCUMENTADO] /item/7/item/0. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/v2/queues/MOCK_ID/wait_calls"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Resposta desconhecida; nenhuma asserção de corpo\", function () { pm.expect(true).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "E26 Dados para gráfico de pesquisa de satisfação",
+      "description": "[DOCUMENTADO] /item/8/item/1. [INFERIDO] Teste somente contra mock local.",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Access-token",
+            "value": "{{mock_token}}"
+          }
+        ],
+        "url": "{{mock_base_url}}/api/satisfaction_survey_generic_reports/graphic?report_type=synthetic&queue_name=MOCK_VALUE&agent_code=MOCK_VALUE&agent_name=MOCK_VALUE&date_started_at=2000-01-01&date_ended_at=2000-01-01&time_started_at=00%3A00%3A00&time_ended_at=00%3A00%3A00"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"[DOCUMENTADO] Resposta desconhecida; nenhuma asserção de corpo\", function () { pm.expect(true).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

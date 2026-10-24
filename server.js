@@ -1,28 +1,38 @@
 const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const cors = require('cors');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { getNpxSipRegistration, getAgentConnectionState, getAgentPriority, getAgentCategory } = require('./public/agent-state');
+const { fetchPublicSefazStatuses } = require('./sefaz-public');
+const { reconcileAgentQueues } = require('./reconcile-agent-queues');
+const { applyPbxObservationToAgent } = require('./pbx-agent-state');
+const { getPanelAccess, filterPanelData } = require('./infoboard-access');
+const { withNpxMonitorObservation } = require('./npx-monitor-state');
+const { safeError, upstreamOptions, validatedUpstreamBaseUrl, sameOriginRedirect, isAllowedApiOrigin } = require('./server-security');
 
 // Carrega variáveis de ambiente
 dotenv.config();
 
 // Previne quedas do processo por erros não tratados de rede/rejeições de Promise
 process.on('uncaughtException', (err) => {
-  console.error('[Process Error] Exceção não capturada:', err.message || err);
+  console.error('[Process Error] Exceção não capturada:', safeError(err));
 });
 process.on('unhandledRejection', (reason) => {
-  console.error('[Process Error] Rejeição de Promise não tratada:', reason?.message || reason);
+  console.error('[Process Error] Rejeição de Promise não tratada:', safeError(reason));
 });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const UPDATE_INTERVAL = (process.env.UPDATE_INTERVAL_SECONDS || 6) * 1000;
+// O monitor NPX informa estado operacional, sem comprovar registro SIP.
+// O estado operacional de /rates/details_by_queue.json passa a ser o padrao.
+// Permite desativacao explicita em ambientes legados sem registro confiavel.
+const NPX_REQUIRE_SIP_CONFIRMATION = process.env.INFOBOARD_NPX_REQUIRE_SIP_CONFIRMATION !== 'false';
 
 // Configurações de Segurança (Hardening)
 app.use(helmet({
@@ -38,8 +48,16 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-app.use(cors());
-app.use(express.json());
+// Bloqueia DNS rebinding e origens cruzadas no endpoint interno.
+// Nomes DNS adicionais da rede podem ser liberados via INFOBOARD_ALLOWED_HOSTS.
+app.use('/api', (req, res, next) => {
+  if (!isAllowedApiOrigin(req)) {
+    return res.status(403).json({ error: 'Origem da requisição não autorizada.' });
+  }
+  next();
+});
+
+// Painel exclusivamente de leitura. Operações ficam no aplicativo oficial NPX.
 // Serve arquivos estáticos da pasta public
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -91,7 +109,7 @@ async function authenticatePrix() {
 
   const email = process.env.PRIXCHAT_EMAIL;
   const password = process.env.PRIXCHAT_PASSWORD;
-  const backendUrl = process.env.PRIXCHAT_BACKEND || 'https://backapp.prixchat.com.br';
+  const backendUrl = validatedUpstreamBaseUrl(process.env.PRIXCHAT_BACKEND || 'https://backapp.prixchat.com.br');
   
   if (!email || !password || email === 'seu_email@empresa.com') {
     throw new Error('Credenciais do PrixChat não configuradas.');
@@ -99,16 +117,16 @@ async function authenticatePrix() {
   
   prixAuthPromise = (async () => {
     try {
-      console.log(`[PrixChat] Tentando autenticar usuário: ${email}...`);
+      console.log('[PrixChat] Iniciando autenticação.');
       const res = await axios.post(`${backendUrl}/auth/login`, {
         email,
         password
-      }, {
+      }, upstreamOptions({
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'Mozilla/5.0'
         }
-      });
+      }));
       prixSessionToken = res.data.token;
       prixConnectionStatus.authenticated = true;
       prixConnectionStatus.error = null;
@@ -116,8 +134,8 @@ async function authenticatePrix() {
       return prixSessionToken;
     } catch (err) {
       prixConnectionStatus.authenticated = false;
-      prixConnectionStatus.error = err.message;
-      console.error('[PrixChat] Erro na autenticação:', err.message);
+      prixConnectionStatus.error = safeError(err);
+      console.error('[PrixChat] Erro na autenticação:', safeError(err));
       throw err;
     } finally {
       prixAuthPromise = null;
@@ -139,14 +157,14 @@ async function getPrixUsersMoments() {
   if (!prixSessionToken) {
     await authenticatePrix();
   }
-  const backendUrl = process.env.PRIXCHAT_BACKEND || 'https://backapp.prixchat.com.br';
+  const backendUrl = validatedUpstreamBaseUrl(process.env.PRIXCHAT_BACKEND || 'https://backapp.prixchat.com.br');
   try {
-    const res = await axios.get(`${backendUrl}/usersMoments`, {
+    const res = await axios.get(`${backendUrl}/usersMoments`, upstreamOptions({
       headers: {
         'Authorization': `Bearer ${prixSessionToken}`,
         'User-Agent': 'Mozilla/5.0'
       }
-    });
+    }));
     prixConnectionStatus.authenticated = true;
     prixConnectionStatus.error = null;
     return res.data;
@@ -154,18 +172,18 @@ async function getPrixUsersMoments() {
     if (err.response && (err.response.status === 401 || err.response.status === 403)) {
       console.log('[PrixChat] Token expirou ou foi invalidado (401/403) no moments. Re-autenticando...');
       await authenticatePrix();
-      const res = await axios.get(`${backendUrl}/usersMoments`, {
+      const res = await axios.get(`${backendUrl}/usersMoments`, upstreamOptions({
         headers: {
           'Authorization': `Bearer ${prixSessionToken}`,
           'User-Agent': 'Mozilla/5.0'
         }
-      });
+      }));
       prixConnectionStatus.authenticated = true;
       prixConnectionStatus.error = null;
       return res.data;
     }
     prixConnectionStatus.authenticated = false;
-    prixConnectionStatus.error = err.message;
+    prixConnectionStatus.error = safeError(err);
     throw err;
   }
 }
@@ -179,8 +197,25 @@ let connectionStatus = {
   lastUpdate: null
 };
 
-// Variável global para armazenar os últimos dados extraídos do PBX
+// Últimos dados extraídos do PBX
 let lastPbxData = {};
+let pbxConnectionStatus = {
+  authenticated: false,
+  error: 'Aguardando primeira coleta do PBX',
+  lastUpdate: null
+};
+
+function getPbxConnectionStatus() {
+  const lastUpdateMs = Date.parse(pbxConnectionStatus.lastUpdate);
+  const isStale = !Number.isFinite(lastUpdateMs) || Date.now() - lastUpdateMs > 30000;
+  return {
+    authenticated: pbxConnectionStatus.authenticated && !isStale,
+    error: isStale && pbxConnectionStatus.authenticated
+      ? 'Coleta PBX sem atualização há mais de 30 segundos'
+      : pbxConnectionStatus.error,
+    lastUpdate: pbxConnectionStatus.lastUpdate
+  };
+}
 
 // Helper para carregar o mapeamento de analistas dinamicamente
 function loadAnalystsMap() {
@@ -190,7 +225,7 @@ function loadAnalystsMap() {
       return JSON.parse(fs.readFileSync(mapPath, 'utf8'));
     }
   } catch (e) {
-    console.error('[PBX Integrator] Erro ao carregar analysts_map.json:', e.message);
+    console.error('[PBX Integrator] Erro ao carregar analysts_map.json:', safeError(e));
   }
   return {};
 }
@@ -214,18 +249,28 @@ function getExtension(agentName, map) {
   return null;
 }
 
-// Agente HTTPS para ignorar erros de certificado TLS auto-assinado do PBX
-const pbxHttpsAgent = new https.Agent({ rejectUnauthorized: false });
+// Certificado TLS verificado por padrão; PBX legado requer opt-in explícito.
+const pbxHttpsAgent = new https.Agent({ rejectUnauthorized: process.env.PBX_TLS_REJECT_UNAUTHORIZED !== 'false' });
 
 // Configurações de API do PBX (lidas do .env)
-const PBX_BASE_URL = process.env.PBX_BASE_URL || 'https://pbx.nossatelecom.com.br';
+const PBX_BASE_URL = process.env.PBX_BASE_URL;
 const PBX_TOKEN = process.env.PBX_API_TOKEN;
 const PBX_KEY = process.env.PBX_API_KEY;
 
 // Monitor direto do PBX via API REST (substitui o Puppeteer)
 async function startPbxApiMonitor() {
   if (!PBX_TOKEN || !PBX_KEY) {
+    pbxConnectionStatus.error = 'Credenciais PBX não configuradas';
     console.error('[PBX API] ERRO: PBX_API_TOKEN ou PBX_API_KEY não encontrado no .env. Monitor PBX desativado.');
+    return;
+  }
+
+  let pbxBaseUrl;
+  try {
+    pbxBaseUrl = validatedUpstreamBaseUrl(PBX_BASE_URL);
+  } catch (error) {
+    pbxConnectionStatus.error = safeError(error);
+    console.error('[PBX API] Configuração da URL inválida:', safeError(error));
     return;
   }
 
@@ -234,8 +279,8 @@ async function startPbxApiMonitor() {
   // Fase 1: Baixa o mapa completo de username -> linha_ip dos dispositivos cadastrados
   let usernamToRamal = {};
   try {
-    const devicesUrl = `${PBX_BASE_URL}/api/listDevices/${PBX_TOKEN}/${PBX_KEY}`;
-    const devRes = await axios.get(devicesUrl, { httpsAgent: pbxHttpsAgent });
+    const devicesUrl = `${pbxBaseUrl}/api/listDevices/${PBX_TOKEN}/${PBX_KEY}`;
+    const devRes = await axios.get(devicesUrl, upstreamOptions({ httpsAgent: pbxHttpsAgent }));
     if (devRes.data && devRes.data.error === 0 && devRes.data.data) {
       devRes.data.data.forEach(dev => {
         if (dev.username && dev.linha_ip) {
@@ -247,7 +292,7 @@ async function startPbxApiMonitor() {
       console.warn('[PBX API] Aviso: Não foi possível carregar o mapa de ramais. Usando device_username como ramal.');
     }
   } catch (err) {
-    console.error('[PBX API] Erro ao carregar mapa de dispositivos:', err.message);
+    console.error('[PBX API] Erro ao carregar mapa de dispositivos:', safeError(err));
   }
 
   // Fase 2: Loop de coleta a cada 5 segundos
@@ -255,9 +300,14 @@ async function startPbxApiMonitor() {
     try {
       // Busca dispositivos registrados (online/offline) e chamadas ativas em paralelo
       const [regRes, callsRes] = await Promise.all([
-        axios.get(`${PBX_BASE_URL}/api/listDevicesRegistered/${PBX_TOKEN}/${PBX_KEY}`, { httpsAgent: pbxHttpsAgent }),
-        axios.get(`${PBX_BASE_URL}/api/onlineCalls/${PBX_TOKEN}/${PBX_KEY}`, { httpsAgent: pbxHttpsAgent })
+        axios.get(`${pbxBaseUrl}/api/listDevicesRegistered/${PBX_TOKEN}/${PBX_KEY}`, upstreamOptions({ httpsAgent: pbxHttpsAgent })),
+        axios.get(`${pbxBaseUrl}/api/onlineCalls/${PBX_TOKEN}/${PBX_KEY}`, upstreamOptions({ httpsAgent: pbxHttpsAgent }))
       ]);
+
+      if (regRes.data?.error !== 0 || !Array.isArray(regRes.data?.data) ||
+          callsRes.data?.error !== 0 || !Array.isArray(callsRes.data?.data)) {
+        throw new Error('Resposta inválida na consulta de dispositivos ou chamadas do PBX');
+      }
 
       // Monta um mapa de chamadas ativas por ramal: { "2008": { source, destination, status_text, starttime } }
       const activeCalls = {};
@@ -364,8 +414,13 @@ async function startPbxApiMonitor() {
         });
         lastPbxData = newPbxData;
       }
+      pbxConnectionStatus.authenticated = true;
+      pbxConnectionStatus.error = null;
+      pbxConnectionStatus.lastUpdate = new Date().toISOString();
     } catch (err) {
-      console.error('[PBX API] Erro na coleta do loop:', err.message);
+      pbxConnectionStatus.authenticated = false;
+      pbxConnectionStatus.error = safeError(err);
+      console.error('[PBX API] Erro na coleta do loop:', safeError(err));
     }
   }
 
@@ -402,17 +457,17 @@ async function authenticate() {
     throw new Error('Credenciais padrão ou ausentes no arquivo .env. Usando modo simulador.');
   }
 
-  console.log(`[NPX Integrator] Tentando autenticar usuário: ${email}...`);
+  console.log('[NPX Integrator] Iniciando autenticação.');
   const jar = new CookieJar();
 
   npxAuthPromise = (async () => {
     try {
       // 1. GET para pegar a página de login e o token de autenticidade (CSRF) do Rails
-      const getRes = await axios.get('https://app.npxtech.com.br/users/sign_in', {
+      const getRes = await axios.get('https://app.npxtech.com.br/users/sign_in', upstreamOptions({
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
-      });
+      }));
 
       jar.parseSetCookie(getRes.headers);
       const $ = cheerio.load(getRes.data);
@@ -429,34 +484,35 @@ async function authenticate() {
       params.append('user[password]', password);
       params.append('commit', 'Entrar');
 
-      const postRes = await axios.post('https://app.npxtech.com.br/users/sign_in', params.toString(), {
+      const npxLoginUrl = 'https://app.npxtech.com.br/users/sign_in';
+      const postRes = await axios.post(npxLoginUrl, params.toString(), upstreamOptions({
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Cookie': jar.getCookieString(),
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         },
-        maxRedirects: 0,
         validateStatus: (status) => status >= 200 && status < 400
-      });
+      }));
 
       jar.parseSetCookie(postRes.headers);
 
-      // Segue o redirect para o dashboard para o Rails consolidar o cookie de sessão autenticado
-      if (postRes.headers['location']) {
-        const redirUrl = postRes.headers['location'].startsWith('http')
-          ? postRes.headers['location']
-          : 'https://app.npxtech.com.br' + postRes.headers['location'];
-        
-        const redirRes = await axios.get(redirUrl, {
+      // A sessão só acompanha redirecionamentos dentro da origem autenticada.
+      let redirectLocation = postRes.headers['location'];
+      let previousUrl = npxLoginUrl;
+      for (let redirectCount = 0; redirectLocation && redirectCount < 5; redirectCount++) {
+        const redirectUrl = sameOriginRedirect(redirectLocation, previousUrl);
+        const redirectResponse = await axios.get(redirectUrl, upstreamOptions({
           headers: {
             'Cookie': jar.getCookieString(),
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
           },
-          maxRedirects: 5,
           validateStatus: (status) => status >= 200 && status < 400
-        });
-        jar.parseSetCookie(redirRes.headers);
+        }));
+        jar.parseSetCookie(redirectResponse.headers);
+        redirectLocation = redirectResponse.headers['location'];
+        previousUrl = redirectUrl;
       }
+      if (redirectLocation) throw new Error('Limite de redirecionamentos da integração excedido');
 
       activeSession = jar;
       connectionStatus.authenticated = true;
@@ -466,8 +522,8 @@ async function authenticate() {
       return true;
     } catch (error) {
       connectionStatus.authenticated = false;
-      connectionStatus.error = error.message;
-      console.error('[NPX Integrator] Erro na autenticação:', error.message);
+      connectionStatus.error = safeError(error);
+      console.error('[NPX Integrator] Erro na autenticação:', safeError(error));
       throw error;
     } finally {
       npxAuthPromise = null; // Limpa a promise após terminar
@@ -478,7 +534,7 @@ async function authenticate() {
 }
 
 // Helper para fazer requisição GET na API do NPX (JSON) com cookies
-async function apiGet(endpoint, params = {}) {
+async function apiGet(endpoint, params = {}, retried = false) {
   if (!connectionStatus.authenticated || !activeSession.hasCookies()) {
     await authenticate();
   }
@@ -486,33 +542,34 @@ async function apiGet(endpoint, params = {}) {
   const url = `https://app.npxtech.com.br${endpoint}`;
   
   try {
-    const res = await axios.get(url, {
+    const res = await axios.get(url, upstreamOptions({
       params,
       headers: {
         'Cookie': activeSession.getCookieString(),
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'application/json, text/javascript, */*; q=0.01',
         'X-Requested-With': 'XMLHttpRequest'
-      },
-      timeout: 10000
-    });
+      }
+    }, 20000));
 
     // Se o HTML retornado contém o formulário de login, nossa sessão expirou
     if (typeof res.data === 'string' && (res.data.includes('new_user') || res.data.includes('users/sign_in'))) {
       console.log('[NPX Integrator] Sessão expirou. Re-autenticando...');
       activeSession = new CookieJar();
       connectionStatus.authenticated = false;
+      // Credenciais inválidas não podem iniciar uma cadeia infinita de logins.
+      if (retried) throw new Error('Sessão NPX não confirmada após autenticação');
       await authenticate();
-      return apiGet(endpoint, params); // Tenta novamente após re-autenticar
+      return apiGet(endpoint, params, true);
     }
 
     return res.data;
   } catch (error) {
     // Se for 401 ou erro de conexão (ECONNRESET, ETIMEDOUT, etc.), limpa os cookies para forçar login novo
-    console.error(`[NPX Integrator] Erro ao buscar ${endpoint}: ${error.message}. Resetando sessão para reconectar.`);
+    console.error('[NPX Integrator] Falha ao buscar dados:', safeError(error));
     activeSession = new CookieJar();
     connectionStatus.authenticated = false;
-    connectionStatus.error = error.message;
+    connectionStatus.error = safeError(error);
     throw error;
   }
 }
@@ -541,6 +598,16 @@ function formatSecondsToTime(seconds) {
 }
 
 // Gerador de dados simulados de alta fidelidade
+function emptyDepartmentData() {
+  return { queue: 0, wait_time_sec: 0, agents: [], calls: [],
+    agents_online: 0, agents_busy: 0, agents_paused: 0, agents_free: 0 };
+}
+
+function emptyDepartments() {
+  return Object.fromEntries(Object.keys(DEPARTMENTS).map(key => [key, emptyDepartmentData()]));
+}
+
+// Gerador de dados simulados de alta fidelidade (somente demo explícita)
 function generateSimulatedData() {
   const time = new Date();
   const seed = time.getMinutes() + (time.getSeconds() / 60);
@@ -662,16 +729,40 @@ function generateSimulatedData() {
 }
 
 function escapeHtml(str) {
-  if (!str) return '';
+  if (str == null) return '';
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const TRUSTED_HORARIOS_IMAGE_HOSTS = new Set([
+  '192.168.243.2:8888',
+  'srv-ads002:8888'
+]);
+
+function normalizeTrustedHorariosImageSrc(src) {
+  if (!src) return '';
+  try {
+    const url = new URL(String(src), 'http://192.168.243.2:8888/');
+    const trustedProtocol = url.protocol === 'http:' || url.protocol === 'https:';
+    const trustedHost = TRUSTED_HORARIOS_IMAGE_HOSTS.has(url.host.toLowerCase());
+    if (!trustedProtocol || !trustedHost || url.username || url.password) return '';
+    return url.href;
+  } catch {
+    return '';
+  }
+}
+
+function safeTickerImageSrc(src) {
+  return escapeHtml(normalizeTrustedHorariosImageSrc(src));
 }
 
 function isWorkingHours() {
   const now = new Date();
-  const day = now.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+  const day = now.getDay();
   const hour = now.getHours();
 
   // Domingo (0): Fora de expediente
@@ -737,10 +828,10 @@ async function checkAndSendTelegramSlaAlerts(prixchatResult) {
             chat_id: chatId,
             text: msg,
             parse_mode: 'HTML'
-          });
-          console.log(`[Telegram Bot] Alerta de SLA enviado para ${t.client} (ID: ${t.id || 'N/D'}, ${mins}m na fila)!`);
+          }, upstreamOptions());
+          console.log('[Telegram Bot] Alerta de SLA enviado.');
         } catch (err) {
-          console.error('[Telegram Bot] Erro ao enviar alerta:', err.response ? err.response.data : err.message);
+          console.error('[Telegram Bot] Erro ao enviar alerta:', safeError(err));
         }
       }
     }
@@ -768,10 +859,10 @@ async function checkAndSendTelegramSlaAlerts(prixchatResult) {
               chat_id: chatId,
               text: msg,
               parse_mode: 'HTML'
-            });
-            console.log(`[Telegram Bot] Confirmação de atendimento assumido enviada: ${agent.name} puxou ${t.client} (ID: ${t.id || 'N/D'})!`);
+            }, upstreamOptions());
+            console.log('[Telegram Bot] Confirmação de atendimento enviada.');
           } catch (err) {
-            console.error('[Telegram Bot] Erro ao enviar confirmação de atendimento assumido:', err.response ? err.response.data : err.message);
+            console.error('[Telegram Bot] Erro ao enviar confirmação de atendimento assumido:', safeError(err));
           }
         }
       }
@@ -799,6 +890,10 @@ async function runUpdateCycle() {
     const departmentsArray = Object.entries(DEPARTMENTS);
 
     const analystsMap = loadAnalystsMap();
+    // Todas as filas desta coleta usam o mesmo retrato do PBX. Como a
+    // consulta NPX e a atualização PBX são assíncronas, ler lastPbxData
+    // dentro de cada fila produz cards diferentes para o mesmo ramal.
+    const pbxDataSnapshot = getPbxConnectionStatus().authenticated ? lastPbxData : {};
 
     // Executa as requisições do NPX e do PrixChat em paralelo
     const [npxResults, prixMoments] = await Promise.all([
@@ -808,7 +903,10 @@ async function runUpdateCycle() {
         // Busca dados concorrentemente para este setor
         const [totals, details, waitCalls] = await Promise.all([
           apiGet('/rates/totals_filter_by_queues.json', { queue: dept.path, queue_type: 'LOG' }),
-          apiGet('/rates/details_by_queue.json', { queue: dept.path, queue_type: 'LOG' }),
+          apiGet('/rates/details_by_queue.json', { queue: dept.path, queue_type: 'LOG' }).then(data => {
+            if (!NPX_REQUIRE_SIP_CONFIRMATION) return data;
+            return { ...data, details: withNpxMonitorObservation(data?.details, dept.path) };
+          }),
           apiGet('/rates/wait_calls.json', { queue: dept.path })
         ]);
 
@@ -838,36 +936,18 @@ async function runUpdateCycle() {
           });
         }
 
-        // 2. Ligações ativas (agentes ocupados com chamadas)
-        if (details && details.details) {
-          details.details.forEach(agent => {
-            const isBusy = agent.status === 2 || agent.src || agent.dst;
-            if (isBusy && (agent.src || agent.dst)) {
-              calls.push({
-                id: `real-act-${agent.code}`,
-                client: agent.src || agent.dst || 'Chamada Ativa',
-                agent: agent.name,
-                time_sec: parseTimeToSeconds(agent.time),
-                status: 'Atendimento'
-              });
-            }
-          });
-        }
-
-        // Ordena a lista de analistas obtidos reais para manter consistência visual no painel
-        const sortedAgents = details && details.details ? [...details.details] : [];
-        sortedAgents.sort((a, b) => {
-          if (a.status === b.status) return 0;
-          if (a.status === 2) return -1;
-          if (b.status === 2) return 1;
-          if (a.status === 5) return -1;
-          if (b.status === 5) return 1;
-          return 0;
-        });
+        // Copia os analistas antes de incorporar o estado do PBX.
+        let sortedAgents = details && details.details ? [...details.details] : [];
 
         // Injeta o status do PBX nos analistas retornados (Para a API Real)
-        const pbxData = lastPbxData;
+        // Nunca reutiliza presenca PBX apos falha ou expiração da ultima coleta.
+        const pbxData = pbxDataSnapshot;
+        const pbxInOtherDepartment = new Set();
         sortedAgents.forEach(agent => {
+          // A presença vem do monitor NPX desta coleta, independentemente do SIP.
+          agent.npxQueuePresent = true;
+          agent.npxSipRegistered = getNpxSipRegistration(agent, { explicitOnly: NPX_REQUIRE_SIP_CONFIRMATION });
+          agent.npxRequireSipConfirmation = NPX_REQUIRE_SIP_CONFIRMATION;
           const ramal = getExtension(agent.name, analystsMap);
           agent.ramal = ramal;
           
@@ -879,25 +959,29 @@ async function runUpdateCycle() {
           });
           const val = mappedEntry ? mappedEntry[1] : null;
           const dept = val && typeof val === 'object' ? val.departamento : 'InfoBrasil_Suporte';
+          // O registro do ramal independe da fila NPX exibida. Um dispositivo
+          // desregistrado deve ter o mesmo estado em qualquer setor.
+          applyPbxObservationToAgent(agent, {
+            pbxInfo: pbxData[ramal], ramal, mappedQueue: dept, currentQueue: key
+          });
 
-          // O status do NPX (agent.status) agora será mantido como vem da API real (0 = Offline, 1 = Online, etc)
-          // Isso garante que apenas quem está logado no MicroSIP do NPX fique Verde Escuro.
+          // agent.status informa a situacao na fila, nao o registro SIP do MicroSIP.
 
-          // Só aplica override do PBX se o analista pertencer a esta fila/setor
-          if (dept === key && ramal && pbxData[ramal]) {
-            const pbxInfo = pbxData[ramal];
-            agent.pbxStatus = pbxInfo.status;
-            agent.pbxNumber = pbxInfo.number;
-            agent.pbxDuration = pbxInfo.duration;
-            agent.pbxDurationStr = pbxInfo.durationStr;
-            agent.pbxDirection = pbxInfo.direction;
-
-            // Se o analista NÃO está logado no NPX (00:00:00), zera o status do NPX para seguir 100% o padrão do PBX
-            if (!agent.total_loged_time || agent.total_loged_time === "00:00:00") {
-              agent.status = 0;
-            }
+          // PBX registrado aparece exclusivamente no setor cadastrado do analista.
+          // Uma presença residual em outra fila NPX não cria um segundo card online.
+          // Uma troca valida pode levar o analista para outro setor sem mudar
+          // seu departamento cadastrado no mapa do PBX.
+          const npxActiveHere = NPX_REQUIRE_SIP_CONFIRMATION &&
+            getAgentConnectionState(agent).isNpxQueueOnline;
+          if (val && dept !== key && ramal && ['Free', 'Busy'].includes(pbxData[ramal]?.status) &&
+              !npxActiveHere) {
+            pbxInOtherDepartment.add(agent);
+            return;
           }
+
+          // Tempo acumulado de login nao prova presenca SIP e nao altera o status original.
         });
+        sortedAgents = sortedAgents.filter(agent => !pbxInOtherDepartment.has(agent));
 
         // Injeta analistas mapeados que estão offline no NPX mas logados no PBX (Free ou Busy)
         Object.entries(analystsMap).forEach(([name, val]) => {
@@ -919,6 +1003,10 @@ async function runUpdateCycle() {
                       name: name,
                       ramal: ramal,
                       status: 0,
+                      npxQueuePresent: false,
+                      npxSipRegistered: false,
+                      npxRequireSipConfirmation: NPX_REQUIRE_SIP_CONFIRMATION,
+                      pbxMonitorConfirmed: true,
                       pbxStatus: pbxInfo.status,
                       pbxNumber: pbxInfo.number,
                       pbxDuration: pbxInfo.duration,
@@ -934,6 +1022,21 @@ async function runUpdateCycle() {
            }
         });
 
+        // Chamadas ativas NPX somente após aplicar a precedência PBX e remover
+        // eventuais presenças residuais em outras filas.
+        sortedAgents.forEach(agent => {
+          const state = getAgentConnectionState(agent);
+          if (state.isRealNpxCall) {
+            calls.push({
+              id: `real-act-${agent.code}`,
+              client: state.hasRealPhoneDst ? state.dstText : state.srcText,
+              agent: agent.name,
+              time_sec: parseTimeToSeconds(agent.time),
+              status: 'Atendimento'
+            });
+          }
+        });
+
         // Recalcula os totais com base no estado final modificado pelo PBX
         let finalBusy = 0;
         let finalPaused = 0;
@@ -941,27 +1044,18 @@ async function runUpdateCycle() {
         let finalOnline = 0;
 
         sortedAgents.forEach(agent => {
-          if (agent.status === 2) {
-            finalBusy++;
-            finalOnline++;
-          } else if (agent.status === 5) {
-            finalPaused++;
-            finalOnline++;
-          } else if (agent.status === 1) {
-            finalFree++;
-            finalOnline++;
-          }
+          // Um analista pode estar conectado apenas no PBX. Contabiliza uma
+          // única vez por pessoa, respeitando a precedência pausa > ocupado > livre.
+           const category = getAgentCategory(agent);
+           if (category === 'paused') finalPaused++;
+           else if (category === 'busy') finalBusy++;
+           else if (category === 'free') finalFree++;
         });
+        finalOnline = finalBusy + finalPaused + finalFree;
 
         // Reordena para garantir que ocupados fiquem no topo
-        sortedAgents.sort((a, b) => {
-          if (a.status === b.status) return 0;
-          if (a.status === 2) return -1;
-          if (b.status === 2) return 1;
-          if (a.status === 5) return -1;
-          if (b.status === 5) return 1;
-          return 0;
-        });
+        sortedAgents.sort((a, b) => getAgentPriority(a) - getAgentPriority(b) ||
+          String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR'));
 
         return {
           key,
@@ -980,7 +1074,7 @@ async function runUpdateCycle() {
         };
       })),
       getPrixUsersMoments().catch(err => {
-        console.error('[PrixChat] Erro ao coletar tickets reais de WhatsApp:', err.message);
+        console.error('[PrixChat] Erro ao coletar tickets reais de WhatsApp:', safeError(err));
         return null;
       })
     ]);
@@ -1076,10 +1170,7 @@ async function runUpdateCycle() {
           isSimulated: connectionStatus.isSimulated,
           error: connectionStatus.error
         },
-        pbx: {
-          authenticated: true,
-          error: null
-        },
+        pbx: getPbxConnectionStatus(),
         prix: {
           authenticated: prixConnectionStatus.authenticated,
           isSimulated: prixConnectionStatus.isSimulated,
@@ -1092,16 +1183,25 @@ async function runUpdateCycle() {
       sefaz: sefazDataCache
     };
   } catch (err) {
-    console.error('[NPX Integrator] Erro no ciclo de atualização. Mantendo último dado conhecido:', err.message);
-    connectionStatus.error = err.message;
+    console.error('[NPX Integrator] Erro no ciclo de atualização. Mantendo último dado conhecido:', safeError(err));
+    connectionStatus.error = safeError(err);
     connectionStatus.authenticated = false;
 
     if (lastScrapedData && (!lastScrapedData.status || !lastScrapedData.status.isSimulated)) {
       // Mantém os dados antigos na tela (congelados) e apenas acende o alerta de erro
+      // Uma coleta NPX indisponível não pode manter presença na fila como online.
+      for (const dept of Object.values(lastScrapedData.departments || {})) {
+        for (const agent of dept.agents || []) agent.npxQueuePresent = false;
+        const categories = (dept.agents || []).map(getAgentCategory);
+        dept.agents_busy = categories.filter(c => c === 'busy').length;
+        dept.agents_paused = categories.filter(c => c === 'paused').length;
+        dept.agents_free = categories.filter(c => c === 'free').length;
+        dept.agents_online = dept.agents_busy + dept.agents_paused + dept.agents_free;
+      }
       lastScrapedData.status.npx = {
         authenticated: false,
         isSimulated: false,
-        error: err.message
+        error: safeError(err)
       };
       lastScrapedData.status.isSimulated = false;
     } else {
@@ -1111,12 +1211,9 @@ async function runUpdateCycle() {
         npx: {
           authenticated: false,
           isSimulated: true,
-          error: err.message
+          error: safeError(err)
         },
-        pbx: {
-          authenticated: true,
-          error: null
-        },
+        pbx: getPbxConnectionStatus(),
         prix: {
           authenticated: prixConnectionStatus.authenticated,
           isSimulated: prixConnectionStatus.isSimulated,
@@ -1131,6 +1228,19 @@ async function runUpdateCycle() {
 
 // --- INTEGRAÇÃO COM PORTAL DE HORÁRIOS E ESCALAS (SRV-ADS002) ---
 let horariosCache = null;
+let horariosFetchPromise = null;
+let horariosRetryTimer = null;
+let horariosRetryDelay = 30 * 1000;
+const HORARIOS_RETRY_MAX_DELAY = 5 * 60 * 1000;
+
+function scheduleHorariosRetry() {
+  if (horariosCache || horariosRetryTimer) return;
+  horariosRetryTimer = setTimeout(() => {
+    horariosRetryTimer = null;
+    fetchHorariosData();
+  }, horariosRetryDelay);
+  horariosRetryDelay = Math.min(horariosRetryDelay * 2, HORARIOS_RETRY_MAX_DELAY);
+}
 
 function rebuildTicker() {
   if (!horariosCache) return;
@@ -1138,7 +1248,9 @@ function rebuildTicker() {
     horariosCache.pillEscala,
     horariosCache.pillSobreaviso,
     horariosCache.pillApoio,
+    horariosCache.pillDomingos,
     horariosCache.pillFerias,
+    horariosCache.pillEventos,
     horariosCache.pillAniversariantes,
     hospedagensCache.tickerHtml
   ].filter(Boolean);
@@ -1162,15 +1274,23 @@ function getNextSaturdayString() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-async function fetchHorariosData() {
+function fetchHorariosData() {
+  if (horariosFetchPromise) return horariosFetchPromise;
+  horariosFetchPromise = collectHorariosData().finally(() => {
+    horariosFetchPromise = null;
+  });
+  return horariosFetchPromise;
+}
+
+async function collectHorariosData() {
   const satDate = getNextSaturdayString();
   const [yyyy, mm, dd] = satDate.split('-');
   const formattedSatDate = `${dd}/${mm}/${yyyy}`;
 
   let res = null;
   const urlsToTry = [
-    `http://srv-ads002:8888/horarios?data_filtro_sabado=${satDate}`,
-    `http://192.168.243.2:8888/horarios?data_filtro_sabado=${satDate}`
+    `http://srv-ads002:8888/horarios?sabado=${satDate}`,
+    `http://192.168.243.2:8888/horarios?sabado=${satDate}`
   ];
 
   for (const url of urlsToTry) {
@@ -1184,10 +1304,7 @@ async function fetchHorariosData() {
 
   if (!res || !res.data) {
     console.error('[Horarios Scraper] Não foi possível conectar ao servidor de horários (srv-ads002 / 192.168.243.2).');
-    // Se ainda não temos nenhum dado em cache, tenta novamente em 5 segundos
-    if (!horariosCache) {
-      setTimeout(fetchHorariosData, 5000);
-    }
+    scheduleHorariosRetry();
     return;
   }
 
@@ -1246,6 +1363,76 @@ async function fetchHorariosData() {
 
     const ausenciasArr = [];
     const ausenciasHtmlArr = [];
+
+    // --- ESCALA DE SOBREAVISO AOS DOMINGOS (PLANTÃO TEF) ---
+    let $domingoCard = $('#secao-escala-domingo');
+    if ($domingoCard.length === 0) {
+      $('.card').each((_, card) => {
+        const text = $(card).find('h1, h2, h3, h4, h5, h6, .card-header, .card-title, .section-header').text().toLowerCase();
+        if (text.includes('domingo') || text.includes('plantão tef') || text.includes('plantao tef')) {
+          $domingoCard = $(card);
+          return false;
+        }
+      });
+    }
+
+    const sobreavisoDomingosArr = [];
+    $domingoCard.find('.card-tec').each((_, card) => {
+      const $spanData = $(card).find('[data-domingo]').first();
+      let dataIso = ($spanData.attr('data-domingo') || '').trim();
+      const rawDateText = ($spanData.text() || $(card).text() || '').trim();
+      const brMatch = rawDateText.match(/\b(\d{2})\/(\d{2})\/(\d{4})\b/);
+      let dataBr = brMatch ? brMatch[0] : '';
+
+      if (!dataBr && /^\d{4}-\d{2}-\d{2}$/.test(dataIso)) {
+        const [y, m, d] = dataIso.split('-');
+        dataBr = `${d}/${m}/${y}`;
+      } else if (!dataIso && brMatch) {
+        dataIso = `${brMatch[3]}-${brMatch[2]}-${brMatch[1]}`;
+      }
+
+      let domDate = null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dataIso)) {
+        const [y, m, d] = dataIso.split('-').map(Number);
+        domDate = new Date(y, m - 1, d);
+      } else {
+        domDate = parseDateBR(dataBr);
+      }
+      if (!domDate || Number.isNaN(domDate.getTime())) return;
+      domDate.setHours(0, 0, 0, 0);
+      if (domDate < today) return; // Ignora domingos já passados
+
+      let $nomeEl = $(card).find('.card-nome, div[title]').first();
+      if ($nomeEl.length === 0) {
+        $nomeEl = $(card).find('img.card-avatar').next('div').children('div').first();
+      }
+      const nome = ($nomeEl.attr('title') || $nomeEl.text() || '').trim();
+      if (!nome || !dataBr) return;
+
+      const badgesText = $(card).find('.badge').map((__, b) => $(b).text().trim()).get().join(' ');
+      const proximo = /pr[óo]ximo\s+domingo/i.test(badgesText);
+
+      sobreavisoDomingosArr.push({
+        nome,
+        data: dataBr,
+        dataIso,
+        proximo,
+        _ts: domDate.getTime()
+      });
+    });
+
+    sobreavisoDomingosArr.sort((a, b) => a._ts - b._ts);
+    sobreavisoDomingosArr.forEach((item, idx) => {
+      if (idx === 0) item.proximo = true;
+      delete item._ts;
+    });
+
+    const sobreavisoDomingosHtmlArr = sobreavisoDomingosArr.map(
+      item => `<strong>${escapeHtml(item.nome)}</strong> (${escapeHtml(item.data)})`
+    );
+    const sobreavisoDomingosTextoArr = sobreavisoDomingosArr.map(
+      item => `${item.nome} (${item.data})`
+    );
 
     $ausenciasCard.find('table tr').slice(1).each((i, tr) => {
       const row = $(tr).find('td').map((c, td) => $(td).text().trim()).get();
@@ -1314,6 +1501,7 @@ async function fetchHorariosData() {
           if (fotoSrc && fotoSrc.startsWith('/')) {
             fotoSrc = 'http://192.168.243.2:8888' + fotoSrc;
           }
+          fotoSrc = normalizeTrustedHorariosImageSrc(fotoSrc);
 
           const nascimento = $tds.eq(7).text().trim(); // DD/MM/YYYY
           if (status === 'ATIVO' && nascimento && nascimento.includes('/')) {
@@ -1340,30 +1528,32 @@ async function fetchHorariosData() {
     const aniversariantesTextParts = [];
     
     aniversariantesHoje.forEach(item => {
-      const imgHtml = item.foto ? `<img src="${item.foto}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; margin-right:4px;">` : '';
-      aniversariantesParts.push(`<strong style="color: #ffeb3b; display:inline-flex; align-items:center;">🎉 Feliz Aniversário, ${imgHtml} ${escapeHtml(item.nome)}! 🎂</strong>`);
-      aniversariantesTextParts.push(`🎉 Feliz Aniversário, ${item.nome}! 🎂`);
+      const fotoSrc = safeTickerImageSrc(item.foto);
+      const imgHtml = fotoSrc ? `<img src="${fotoSrc}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; margin-right:4px;">` : '';
+       aniversariantesParts.push(`<strong style="color: #ffeb3b; display:inline-flex; align-items:center;">Feliz Aniversário, ${imgHtml} ${escapeHtml(item.nome)}!</strong>`);
+       aniversariantesTextParts.push(`Feliz Aniversário, ${item.nome}!`);
     });
 
     aniversariantesMes.forEach(item => {
-      const imgHtml = item.foto ? `<img src="${item.foto}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; margin-right:4px;">` : '';
+      const fotoSrc = safeTickerImageSrc(item.foto);
+      const imgHtml = fotoSrc ? `<img src="${fotoSrc}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; margin-right:4px;">` : '';
       aniversariantesParts.push(`<span style="display:inline-flex; align-items:center;">${imgHtml} ${escapeHtml(item.nome)} (${item.dia}/${mesAtual})</span>`);
       aniversariantesTextParts.push(`${item.nome} (${item.dia}/${mesAtual})`);
     });
 
     const pillAniversariantes = aniversariantesParts.length > 0 
-      ? `<span class="ticker-pill pill-aniversariantes" style="display:inline-flex; align-items:center; gap:6px;"><i class="fa-solid fa-gift"></i> <strong>ANIVERSARIANTES DO MÊS:</strong> ${aniversariantesParts.join(' • ')}</span>`
+      ? `<span class="ticker-pill pill-aniversariantes" style="display:inline-flex; align-items:center; gap:6px;"><i class="fa-solid fa-gift"></i> <strong>ANIVERSARIANTES DO MÊS:</strong> ${aniversariantesParts.join(' ⬢ ')}</span>`
       : '';
     const textAniversariantes = aniversariantesTextParts.length > 0
-      ? ` | 🎁 ANIVERSARIANTES DO MÊS: ${aniversariantesTextParts.join(' • ')}`
+       ? ` | ANIVERSARIANTES DO MÊS: ${aniversariantesTextParts.join(' ⬢ ')}`
       : '';
     // --------------------------------
 
-    const turnosStr = turnos.length > 0 ? turnos.join('  •  ') : 'Sem escala cadastrada';
+    const turnosStr = turnos.length > 0 ? turnos.join('  ⬢  ') : 'Sem escala cadastrada';
     const sobreavisoStr = sobreavisoArr.length > 0 ? sobreavisoArr.join(', ') : 'Nenhum';
     const apoioFixoStr = apoioFixoArr.length > 0 ? apoioFixoArr.join(', ') : 'Nenhum';
-    const ausenciasStr = ausenciasArr.length > 0 ? ausenciasArr.join(' • ') : 'Nenhuma';
-    const ausenciasHtmlStr = ausenciasHtmlArr.length > 0 ? ausenciasHtmlArr.join(' • ') : 'Nenhuma';
+    const ausenciasStr = ausenciasArr.length > 0 ? ausenciasArr.join(' ⬢ ') : 'Nenhuma';
+    const ausenciasHtmlStr = ausenciasHtmlArr.length > 0 ? ausenciasHtmlArr.join(' ⬢ ') : 'Nenhuma';
 
     // Detecta a cor da equipe de plantão no sábado (Amarela ou Verde)
     let equipeCorClass = '';
@@ -1390,42 +1580,114 @@ async function fetchHorariosData() {
 
     // Escala: só mostra se houver turnos cadastrados
     const pillEscala = turnos.length > 0
-      ? `<span class="ticker-pill ${pillEscalaClass}"><i class="fa-solid fa-calendar-days"></i> <strong>SÁBADO (${formattedSatDate}):</strong> ${turnos.join('  •  ')}</span>`
+      ? `<span class="ticker-pill ${pillEscalaClass}"><i class="fa-solid fa-calendar-days"></i> <strong>SÁBADO (${formattedSatDate}):</strong> ${turnos.map(escapeHtml).join('  ⬢  ')}</span>`
       : '';
 
     // Sobreaviso: só mostra se houver alguém de sobreaviso
     const pillSobreaviso = sobreavisoArr.length > 0
-      ? `<span class="ticker-pill pill-sobreaviso"><i class="fa-solid fa-triangle-exclamation"></i> <strong>SOBREAVISO:</strong> ${sobreavisoArr.join(', ')}</span>`
+      ? `<span class="ticker-pill pill-sobreaviso"><i class="fa-solid fa-triangle-exclamation"></i> <strong>SOBREAVISO:</strong> ${sobreavisoArr.map(escapeHtml).join(', ')}</span>`
       : '';
 
     // Apoio fixo: só mostra se houver alguém de apoio
     const pillApoio = apoioFixoArr.length > 0
-      ? `<span class="ticker-pill pill-apoio"><i class="fa-solid fa-wrench"></i> <strong>APOIO FIXO (08h-12h):</strong> ${apoioFixoArr.join(', ')}</span>`
+      ? `<span class="ticker-pill pill-apoio"><i class="fa-solid fa-wrench"></i> <strong>APOIO FIXO (08h-12h):</strong> ${apoioFixoArr.map(escapeHtml).join(', ')}</span>`
+      : '';
+
+    // Sobreaviso aos Domingos (Plantão TEF): só mostra se houver próximos domingos cadastrados
+    const pillDomingos = sobreavisoDomingosHtmlArr.length > 0
+      ? `<span class="ticker-pill pill-sobreaviso pill-domingo"><i class="fa-solid fa-headset"></i> <strong>SOBREAVISO DOMINGOS (PLANTÃO TEF):</strong> ${sobreavisoDomingosHtmlArr.join(' ⬢ ')}</span>`
       : '';
 
     // Férias/Ausências: só mostra se houver alguma ausência
     const pillFerias = ausenciasHtmlArr.length > 0
-      ? `<span class="ticker-pill pill-ferias"><i class="fa-solid fa-umbrella-beach"></i> <strong>AUSÊNCIAS E FÉRIAS:</strong> ${ausenciasHtmlArr.join(' • ')}</span>`
+      ? `<span class="ticker-pill pill-ferias"><i class="fa-solid fa-umbrella-beach"></i> <strong>AUSÊNCIAS E FÉRIAS:</strong> ${ausenciasHtmlArr.join(' ⬢ ')}</span>`
       : '';
 
-    // Texto base do ticker (sem pills — fallback para browsers sem suporte a HTML)
-    const partsTexto = [];
-    if (turnos.length > 0)       partsTexto.push(`📅 ESCALA DE SÁBADO (${formattedSatDate}): ${turnos.join('  •  ')}`);
-    if (sobreavisoArr.length > 0) partsTexto.push(`🚨 SOBREAVISO: ${sobreavisoArr.join(', ')}`);
-    if (apoioFixoArr.length > 0)  partsTexto.push(`🛠️ APOIO FIXO: ${apoioFixoArr.join(', ')}`);
-    if (ausenciasArr.length > 0)  partsTexto.push(`🏖️ AUSÊNCIAS E FÉRIAS: ${ausenciasArr.join(' • ')}`);
+     // Texto base do ticker, usado quando a versão HTML não está disponível.
+     const partsTexto = [];
+     if (turnos.length > 0)       partsTexto.push(`SÁBADO (${formattedSatDate}): ${turnos.join('  ⬢  ')}`);
+     if (sobreavisoArr.length > 0) partsTexto.push(`SOBREAVISO: ${sobreavisoArr.join(', ')}`);
+     if (apoioFixoArr.length > 0)  partsTexto.push(`APOIO FIXO: ${apoioFixoArr.join(', ')}`);
+     if (sobreavisoDomingosTextoArr.length > 0) partsTexto.push(`SOBREAVISO DOMINGOS (PLANTÃO TEF): ${sobreavisoDomingosTextoArr.join(' ⬢ ')}`);
+     if (ausenciasArr.length > 0)  partsTexto.push(`AUSÊNCIAS E FÉRIAS: ${ausenciasArr.join(' ⬢ ')}`);
     if (textAniversariantes)      partsTexto.push(textAniversariantes.replace(/^\s*\|\s*/, ''));
+    // --- EVENTOS EM DESTAQUE ---
+    const eventosArr = [];
+    $('#secao-eventos .evento-card').each((i, card) => {
+      const data_titulo = $(card).find('.evento-cabecalho h4, .evento-cabecalho h3, .evento-cabecalho').first().text().trim();
+
+      // Parse data do titulo (ex: "05/10 - Happy Hour")
+      let eventoPassou = false;
+      const dateMatch = data_titulo.match(/^(\d{2})\/(\d{2})(?:\/(\d{4}))?/);
+      if (dateMatch) {
+         const day = parseInt(dateMatch[1], 10);
+         const month = parseInt(dateMatch[2], 10);
+         const year = dateMatch[3] ? parseInt(dateMatch[3], 10) : new Date().getFullYear();
+
+         const evtDate = new Date(year, month - 1, day);
+         const today = new Date();
+         today.setHours(0,0,0,0);
+
+         // Se o dia já passou (evtDate < today), marcamos como passou
+         if (evtDate < today) {
+            eventoPassou = true;
+         }
+      }
+
+      // Se já passou, não mostra no rodapé
+      if (eventoPassou) return;
+
+      const status = $(card).find('.evento-status').text().trim();
+
+      const detalhesArr = [];
+      $(card).find('.evento-detalhes span').each((_, span) => {
+        detalhesArr.push($(span).text().trim());
+      });
+      const detalhes = detalhesArr.join(' | ');
+
+      const obs = $(card).find('.evento-observacao-texto').text().trim();
+
+      const participantes = [];
+      $(card).find('.evento-participante').each((_, p) => {
+        const imgSrc = normalizeTrustedHorariosImageSrc($(p).find('img').attr('src'));
+        const $span = $(p).find('span').clone();
+        $span.children().remove();
+        const nome = $span.text().trim();
+        const info = $(p).find('small').text().trim();
+
+        participantes.push({
+          nome,
+          imgSrc,
+          info
+        });
+      });
+
+      eventosArr.push({ data_titulo, status, detalhes, obs, participantes });
+    });
+
+    const pillEventos = eventosArr.length > 0
+      ? '<span class="ticker-pill pill-evento"><i class="fa-solid fa-calendar-star"></i> <strong>EVENTO:</strong> ' + eventosArr.map(e => escapeHtml(e.data_titulo)).join(' ⬢ ') + '</span>'
+      : '';
+
+    if (eventosArr.length > 0) partsTexto.push('🎉 EVENTO: ' + eventosArr.map(e => e.data_titulo).join(' ⬢ '));
+
     const baseTickerText = partsTexto.join('  |  ');
 
     horariosCache = {
+      eventos: eventosArr,
+      pillEventos: pillEventos,
       formattedDate: formattedSatDate,
       turnos,
       sobreaviso: sobreavisoArr,
       apoioFixo: apoioFixoArr,
+      sobreavisoDomingos: sobreavisoDomingosArr,
+      domingos: sobreavisoDomingosArr,
       ausencias: ausenciasArr,
       pillEscala,
       pillSobreaviso,
       pillApoio,
+      pillDomingos,
+      pillSobreavisoDomingos: pillDomingos,
       pillFerias,
       pillAniversariantes,
       aniversariantesHojeData: aniversariantesHoje,
@@ -1434,12 +1696,15 @@ async function fetchHorariosData() {
       tickerHtml: ''
     };
     rebuildTicker();
+    horariosRetryDelay = 30 * 1000;
+    if (horariosRetryTimer) {
+      clearTimeout(horariosRetryTimer);
+      horariosRetryTimer = null;
+    }
     console.log(`[Horarios Scraper] Escala atualizada para ${formattedSatDate}`);
   } catch (err) {
-    console.error('[Horarios Scraper] Erro ao processar HTML de horários:', err.message);
-    if (!horariosCache) {
-      setTimeout(fetchHorariosData, 5000);
-    }
+    console.error('[Horarios Scraper] Erro ao processar HTML de horários:', safeError(err));
+    scheduleHorariosRetry();
   }
 }
 
@@ -1494,15 +1759,15 @@ async function fetchHospedagensData() {
     });
 
     if (items.length > 0) {
-      const itemsHtml = items.map(it => `<strong>${escapeHtml(it.nome)}</strong> <span class="hosp-tag">(${escapeHtml(it.db)} - ${escapeHtml(it.dataShort)})</span>`).join(' • ');
-      const itemsText = items.map(it => `${it.nome} (${it.db} - ${it.dataShort})`).join(' • ');
+      const itemsHtml = items.map(it => `<strong>${escapeHtml(it.nome)}</strong> <span class="hosp-tag">(${escapeHtml(it.db)} - ${escapeHtml(it.dataShort)})</span>`).join(' ⬢ ');
+      const itemsText = items.map(it => `${it.nome} (${it.db} - ${it.dataShort})`).join(' ⬢ ');
 
       const pillHtml = `<span class="ticker-pill pill-hospedagens"><i class="fa-solid fa-cloud-arrow-up"></i> <strong>NOVAS HOSPEDAGENS:</strong> ${itemsHtml}</span>`;
 
       hospedagensCache = {
         items,
         tickerHtml: pillHtml,
-        tickerText: `🚀 NOVAS HOSPEDAGENS: ${itemsText}`,
+        tickerText: `NOVAS HOSPEDAGENS: ${itemsText}`,
         lastUpdate: new Date().toISOString()
       };
       console.log(`[Hospedagens Scraper] ${items.length} novos clientes carregados`);
@@ -1511,121 +1776,55 @@ async function fetchHospedagensData() {
       rebuildTicker();
     }
   } catch (err) {
-    console.error('[Hospedagens Scraper] Erro ao processar HTML:', err.message);
+    console.error('[Hospedagens Scraper] Erro ao processar HTML:', safeError(err));
   }
 }
 
-// --- INTEGRAÇÃO OFICIAL COM PORTAL NACIONAL DA FAZENDA / RECEITA FEDERAL (SEFAZ / SVRS) ---
-let sefazDataCache = {
-  nfe: { doc: 'NFe', status: 'OK', latency: 120, state: 'CE', label: 'SEFAZ CE' },
-  nfce: { doc: 'NFCe', status: 'OK', latency: 140, state: 'CE', label: 'SEFAZ CE' },
-  cte: { doc: 'CTe', status: 'OK', latency: 95, state: 'SVRS', label: 'SVRS' },
-  mdfe: { doc: 'MDFe', status: 'OK', latency: 102, state: 'SVRS', label: 'SVRS' },
-  lastUpdate: new Date().toISOString()
-};
-
-function fetchPortalNacionalFollow(url, headers = {}) {
-  return new Promise((resolve, reject) => {
-    const u = new URL(url);
-    const options = {
-      hostname: u.hostname,
-      port: 443,
-      path: u.pathname + u.search,
-      method: 'GET',
-      timeout: 8000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'pt-BR,pt;q=0.9',
-        ...headers
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        const nextUrl = new URL(res.headers.location, url).href;
-        const setCookie = res.headers['set-cookie'];
-        const cookieHeader = setCookie ? setCookie.map(c => c.split(';')[0]).join('; ') : '';
-        return resolve(fetchPortalNacionalFollow(nextUrl, { 'Cookie': cookieHeader }));
-      }
-
-      let data = '';
-      res.on('data', chunk => { data += chunk; });
-      res.on('end', () => resolve({ data, statusCode: res.statusCode }));
-    });
-    req.on('error', reject);
-    req.on('timeout', () => { req.destroy(new Error('Timeout')); });
-    req.end();
-  });
+// --- MONITORAMENTO SEFAZ VIA API PÚBLICA INTEGRANOTAS ---
+function emptySefazData(lastUpdate = null) {
+  return {
+    nfe: { doc: 'NFe', status: 'UNKNOWN', latency: null, state: 'CE', label: 'IntegraNotas' },
+    nfce: { doc: 'NFCe', status: 'UNKNOWN', latency: null, state: 'CE', label: 'IntegraNotas' },
+    cte: { doc: 'CTe', status: 'UNKNOWN', latency: null, state: 'CE', label: 'IntegraNotas' },
+    mdfe: { doc: 'MDFe', status: 'UNKNOWN', latency: null, state: 'CE', label: 'IntegraNotas' },
+    lastUpdate
+  };
 }
+
+let sefazDataCache = emptySefazData();
 
 async function fetchSefazStatus() {
+  const documentKeys = ['nfe', 'nfce', 'cte', 'mdfe'];
+  const checkedAt = new Date().toISOString();
+  const next = emptySefazData();
+
   try {
-    const t0 = Date.now();
-    const { data } = await fetchPortalNacionalFollow('https://www.nfe.fazenda.gov.br/portal/disponibilidade.aspx');
-    const latencyGov = Math.max(Date.now() - t0, 60);
-
-    const $ = cheerio.load(data);
-    let svrsStatus = 'OK';
-    let ceStatus = 'OK';
-
-    $('table.tabelaListagemDados tr').each((i, row) => {
-      const cols = $(row).find('td');
-      if (cols.length > 0) {
-        const autorizador = $(cols[0]).text().trim();
-        
-        // Coleta status SVRS
-        if (autorizador === 'SVRS') {
-          const statServ = $(cols[4]).find('img').attr('src') || $(cols[5]).find('img').attr('src') || '';
-          if (statServ.includes('amarela')) svrsStatus = 'WARNING';
-          else if (statServ.includes('vermelha')) svrsStatus = 'DANGER';
-          else svrsStatus = 'OK';
-        }
-        
-        // Coleta status Ceará (CE)
-        if (autorizador === 'CE') {
-          const statServ = $(cols[4]).find('img').attr('src') || $(cols[5]).find('img').attr('src') || '';
-          if (statServ.includes('amarela')) ceStatus = 'WARNING';
-          else if (statServ.includes('vermelha')) ceStatus = 'DANGER';
-          else ceStatus = 'OK';
-        }
+    const checks = await fetchPublicSefazStatuses(axios, { uf: 'CE', checkedAt });
+    for (const key of documentKeys) {
+      const check = checks?.[key];
+      if (!check) {
+        next[key].detail = 'Resposta ausente do monitor público IntegraNotas';
+        continue;
       }
-    });
-
-    sefazDataCache = {
-      nfe: {
-        doc: 'NFe',
-        status: ceStatus,
-        latency: latencyGov,
+      next[key] = {
+        ...next[key],
+        ...check,
+        doc: next[key].doc,
         state: 'CE',
-        label: 'SEFAZ CE'
-      },
-      nfce: {
-        doc: 'NFCe',
-        status: ceStatus,
-        latency: Math.round(latencyGov * 1.1),
-        state: 'CE',
-        label: 'SEFAZ CE'
-      },
-      cte: {
-        doc: 'CTe',
-        status: svrsStatus,
-        latency: Math.max(latencyGov - 40, 70),
-        state: 'SVRS',
-        label: 'SVRS'
-      },
-      mdfe: {
-        doc: 'MDFe',
-        status: svrsStatus,
-        latency: Math.max(latencyGov - 30, 80),
-        state: 'SVRS',
-        label: 'SVRS'
-      },
-      lastUpdate: new Date().toISOString()
-    };
+        label: 'IntegraNotas',
+        latency: null
+      };
+    }
   } catch (err) {
-    console.error('[SEFAZ Monitor Oficial] Erro ao atualizar status:', err.message);
+    console.error('[SEFAZ IntegraNotas] Falha inesperada na coleta:', safeError(err));
+    for (const key of documentKeys) {
+      next[key].detail = 'Não foi possível consultar o monitor público IntegraNotas';
+    }
   }
+
+  // A API não fornece timestamp da própria medição; este é o instante real da coleta pelo InfoBoard.
+  next.lastUpdate = checkedAt;
+  sefazDataCache = next;
 }
 
 // Atualiza status da SEFAZ a cada 60 segundos
@@ -1652,18 +1851,52 @@ app.get('/api/data', (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
+
+  const access = getPanelAccess(req);
+  if (!access) return res.status(401).json({ error: 'Acesso de leitura disponível somente na rede interna autorizada.' });
   
   if (!lastScrapedData) {
-    return res.json(generateSimulatedData());
+    return res.json(filterPanelData({
+      timestamp: new Date().toISOString(),
+      status: {
+        npx: { authenticated: false, isSimulated: false, error: 'Aguardando primeira coleta NPX' },
+        pbx: getPbxConnectionStatus(),
+        prix: { ...prixConnectionStatus, isSimulated: false, error: 'Aguardando primeira coleta PrixChat' },
+        isSimulated: false
+      },
+      departments: emptyDepartments(),
+      prixchat: { pending: [], agents: [] },
+      sefaz: sefazDataCache,
+      horarios: horariosCache,
+      hospedagens: hospedagensCache
+    }, access, DEPARTMENTS));
   }
-  const payload = { ...lastScrapedData, horarios: horariosCache, hospedagens: hospedagensCache };
-  res.json(payload);
+  const payload = {
+    ...lastScrapedData,
+    ...(NPX_REQUIRE_SIP_CONFIRMATION ? { departments: Object.fromEntries(
+      Object.entries(lastScrapedData.departments || {}).map(([queue, department]) =>
+        [queue, { ...department, agents: [...(department.agents || [])], calls: [...(department.calls || [])] }])
+    ) } : {}),
+    status: { ...lastScrapedData.status, pbx: getPbxConnectionStatus() },
+    sefaz: sefazDataCache,
+    horarios: horariosCache,
+    hospedagens: hospedagensCache
+  };
+  // Reavalia validade da observacao tambem se um coletor estiver atrasado.
+  if (NPX_REQUIRE_SIP_CONFIRMATION) reconcileAgentQueues(payload.departments);
+  res.json(filterPanelData(payload, access, DEPARTMENTS));
 });
 
-app.listen(PORT, () => {
+const httpServer = app.listen(PORT, () => {
   console.log('========================================================');
   console.log(`[NPX Integrator Server] Rodando na porta ${PORT}`);
   console.log(`Acesse o Wallboard da TV em: http://localhost:${PORT}`);
   console.log(`Endpoint de Dados: http://localhost:${PORT}/api/data`);
   console.log('========================================================');
+});
+
+httpServer.on('error', (err) => {
+  console.error(`[NPX Integrator Server] Não foi possível abrir a porta ${PORT}: ${safeError(err)}`);
+  // Com a porta ocupada, encerra esta instância para não duplicar os coletores.
+  process.exit(1);
 });

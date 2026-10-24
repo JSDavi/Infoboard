@@ -1,0 +1,24 @@
+# Publicacao npm nao e utilizada; impedir inclusao acidental de estado local.
+.env*
+!.env.example
+.git/
+.maestri/
+.agents/
+backups/
+daemon/
+node_modules/
+config/analysts_map.json
+artifacts/
+dist/
+coverage/
+docs/auditoria/
+*.log
+*.zip
+*.tgz
+*.tap
+*.pem
+*.key
+temp.json
+html_dump.html
+check_url.txt
+query

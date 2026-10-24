@@ -1,6 +1,41 @@
 node_modules/
-.env
+.env*
+!.env.example
 debug_html/
 *.log
 .DS_Store
 test_nossatelecom_real.js
+
+# Estado local de agentes, recuperacao e servicos gerados.
+/.maestri/
+/.agents/*
+!/.agents/rules/
+/backups/
+/daemon/
+/artifacts/
+/coverage/
+/dist/
+# Relatorios de seguranca detalhados sao locais; distribuir somente a politica.
+/docs/auditoria/
+*.zip
+*.tgz
+*.tap
+*.bak
+*.tmp
+*.orig
+*.pem
+*.key
+
+# Dados reais e capturas nunca compoem a distribuicao.
+/config/analysts_map.json
+/temp.json
+/html_dump.html
+/check_url.txt
+/query
+**/chrome-preview-profile/
+**/raw/
+
+# Testes manuais legados podem autenticar em provedores reais.
+/test_queues*.js
+/test_login_wrong.js
+/test_rules.js

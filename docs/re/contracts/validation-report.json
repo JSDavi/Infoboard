@@ -1,0 +1,16 @@
+{
+  "certainty": "DOCUMENTADO",
+  "mode": "offline; nenhuma chamada de rede",
+  "result": "pass",
+  "checks": 204,
+  "passed": 204,
+  "failed": [],
+  "sourceRequestFieldsChecked": 45,
+  "responseFixturesChecked": 14,
+  "limitations": [
+    "Verificação estrutural própria; não executa validador OpenAPI completo.",
+    "Esquemas permissivos derivados de exemplos; não garantem contrato exaustivo.",
+    "Collection Postman não executada contra mock ou Beatrix.",
+    "Não confirma transições, autorização, disponibilidade ou comportamento do servidor."
+  ]
+}

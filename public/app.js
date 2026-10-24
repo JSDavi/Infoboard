@@ -7,16 +7,36 @@ const CONFIG = {
   updateInterval: 3000 // atualiza a cada 3 segundos
 };
 let previousTotalQueue = 0;
-let countdownValue = 5;
-let countdownInterval = null;
+const escapePanelHtml = value => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const safeChatSector = sector => {
+  const value = String(sector ?? '').toLowerCase();
+  return ['suporte', 'comercial', 'financeiro', 'sped'].includes(value) ? value : 'outros';
+};
 let chatCarouselIndex = 0; // Controla qual página de atendentes do chat está ativa
 let lastChatData = null; // Armazena a última resposta real obtida do PrixChat
 // Agrupamento por Slots (0 = Esquerda, 1 = Centro, 2 = Direita) e Modos de Exibição
-let chatSlotGroups = JSON.parse(localStorage.getItem('chat_slot_groups') || '{"0":[],"1":[],"2":[]}');
-let chatAnalystViewModes = JSON.parse(localStorage.getItem('chat_analyst_view_modes') || '{}');
+function readChatPreference(key, fallback) {
+  try {
+    return InfoBoardChatSlots.parseStoredObject(localStorage.getItem(key), fallback);
+  } catch {
+    return fallback; // Storage indisponível: inicia com preferências padrão.
+  }
+}
+let chatSlotGroups = InfoBoardChatSlots.normalizeGroups(readChatPreference('chat_slot_groups', {}));
+let chatAnalystViewModes = readChatPreference('chat_analyst_view_modes', {});
 let pinPendingAlways = false; // Se verdadeiro, mantém a coluna de pendentes visível mesmo vazia
 let carouselPaused = false; // Controla se o carrossel está pausado
+let chatDragInProgress = false; // Mantém o DOM estável durante arraste de colunas
+let chatDraggedAnalystName = null;
 let expandedAnalysts = new Set(); // Armazena as chaves dos analistas com card expandido por clique
+
+function saveChatSlotGroups() {
+  try {
+    localStorage.setItem('chat_slot_groups', JSON.stringify(chatSlotGroups));
+  } catch {
+    // O painel segue funcionando em navegadores com armazenamento desabilitado.
+  }
+}
 
 // Função para alternar modo compacto / detalhado de um analista
 window.toggleAnalystViewMode = function(name, e) {
@@ -62,23 +82,32 @@ window.togglePinAgent = function(name, e) {
     chatSlotGroups[targetSlot].push(name);
   }
 
-  localStorage.setItem('chat_slot_groups', JSON.stringify(chatSlotGroups));
+  saveChatSlotGroups();
   renderPrixChat(lastChatData);
 };
 
 // --- DRAG & DROP DE ANALISTAS DO CHAT (AGRUPAMENTO POR COLUNA) ---
 window.handleChatDragStart = function(e, analystName) {
+  chatDragInProgress = true;
+  chatDraggedAnalystName = analystName;
   e.dataTransfer.setData('text/plain', analystName);
   e.dataTransfer.effectAllowed = 'move';
   const col = e.target.closest('.chat-column');
   if (col) {
-    setTimeout(() => col.classList.add('chat-dragging'), 0);
+    setTimeout(() => {
+      if (chatDragInProgress && col.isConnected) col.classList.add('chat-dragging');
+    }, 0);
   }
 };
 
 window.handleChatDragEnd = function(e) {
   document.querySelectorAll('.chat-dragging').forEach(el => el.classList.remove('chat-dragging'));
   document.querySelectorAll('.chat-drag-over').forEach(el => el.classList.remove('chat-drag-over'));
+  chatDraggedAnalystName = null;
+  if (chatDragInProgress) {
+    chatDragInProgress = false;
+    renderPrixChat(lastChatData);
+  }
 };
 
 window.handleChatDragOver = function(e) {
@@ -104,35 +133,20 @@ window.handleChatDrop = function(e, slotIndex, targetAnalystName) {
   document.querySelectorAll('.chat-dragging').forEach(el => el.classList.remove('chat-dragging'));
 
   const draggedName = e.dataTransfer.getData('text/plain');
-  if (!draggedName) return;
+  if (!draggedName || draggedName !== chatDraggedAnalystName) return;
+  if (!lastChatData?.agents?.some(agent => agent.name === draggedName && agent.tickets?.length > 0)) return;
+  if (targetAnalystName && !lastChatData.agents.some(agent => agent.name === targetAnalystName && agent.tickets?.length > 0)) return;
+  chatDragInProgress = false;
+  chatDraggedAnalystName = null;
 
-  // Remove draggedName de todos os slots onde já estava
-  for (let s in chatSlotGroups) {
-    chatSlotGroups[s] = (chatSlotGroups[s] || []).filter(name => name !== draggedName);
+  const showPending = (lastChatData.pending?.length || 0) > 0 || pinPendingAlways;
+  const nextGroups = InfoBoardChatSlots.applyDropToGroups(
+    chatSlotGroups, draggedName, slotIndex, targetAnalystName, showPending
+  );
+  if (JSON.stringify(nextGroups) !== JSON.stringify(chatSlotGroups)) {
+    chatSlotGroups = nextGroups;
+    saveChatSlotGroups();
   }
-
-  if (!chatSlotGroups[slotIndex]) {
-    chatSlotGroups[slotIndex] = [];
-  }
-
-  // Se soltou em cima de outro analista, garante que o alvo também fique fixado neste slot
-  if (targetAnalystName && targetAnalystName !== draggedName) {
-    for (let s in chatSlotGroups) {
-      if (parseInt(s) !== slotIndex) {
-        chatSlotGroups[s] = (chatSlotGroups[s] || []).filter(name => name !== targetAnalystName);
-      }
-    }
-    if (!chatSlotGroups[slotIndex].includes(targetAnalystName)) {
-      chatSlotGroups[slotIndex].push(targetAnalystName);
-    }
-  }
-
-  // Adiciona o analista arrastado no slot
-  if (!chatSlotGroups[slotIndex].includes(draggedName)) {
-    chatSlotGroups[slotIndex].push(draggedName);
-  }
-
-  localStorage.setItem('chat_slot_groups', JSON.stringify(chatSlotGroups));
   renderPrixChat(lastChatData);
 };
 
@@ -167,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Ciclo principal de atualização
   setInterval(fetchData, CONFIG.updateInterval);
-  startCountdownTimer();
 
   // Previne congelamento quando a aba fica em 2º plano no modo "Projetar Tela" do Windows
   document.addEventListener('visibilitychange', () => {
@@ -182,31 +195,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Roda a transição de analistas do PrixChat (carrossel) a cada 8 segundos
   setInterval(() => {
-    const chatData = lastChatData || mockPrixChatData;
+    if (chatDragInProgress) return;
+    const chatData = lastChatData || { pending: [], agents: [] };
     const pendingCount = chatData.pending ? chatData.pending.length : 0;
     const showPending = pendingCount > 0 || pinPendingAlways;
-    const analystSlotsCount = showPending ? 2 : 3;
 
     const busyAgents = chatData.agents ? chatData.agents.filter(a => a.tickets && a.tickets.length > 0) : [];
-    
-    // Identifica analistas fixados em qualquer slot
-    const allPinned = [];
-    for (let s = 0; s < analystSlotsCount; s++) {
-      const inSlot = (chatSlotGroups[s] || []).filter(name => busyAgents.some(a => a.name === name));
-      allPinned.push(...inSlot);
-    }
-
-    const availableRotating = busyAgents.filter(a => !allPinned.includes(a.name));
-    
-    let freeSlotsCount = 0;
-    for (let s = 0; s < analystSlotsCount; s++) {
-      const inSlot = (chatSlotGroups[s] || []).filter(name => busyAgents.some(a => a.name === name));
-      if (inSlot.length === 0) freeSlotsCount++;
-    }
+    const layout = InfoBoardChatSlots.getVisibleLayout(chatSlotGroups, busyAgents, showPending);
 
     let maxPages = 1;
-    if (freeSlotsCount > 0 && availableRotating.length > 0) {
-      maxPages = Math.ceil(availableRotating.length / freeSlotsCount) || 1;
+    if (layout.freeSlots.length > 0 && layout.rotatingAgents.length > 0) {
+      maxPages = Math.ceil(layout.rotatingAgents.length / layout.freeSlots.length) || 1;
     }
 
     if (!carouselPaused) {
@@ -243,35 +242,39 @@ function startClock() {
   setInterval(updateTime, 1000);
 }
 
-// Temporizador visual regressivo no rodapé
-function startCountdownTimer() {
-  const countdownLabel = document.getElementById('countdown-label');
-  countdownValue = CONFIG.updateInterval / 1000;
-  
-  if (countdownInterval) clearInterval(countdownInterval);
-  
-  countdownInterval = setInterval(() => {
-    countdownValue--;
-    if (countdownValue < 0) {
-      countdownValue = CONFIG.updateInterval / 1000;
-    }
-    countdownLabel.textContent = countdownValue;
-  }, 1000);
-}
-
 // Busca os dados do servidor local (sempre forçando requisição nova sem cache)
 async function fetchData() {
   try {
     const response = await fetch(`/api/data?t=${Date.now()}`, { cache: 'no-store' });
+    if (response.status === 401) {
+      // Ao perder acesso à rede interna, limpe os dados exibidos.
+      lastChatData = null;
+      const emptyDept = () => ({ queue: 0, wait_time_sec: 0, agents: [], calls: [], agents_online: 0 });
+      updateUI({
+        status: { npx: { authenticated: false }, pbx: { authenticated: false }, prix: { authenticated: false } },
+        departments: {
+          InfoBrasil_Comercial: emptyDept(), Infobrasil_finan: emptyDept(),
+          InfoBrasil_SPED_Fiscal: emptyDept(), InfoBrasil_Suporte: emptyDept(),
+          InfoBrasil_Ponto: emptyDept()
+        },
+        prixchat: { pending: [], agents: [] }, horarios: null, hospedagens: null
+      });
+      setConnectionStatus('npx', 'offline', 'ACESSO RESTRITO');
+      const banner = document.getElementById('npx-alert-banner');
+      const bannerText = document.getElementById('npx-alert-message');
+      if (banner) { banner.className = 'npx-alert-banner'; banner.style.display = 'flex'; }
+      if (bannerText) bannerText.textContent = 'Acesso à leitura permitido somente na rede interna autorizada.';
+      return;
+    }
     if (!response.ok) throw new Error('Erro na resposta do integrador');
     
     const data = await response.json();
     lastChatData = data.prixchat; // Persiste os dados reais de chat na variável global
     updateUI(data);
-    startCountdownTimer(); // Reinicia o cronômetro visual
   } catch (error) {
     console.error('[Wallboard TV] Falha ao obter dados:', error);
     setConnectionStatus('npx', 'offline', 'NPX Off');
+    setConnectionStatus('pbx', 'offline', 'PBX Off');
     setConnectionStatus('prix', 'offline', 'PRIX Off');
   }
 }
@@ -495,9 +498,10 @@ const mockPrixChatData = {
 function renderPrixChat(realData) {
   const container = document.getElementById('chat-kanban-board');
   if (!container) return;
+  if (chatDragInProgress) return;
   
-  // Se realData estiver presente (e tiver pendentes ou agentes), usa realData. Caso contrário, usa mock de fallback.
-  const chatData = realData || mockPrixChatData;
+  // Não exibir atendimentos de demonstração quando o PrixChat estiver sem dados.
+  const chatData = realData || { pending: [], agents: [] };
   
   const pendingCount = chatData.pending ? chatData.pending.length : 0;
   let activeCount = 0;
@@ -508,22 +512,8 @@ function renderPrixChat(realData) {
     });
   }
   
-  // Atualiza métricas e cabeçalho
+  // Contagem de ativos no cabeçalho; pendentes já aparece na coluna própria.
   document.getElementById('chat-summary-count').textContent = `${activeCount} Ativos`;
-  document.getElementById('chat-kpi-pending').textContent = pendingCount;
-  document.getElementById('chat-kpi-active').textContent = activeCount;
-  document.getElementById('chat-kpi-tmr').textContent = '02:15';
-  
-  // Destaca o card KPI de Pendentes se houver fila
-  const pendingKpiCard = document.getElementById('chat-kpi-pending').parentElement;
-  if (pendingKpiCard) {
-    if (pendingCount > 0) {
-      pendingKpiCard.classList.add('alert');
-    } else {
-      pendingKpiCard.classList.remove('alert');
-    }
-  }
-  
   container.innerHTML = '';
   
   const showPending = pendingCount > 0 || pinPendingAlways;
@@ -553,17 +543,18 @@ function renderPrixChat(realData) {
     container.appendChild(pendingCol);
     
     const pendingCardsContainer = pendingCol.querySelector('#chat-pending-cards');
-    if (chatData.pending) {
-      chatData.pending.forEach(t => {
-        const card = document.createElement('div');
-        const isSlaAlert = t.timeSec > 300; // 5 minutos na fila de espera
-        card.className = 'chat-kanban-card' + (isSlaAlert ? ' alert-card-sla' : '');
-        card.innerHTML = `
-          <span class="chat-kanban-client">${t.client}</span>
-          <span class="chat-kanban-snippet">${t.msg}</span>
+      if (chatData.pending) {
+        chatData.pending.forEach(t => {
+          const card = document.createElement('div');
+          const isSlaAlert = t.timeSec > 300; // 5 minutos na fila de espera
+          const sector = safeChatSector(t.sector);
+          card.className = 'chat-kanban-card' + (isSlaAlert ? ' alert-card-sla' : '');
+          card.innerHTML = `
+          <span class="chat-kanban-client">${escapePanelHtml(t.client)}</span>
+          <span class="chat-kanban-snippet">${escapePanelHtml(t.msg)}</span>
           <div class="chat-kanban-meta">
-            <span class="chat-kanban-time ${isSlaAlert ? 'alert' : ''}">${t.time}</span>
-            <span class="chat-kanban-sector ${t.sector}">${t.sector.toUpperCase()}</span>
+            <span class="chat-kanban-time ${isSlaAlert ? 'alert' : ''}">${escapePanelHtml(t.time)}</span>
+            <span class="chat-kanban-sector ${sector}">${sector.toUpperCase()}</span>
           </div>
         `;
         pendingCardsContainer.appendChild(card);
@@ -580,12 +571,12 @@ function renderPrixChat(realData) {
   function createAnalystColumnElement(agent, isCompact, isPinned, slotIndex, isGrouped) {
     const col = document.createElement('div');
     col.className = 'chat-column' + (agent.online === false ? ' offline' : '') + (isPinned ? ' pinned-active' : '');
-    col.setAttribute('draggable', 'true');
-    col.setAttribute('ondragstart', `handleChatDragStart(event, '${agent.name}')`);
-    col.setAttribute('ondragend', `handleChatDragEnd(event)`);
-    col.setAttribute('ondragover', `handleChatDragOver(event)`);
-    col.setAttribute('ondragleave', `handleChatDragLeave(event)`);
-    col.setAttribute('ondrop', `handleChatDrop(event, ${slotIndex}, '${agent.name}')`);
+    col.draggable = true;
+    col.addEventListener('dragstart', e => handleChatDragStart(e, agent.name));
+    col.addEventListener('dragend', handleChatDragEnd);
+    col.addEventListener('dragover', handleChatDragOver);
+    col.addEventListener('dragleave', handleChatDragLeave);
+    col.addEventListener('drop', e => handleChatDrop(e, slotIndex, agent.name));
 
     const pinIconClass = isPinned ? 'fa-solid fa-thumbtack pinned-active' : 'fa-solid fa-thumbtack';
     const pinTitle = isPinned ? 'Desafixar coluna (voltar ao carrossel)' : 'Fixar nesta coluna';
@@ -595,18 +586,20 @@ function renderPrixChat(realData) {
     col.innerHTML = `
       <div class="chat-column-header">
         <div style="display: flex; align-items: center; gap: 6px;">
-          <button class="chat-pin-btn" onclick="togglePinAgent('${agent.name}', event)" title="${pinTitle}">
+          <button class="chat-pin-btn" title="${pinTitle}">
             <i class="${pinIconClass}"></i>
           </button>
-          <button class="chat-view-mode-btn ${isCompact ? 'active' : ''}" onclick="toggleAnalystViewMode('${agent.name}', event)" title="${modeTitle}">
+          <button class="chat-view-mode-btn ${isCompact ? 'active' : ''}" title="${modeTitle}">
             <i class="fa-solid ${modeIcon}"></i>
           </button>
-          <span class="chat-header-name" title="Clique e arraste para agrupar em outra coluna">${agent.name}</span>
+          <span class="chat-header-name" title="Clique e arraste para agrupar em outra coluna">${escapePanelHtml(agent.name)}</span>
         </div>
         <span class="online-badge" style="background:rgba(255,255,255,0.25); color:white;">${agent.tickets ? agent.tickets.length : 0}</span>
       </div>
       <div class="chat-cards-container ${isGrouped ? 'pinned-cards-container' : ''}"></div>
     `;
+    col.querySelector('.chat-pin-btn').addEventListener('click', e => togglePinAgent(agent.name, e));
+    col.querySelector('.chat-view-mode-btn').addEventListener('click', e => toggleAnalystViewMode(agent.name, e));
 
     const cardsContainer = col.querySelector('.chat-cards-container');
     const tickets = agent.tickets || [];
@@ -621,24 +614,25 @@ function renderPrixChat(realData) {
 
     sortedTickets.forEach(t => {
       const isSlaAlert = t.timeSec > 1800; // 30 minutos em atendimento sem interação
+      const sector = safeChatSector(t.sector);
       const card = document.createElement('div');
 
       if (isCompact) {
         card.className = 'chat-compact-card' + (isSlaAlert ? ' alert-card-sla' : '');
         card.title = `${t.client} | ${t.msg || 'Sem mensagens recentes'}`;
         card.innerHTML = `
-          <span class="chat-compact-client" title="${t.client}">${t.client}</span>
-          <span class="chat-compact-time ${isSlaAlert ? 'alert' : ''}">${t.time}</span>
-          <span class="chat-compact-sector ${t.sector}">${t.sector.toUpperCase()}</span>
+          <span class="chat-compact-client" title="${escapePanelHtml(t.client)}">${escapePanelHtml(t.client)}</span>
+          <span class="chat-compact-time ${isSlaAlert ? 'alert' : ''}">${escapePanelHtml(t.time)}</span>
+          <span class="chat-compact-sector ${sector}">${sector.toUpperCase()}</span>
         `;
       } else {
         card.className = 'chat-kanban-card' + (isSlaAlert ? ' alert-card-sla' : '');
         card.innerHTML = `
-          <span class="chat-kanban-client">${t.client}</span>
-          <span class="chat-kanban-snippet">${t.msg}</span>
+          <span class="chat-kanban-client">${escapePanelHtml(t.client)}</span>
+          <span class="chat-kanban-snippet">${escapePanelHtml(t.msg)}</span>
           <div class="chat-kanban-meta">
-            <span class="chat-kanban-time ${isSlaAlert ? 'alert' : ''}">${t.time}</span>
-            <span class="chat-kanban-sector ${t.sector}">${t.sector.toUpperCase()}</span>
+            <span class="chat-kanban-time ${isSlaAlert ? 'alert' : ''}">${escapePanelHtml(t.time)}</span>
+            <span class="chat-kanban-sector ${sector}">${sector.toUpperCase()}</span>
           </div>
         `;
       }
@@ -648,24 +642,9 @@ function renderPrixChat(realData) {
     return col;
   }
 
-  // Mapeia todos os analistas fixados em qualquer slot
-  const allPinnedNames = [];
-  for (let s = 0; s < analystSlotsCount; s++) {
-    const inSlot = (chatSlotGroups[s] || []).filter(name => busyAgents.some(a => a.name === name));
-    allPinnedNames.push(...inSlot);
-  }
-
-  // Analistas rotativos disponíveis
-  const availableRotatingAgents = busyAgents.filter(a => !allPinnedNames.includes(a.name));
-
-  // Identifica slots livres (sem analistas fixados)
-  const freeSlots = [];
-  for (let s = 0; s < analystSlotsCount; s++) {
-    const activeInSlot = (chatSlotGroups[s] || []).filter(name => busyAgents.some(a => a.name === name));
-    if (activeInSlot.length === 0) {
-      freeSlots.push(s);
-    }
-  }
+  const chatLayout = InfoBoardChatSlots.getVisibleLayout(chatSlotGroups, busyAgents, showPending);
+  const availableRotatingAgents = chatLayout.rotatingAgents;
+  const freeSlots = chatLayout.freeSlots;
 
   // Distribuição do carrossel rotativo para os slots livres
   let rotatingAgentsDistribution = {};
@@ -689,11 +668,11 @@ function renderPrixChat(realData) {
     const slotZone = document.createElement('div');
     slotZone.className = 'chat-slot-zone';
     slotZone.setAttribute('data-slot-index', slotIdx);
-    slotZone.setAttribute('ondragover', 'handleChatDragOver(event)');
-    slotZone.setAttribute('ondragleave', 'handleChatDragLeave(event)');
-    slotZone.setAttribute('ondrop', `handleChatDrop(event, ${slotIdx})`);
+    slotZone.addEventListener('dragover', handleChatDragOver);
+    slotZone.addEventListener('dragleave', handleChatDragLeave);
+    slotZone.addEventListener('drop', e => handleChatDrop(e, slotIdx));
 
-    const activeInSlot = (chatSlotGroups[slotIdx] || []).filter(name => busyAgents.some(a => a.name === name));
+    const activeInSlot = chatLayout.slots[slotIdx];
 
     if (activeInSlot.length > 1) {
       // Mais de 1 analista agrupado neste slot: renderiza wrapper vertical
@@ -739,6 +718,24 @@ function renderPrixChat(realData) {
 function categorizeError(errText, tagLabel) {
   const text = (errText || '').toLowerCase();
   const tagHtml = `<span class="alert-tag-badge">${tagLabel}</span>`;
+
+  if (text.includes('modo simulador')) {
+    return {
+      type: 'simulated',
+      className: 'alert-banner-auth',
+      iconHtml: '<i class="fa-solid fa-flask"></i>',
+      msg: `${tagHtml} MODO SIMULADO: Dados de demonstracao, sem conexao ao NPX real.`
+    };
+  }
+
+  if (text.includes('status npx indisponivel') || text.includes('status prixchat indisponivel')) {
+    return {
+      type: 'unavailable',
+      className: 'alert-banner-network',
+      iconHtml: '<i class="fa-solid fa-triangle-exclamation"></i>',
+      msg: `${tagHtml} STATUS INDISPONIVEL: Nao foi possivel confirmar a conexao com o servico.`
+    };
+  }
   
   if (text.includes('401') || text.includes('403') || text.includes('login') || text.includes('senha') || text.includes('credencial') || text.includes('unauthorized')) {
     return {
@@ -822,8 +819,10 @@ function getErrorStateClass(errText) {
 }
 
 function updateUI(data) {
+  if (typeof checkEventOverlay === 'function') checkEventOverlay(data);
   // 1. Atualiza Status de Conexão no topo e no rodapé (F11)
   const status = data.status || {};
+  const pbxMonitorAvailable = status.pbx?.authenticated === true && !status.pbx.error;
   const alertBanner = document.getElementById('npx-alert-banner');
   const alertMsg = document.getElementById('npx-alert-message');
 
@@ -834,7 +833,10 @@ function updateUI(data) {
   // Status NPX (Infobrasil NPX)
   if (status.npx) {
     const errText = status.npx.error || '';
-    if (status.npx.isSimulated || !status.npx.authenticated || errText) {
+    if (status.npx.isSimulated) {
+      npxErrorMsg = 'Modo simulador ativo';
+      setConnectionStatus('npx', 'warning', 'NPX DEMO');
+    } else if (status.npx.authenticated !== true || errText) {
       npxErrorMsg = errText || 'Desconectado';
       const errCodeMatch = errText.match(/\b\d{3}\b/);
       const errLabel = errCodeMatch ? `NPX ERRO ${errCodeMatch[0]}` : 'NPX OFF';
@@ -844,13 +846,14 @@ function updateUI(data) {
       setConnectionStatus('npx', 'connected', 'NPX');
     }
   } else {
-    setConnectionStatus('npx', 'connected', 'NPX');
+    npxErrorMsg = 'Status NPX indisponivel';
+    setConnectionStatus('npx', 'offline', 'NPX OFF');
   }
 
   // Status PBX (Nossa Tel PBX)
   if (status.pbx) {
     const errText = status.pbx.error || '';
-    if (status.pbx.authenticated === false || errText) {
+    if (status.pbx.authenticated !== true || errText) {
       pbxErrorMsg = errText || 'Desconectado';
       let errLabel = 'PBX OFF';
       if (errText.includes('status code')) {
@@ -866,13 +869,16 @@ function updateUI(data) {
       setConnectionStatus('pbx', 'connected', 'PBX');
     }
   } else {
-    setConnectionStatus('pbx', 'connected', 'PBX');
+    setConnectionStatus('pbx', 'offline', 'PBX Off');
   }
 
   // Status PRIX (PrixChat)
   if (status.prix) {
     const errText = status.prix.error || '';
-    if (status.prix.isSimulated || !status.prix.authenticated || errText) {
+    if (status.prix.isSimulated) {
+      prixErrorMsg = 'Modo simulador ativo';
+      setConnectionStatus('prix', 'warning', 'PRIX DEMO');
+    } else if (status.prix.authenticated !== true || errText) {
       prixErrorMsg = errText || 'Desconectado';
       let errLabel = 'PRIX OFF';
       if (errText.includes('status code')) {
@@ -888,7 +894,8 @@ function updateUI(data) {
       setConnectionStatus('prix', 'connected', 'PRIX');
     }
   } else {
-    setConnectionStatus('prix', 'connected', 'PRIX');
+    prixErrorMsg = 'Status PrixChat indisponivel';
+    setConnectionStatus('prix', 'offline', 'PRIX OFF');
   }
 
   // Gerencia a exibição do Banner Inteligente de Alerta com Selo da Plataforma
@@ -898,11 +905,13 @@ function updateUI(data) {
 
   if (alertBanner) {
     if (activeErrInfo) {
+      alertBanner.style.backgroundColor = '';
       alertBanner.className = `npx-alert-banner ${activeErrInfo.className}`;
       if (alertMsg) {
         alertMsg.innerHTML = `${activeErrInfo.iconHtml} &nbsp; ${activeErrInfo.msg}`;
       }
     } else {
+      alertBanner.style.backgroundColor = '';
       alertBanner.className = 'npx-alert-banner hidden';
     }
   }
@@ -974,7 +983,7 @@ function updateUI(data) {
           const item = document.createElement('div');
           item.className = 'wait-client-item';
           item.innerHTML = `
-            <span><i class="fa-solid fa-phone-volume"></i> ${call.client}</span>
+            <span><i class="fa-solid fa-phone-volume"></i> ${escapePanelHtml(call.client)}</span>
             <span class="wait-duration-badge">${formatTime(call.time_sec)}</span>
           `;
           waitingList.appendChild(item);
@@ -984,52 +993,33 @@ function updateUI(data) {
       }
     }
 
+    // A ordenação e as cores dos cards devem usar as mesmas regras de estado.
+    // PBX registrado tem precedência sobre qualquer presença na fila NPX.
+    const { getAgentConnectionState, getAgentPriority, getAgentDisplayedCall } = window.InfoBoardAgentState;
+
     // --- SEÇÃO DE ANALISTAS ---
     const analystsList = document.getElementById(`${prefix}-analysts-list`);
     if (analystsList) {
       analystsList.innerHTML = '';
-      const agents = deptData.agents || [];
+      // Mesma fila canônica para ordenação, status operacional e card em todos
+      // os cinco setores. A observação de NPX de outra fila permanece inválida.
+      const agents = (deptData.agents || []).map(agent => ({ ...agent, npxQueue: key }));
 
       if (agents.length === 0) {
         analystsList.innerHTML = `<div class="no-analysts">Sem analistas logados</div>`;
       } else {
         // Hierarquia Rígida de Blocos:
-        // 1. Ocupado NPX (Vermelho Sólido)
-        // 2. Ocupado PBX (Vermelho Claro)
+        // 1. Ocupado PBX (Vermelho Claro)
+        // 2. Ocupado NPX (Vermelho Sólido)
         // 3. Pausado (Azul)
-        // 4. Livre NPX (Verde Sólido)
-        // 5. Livre PBX (Verde Claro / Borda)
+        // 4. Livre PBX (Verde Claro / Borda)
+        // 5. Livre NPX (Verde Sólido)
         // 6. Offline (Cinza)
         agents.sort((a, b) => {
-          const isPausedA = a.paused == 1 || a.status === 5 || a.status === -1;
-          const isPausedB = b.paused == 1 || b.status === 5 || b.status === -1;
-          
-          const getPriority = (agent, isPaused) => {
-            if (isPaused) {
-              return 3; // 3. Pausado (Azul)
-            }
-            
-            if (agent.status === 2) {
-              return 1; // 1. Ocupado NPX (Vermelho Sólido)
-            }
-            
-            if (agent.pbxStatus === 'Busy') {
-              return 2; // 2. Ocupado PBX (Vermelho Claro)
-            }
-            
-            if (agent.status === 1) {
-              return 4; // 4. Livre NPX (Verde Sólido)
-            }
-            
-            if (agent.pbxStatus === 'Free') {
-              return 5; // 5. Livre PBX (Verde Claro / Borda)
-            }
-            
-            return 6; // 6. Offline (Cinza)
-          };
-          
-          const priorityA = getPriority(a, isPausedA);
-          const priorityB = getPriority(b, isPausedB);
+          const stateA = resolveAgentRealPauseState(a, getAgentConnectionState(a));
+          const priorityA = (stateA.isPaused && !stateA.connection.isCallActive) ? 3 : getAgentPriority(a);
+          const stateB = resolveAgentRealPauseState(b, getAgentConnectionState(b));
+          const priorityB = (stateB.isPaused && !stateB.connection.isCallActive) ? 3 : getAgentPriority(b);
           
           if (priorityA !== priorityB) {
             return priorityA - priorityB;
@@ -1044,36 +1034,12 @@ function updateUI(data) {
         agents.forEach(agent => {
           const card = document.createElement('div');
           card.className = 'analyst-card';
-
           let statusClass = 'status-offline';
+          let badgeHtml = '';
           let statusLabel = 'Offline';
-          // Identifica se agent.src ou agent.dst contém o nome de uma Pausa do NPX (ex: DemoRemota_3h, WhatsApp_45', etc)
-          const srcText = agent.src || '';
-          const dstText = agent.dst || '';
-          const isSrcPauseName = srcText && /[a-zA-Z_]/i.test(srcText) && !srcText.startsWith('8520') && !srcText.startsWith('8530') && !srcText.startsWith('085');
-          const isDstPauseName = dstText && /[a-zA-Z_]/i.test(dstText) && !dstText.startsWith('8520') && !dstText.startsWith('8530') && !dstText.startsWith('085');
-
-          const pauseName = (isSrcPauseName ? srcText : (isDstPauseName ? dstText : (agent.pause_name || 'Pausa')));
-
-          // Função para validar se uma string é um número real de cliente (e não código interno/ramal/pausa)
-          const isRealClientPhone = (val) => {
-            if (!val) return false;
-            const str = String(val).trim();
-            if (/[a-zA-Z_]/i.test(str) && !str.startsWith('085') && !str.startsWith('85')) return false;
-            if (str.startsWith('4422')) return false; // Código interno de fila/agente do NPX (ex: 4422006, 4422023)
-            if (str === agent.code || str === agent.extension || str === agent.ramal) return false;
-            if (/^20\d{2}$/.test(str)) return false; // Ramal PBX interno
-            return str.length >= 8;
-          };
-
-          // Uma ligação real existe se o PBX estiver em Busy ou se houver um número real de telefone em dst/src
-          const hasRealPhoneSrc = isRealClientPhone(srcText);
-          const hasRealPhoneDst = isRealClientPhone(dstText);
-          const isRealPbxCall = agent.pbxStatus === 'Busy';
-          const isRealNpxCall = (agent.status === 2) && (hasRealPhoneSrc || hasRealPhoneDst);
-          const isCallActive = isRealPbxCall || isRealNpxCall;
-
-          const isPaused = agent.paused == 1 || agent.status === 5 || agent.status === -1 || isSrcPauseName || isDstPauseName;
+          const connection = getAgentConnectionState(agent);
+          const pauseState = resolveAgentRealPauseState(agent, connection);
+          const { pauseName, isRealNpxCall, isCallActive, isPaused } = pauseState;
 
           let isOverLimit = false;
           if (isPaused) {
@@ -1082,22 +1048,19 @@ function updateUI(data) {
             isOverLimit = (pauseSeconds >= pauseLimit);
           }
 
-          let ramalDisplay = '';
-
-          // Extrai o número real de telefone para exibir (prioriza número externo)
-          let realNumber = '';
-          if (agent.pbxNumber && agent.pbxNumber.length >= 8) {
-            realNumber = agent.pbxNumber;
-          } else if (hasRealPhoneDst) {
-            realNumber = dstText;
-          } else if (hasRealPhoneSrc) {
-            realNumber = srcText;
-          } else {
-            realNumber = 'Em Ligação';
+          // O ramal do analista ocupa sempre a última posição, inclusive em pausa e ligação.
+          // pbxNumber é o telefone da chamada PBX, não o ramal do analista.
+          const agentExtension = connection.isPbxRegistered
+            ? (agent.ramal || agent.extension || agent.code || '')
+            : (agent.code || agent.extension || agent.ramal || '');
+          const ramalDisplay = agentExtension ? String(agentExtension).slice(-4) : '';
+          if (card.dataset) {
+            card.dataset.agentRamal = ramalDisplay;
+            card.dataset.agentQueue = key;
           }
 
-          // Direção da chamada: 0 = Outbound (Saída), 1 = Inbound (Entrada)
-          const isOutbound = (dstText.length >= 8 && !isDstPauseName) || agent.pbxDirection === 0;
+          // Numero, direcao e duracao devem ser do mesmo ramal exibido no card.
+          const { source: activeCallSource, number: realNumber, outbound: isOutbound } = getAgentDisplayedCall(agent);
           const dirIcon = isOutbound 
             ? `<span class="dir-badge outbound" title="Chamada Realizada (Saída)"><i class="fa-solid fa-arrow-up-long"></i></span>`
             : `<span class="dir-badge inbound" title="Chamada Recebida (Entrada)"><i class="fa-solid fa-arrow-down-long"></i></span>`;
@@ -1105,7 +1068,10 @@ function updateUI(data) {
           // Tempo e Duração Real da Chamada (separado do tempo de pausa)
           let formattedCallTime = '00:00';
           let callSeconds = 0;
-          if (isRealPbxCall) {
+          if (activeCallSource === 'npx') {
+            callSeconds = agent.duration || parseTimeToSeconds(agent.time);
+            formattedCallTime = agent.time || '00:00';
+          } else if (activeCallSource === 'pbx') {
             callSeconds = agent.pbxDuration || (agent.pbxDurationStr ? parseTimeToSeconds(agent.pbxDurationStr) : 0);
             if (agent.pbxDurationStr) {
               formattedCallTime = agent.pbxDurationStr;
@@ -1114,9 +1080,6 @@ function updateUI(data) {
               const s = agent.pbxDuration % 60;
               formattedCallTime = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
             }
-          } else if (isRealNpxCall) {
-            callSeconds = agent.duration || parseTimeToSeconds(agent.time);
-            formattedCallTime = agent.time || '00:00';
           }
 
           // Alerta de ligação longa: A partir de 1 hora de atendimento (3600 segundos)
@@ -1131,8 +1094,8 @@ function updateUI(data) {
             statusClass = 'status-5';
 
             badgeHtml = `
-              <span class="status-text-badge status-2 ${isLongCall ? 'alert' : ''}" title="Ligação ativa durante a Pausa (${pauseName}) ${isLongCall ? ' - EXCEDEU 1 HORA!' : ''}">
-                ${dirIcon}${realNumber}&nbsp;&nbsp;|&nbsp;&nbsp;<span class="badge-time">${formattedCallTime}</span>
+              <span class="status-text-badge status-2 ${isLongCall ? 'alert' : ''}" title="Ligação ativa durante a Pausa (${escapePanelHtml(pauseName)}) ${isLongCall ? ' - EXCEDEU 1 HORA!' : ''}">
+                <span class="badge-detail-label">${dirIcon}<span class="badge-detail-text">${escapePanelHtml(realNumber)}</span></span><span class="badge-divider">|</span><span class="badge-time">${escapePanelHtml(formattedCallTime)}</span>
               </span>
             `;
           } else if (isCallActive) {
@@ -1140,59 +1103,81 @@ function updateUI(data) {
 
             badgeHtml = `
               <span class="status-text-badge status-2 ${isLongCall ? 'alert' : ''}" title="${isLongCall ? 'ATENDIMENTO EXCEDEU 1 HORA!' : 'Em Ligação'}">
-                ${dirIcon}${realNumber}&nbsp;&nbsp;|&nbsp;&nbsp;<span class="badge-time">${formattedCallTime}</span>
+                <span class="badge-detail-label">${dirIcon}<span class="badge-detail-text">${escapePanelHtml(realNumber)}</span></span><span class="badge-divider">|</span><span class="badge-time">${escapePanelHtml(formattedCallTime)}</span>
               </span>
             `;
           } else if (isPaused) {
             statusClass = 'status-5';
             statusLabel = pauseName;
-            badgeHtml = `<span class="status-text-badge status-5 ${isOverLimit ? 'alert' : ''}" title="Em Pausa (${isOverLimit ? 'TEMPO LIMITE EXCEDIDO!' : 'Dentro do limite'})"><i class="fa-solid fa-circle-pause"></i> ${statusLabel}&nbsp;&nbsp;|&nbsp;&nbsp;<span class="badge-time">${agent.time || '00:00'}</span></span>`;
-          } else if (agent.status === 1) {
-            statusClass = 'status-1';
-            ramalDisplay = agent.code ? (String(agent.code).length > 4 ? String(agent.code).slice(-4) : String(agent.code)) : (agent.ramal || '');
-            badgeHtml = `<span class="status-text-badge status-1">Livre</span>`;
-          } else if (agent.pbxStatus === 'Free') {
+            badgeHtml = buildPausePillHtml(statusLabel, agent.time || '00:00', isOverLimit);
+          } else if (connection.isPbxRegistered) {
             statusClass = 'status-pbx-free';
-            ramalDisplay = agent.pbxNumber || agent.ramal || '';
-            badgeHtml = `<span class="status-text-badge status-1">Livre</span>`;
+            badgeHtml = '';
+          } else if (connection.isNpxBusy) {
+            statusClass = 'status-2';
+            badgeHtml = '<span class="status-text-badge status-2" title="O monitor oficial NPX informa ocupado; sem numero de chamada confirmado">Ocupado na NPX</span>';
+          } else if (connection.isNpxRinging) {
+            statusClass = 'status-npx-unverified';
+            badgeHtml = '<span class="status-text-badge status-npx-unverified" title="O monitor oficial NPX informa chamada tocando neste ramal">Chamando</span>';
+          } else if (connection.isNpxQueueOnline) {
+            statusClass = 'status-1';
+            // Estado operacional atual do monitor oficial; SIP continua independente.
+            badgeHtml = '';
+          } else if (connection.isNpxQueueDisconnected) {
+            if (connection.isDisconnectedBoth && pbxMonitorAvailable) {
+              card.classList.add('offline-card');
+              badgeHtml = '<span class="status-text-badge status-offline" title="NPX: desligado na fila. PBX: dispositivo sem registro, confirmado por consulta atual. O MicroSIP pode estar aberto.">Sem conexão NPX/PBX</span>';
+            } else {
+              statusClass = 'status-npx-unverified';
+              badgeHtml = '<span class="status-text-badge status-npx-unverified" title="NPX confirma desligamento, mas o estado do registro PBX nao foi confirmado em uma consulta atual">PBX não confirmado</span>';
+            }
+          } else if (connection.isNpxOperationalUnknown) {
+            statusClass = 'status-npx-unverified';
+            badgeHtml = '<span class="status-text-badge status-npx-unverified" title="Sem observacao operacional valida e recente do monitor oficial">Status NPX não confirmado</span>';
+          } else if (connection.isNpxSipUnknown) {
+            statusClass = 'status-npx-unverified';
+            badgeHtml = '<span class="status-text-badge status-npx-unverified" title="Presente na fila NPX, mas sem confirmacao de registro SIP">SIP não confirmado</span>';
+          } else if (connection.isNpxSipDisconnected) {
+            statusClass = 'status-npx-disconnected';
+            badgeHtml = '<span class="status-text-badge status-npx-disconnected" title="Presente na fila NPX, mas com ramal SIP informado como desconectado">Ramal desconectado</span>';
           } else {
             card.classList.add('offline-card');
-            badgeHtml = `<span class="status-text-badge status-offline">Offline</span>`;
+            badgeHtml = '<span class="status-text-badge status-offline" title="Sem presença confirmada no monitor da fila NPX ou registro PBX">Offline</span>';
           }
 
-          // Apply the visual status directly to the entire card
+          // Aplica a mesma cor de estado em todos os departamentos.
           card.classList.add(statusClass);
-
           if (isOverLimit) card.classList.add('alert-blink');
 
-          const ramalCenterHtml = ramalDisplay ? `<span class="analyst-ramal-center">${ramalDisplay}</span>` : '<span class="analyst-ramal-center"></span>';
+          const ramalRightHtml = ramalDisplay ? `<span class="analyst-ramal-center" title="Ramal ${escapePanelHtml(ramalDisplay)}">${escapePanelHtml(ramalDisplay)}</span>` : '<span class="analyst-ramal-center"></span>';
 
           card.innerHTML = `
             <div class="analyst-row-main">
               <div class="analyst-name-info">
-                <span class="penalty-tag">${agent.penalty || 1}</span>
-                <span class="analyst-name" title="${agent.name}">${agent.name}</span>
+                <span class="penalty-tag">${escapePanelHtml(agent.penalty || 1)}</span>
+                <span class="analyst-name" title="${escapePanelHtml(agent.name)}">${escapePanelHtml(agent.name)}</span>
+                <i class="fa-solid fa-circle-info details-btn" title="Ver Métricas"></i>
               </div>
-              ${ramalCenterHtml}
               ${badgeHtml}
+              ${ramalRightHtml}
             </div>
             <div class="analyst-metrics-drawer">
               <div class="metrics-grid">
                 <div class="metric-item">
                   <span class="metric-lbl"><i class="fa-solid fa-right-to-bracket"></i> Logado</span>
-                  <span class="metric-val">${agent.total_loged_time || '00:00:00'}</span>
+                  <span class="metric-val">${escapePanelHtml(agent.total_loged_time || '00:00:00')}</span>
                 </div>
                 <div class="metric-item">
                   <span class="metric-lbl"><i class="fa-solid fa-circle-pause"></i> Pausado</span>
-                  <span class="metric-val">${agent.total_paused_time || '00:00:00'}</span>
+                  <span class="metric-val">${escapePanelHtml(agent.total_paused_time || '00:00:00')}</span>
                 </div>
                 <div class="metric-item">
                   <span class="metric-lbl"><i class="fa-solid fa-phone"></i> Atend.</span>
-                  <span class="metric-val">${agent.total_call_time || '00:00:00'}</span>
+                  <span class="metric-val">${escapePanelHtml(agent.total_call_time || '00:00:00')}</span>
                 </div>
                 <div class="metric-item">
                   <span class="metric-lbl"><i class="fa-solid fa-mug-hot"></i> Ocioso</span>
-                  <span class="metric-val">${agent.total_lazy_time || '00:00:00'}</span>
+                  <span class="metric-val">${escapePanelHtml(agent.total_lazy_time || '00:00:00')}</span>
                 </div>
               </div>
             </div>
@@ -1204,8 +1189,8 @@ function updateUI(data) {
             card.classList.add('active');
           }
 
-          card.addEventListener('click', (e) => {
-            if (e.target.closest('.status-text-badge') || e.target.closest('.penalty-tag')) return;
+          // Só o ícone de métricas é interativo; o card é informativo.
+          card.querySelector('.details-btn').addEventListener('click', () => {
             if (expandedAnalysts.has(agentKey)) {
               expandedAnalysts.delete(agentKey);
               card.classList.remove('active');
@@ -1245,12 +1230,22 @@ function updateUI(data) {
   renderPrixChat(data.prixchat);
 
   // 6. Atualiza o Ticker da Escala de Sábado, Sobreaviso e Férias com Pills Coloridas
+  const tickerTextEl = document.getElementById('ticker-text');
+  if (!data.horarios && tickerTextEl) {
+    tickerTextEl.textContent = 'Escala e sobreaviso indisponíveis — aguardando conexão com o servidor de horários.';
+  }
   if (data.horarios) {
-    const tickerTextEl = document.getElementById('ticker-text');
     if (tickerTextEl) {
-      const htmlContent = data.horarios.tickerHtml || data.horarios.tickerText;
-      if (tickerTextEl.innerHTML !== htmlContent) {
-        tickerTextEl.innerHTML = htmlContent;
+      const htmlContent = data.horarios.tickerHtml;
+      if (htmlContent) {
+        if (tickerTextEl.innerHTML !== htmlContent) {
+          tickerTextEl.innerHTML = htmlContent;
+        }
+      } else {
+        const plainText = data.horarios.tickerText || '';
+        if (tickerTextEl.textContent !== plainText) {
+          tickerTextEl.textContent = plainText;
+        }
       }
     }
 
@@ -1290,67 +1285,67 @@ function checkFullscreen() {
   }
 }
 
-// --- RENDERIZAÇÃO DO WIDGET SEFAZ RADAR DE PERFORMANCE (OPÇÃO 3) ---
+// --- SEMÁFORO DE DISPONIBILIDADE SEFAZ ---
 function renderSefazWidget(sefazData) {
   if (!sefazData) return;
   const radarList = document.getElementById('sefaz-radar-list');
-  const radarTime = document.getElementById('sefaz-radar-time');
   if (!radarList) return;
 
+  const lastUpdateMs = Date.parse(sefazData.lastUpdate);
+  const isStale = !Number.isFinite(lastUpdateMs) || Math.abs(Date.now() - lastUpdateMs) > 180000;
+
   const docs = [
-    { key: 'nfe', name: 'NF-e', uf: 'CE', defaultLabel: 'SEFAZ CE' },
-    { key: 'nfce', name: 'NFC-e', uf: 'CE', defaultLabel: 'SEFAZ CE' },
-    { key: 'cte', name: 'CT-e', uf: 'SVRS', defaultLabel: 'SVRS' },
-    { key: 'mdfe', name: 'MDF-e', uf: 'SVRS', defaultLabel: 'SVRS' }
+    { key: 'nfe', name: 'NF-e', uf: 'CE' },
+    { key: 'nfce', name: 'NFC-e', uf: 'CE' },
+    { key: 'cte', name: 'CT-e', uf: 'CE' },
+    { key: 'mdfe', name: 'MDF-e', uf: 'CE' }
   ];
 
   let rowsHtml = '';
+  const statuses = [];
+  const escapeAttribute = value => String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[char]);
 
   docs.forEach(doc => {
-    const item = sefazData[doc.key] || { status: 'OK', latency: 110, label: doc.defaultLabel };
-    let rowStatusClass = 'status-ok';
-    let barClass = 'bar-ok';
-    let icon = '<i class="fa-solid fa-circle-check val-icon"></i>';
-    let latencyMs = item.latency || 110;
-    let latencyText = `${latencyMs}ms`;
+    const rawStatus = sefazData[doc.key]?.status;
+    const hasData = ['OK', 'WARNING', 'DANGER', 'OFF', 'CONTINGENCY'].includes(rawStatus);
+    const candidate = isStale ? 'STALE' : (hasData ? rawStatus : 'UNKNOWN');
+    statuses.push(candidate);
 
-    // Calcula a porcentagem da barra (20% a 100%)
-    let pct = Math.min(Math.max(Math.round((latencyMs / 450) * 100), 20), 100);
+    let rowStatusClass = 'status-unknown';
+    let statusText = 'SEM DADOS';
 
-    if (item.status === 'WARNING') {
+    if (isStale) {
+      rowStatusClass = 'status-unknown status-stale';
+      statusText = 'DESATUALIZADO';
+    } else if (candidate === 'OK') {
+      rowStatusClass = 'status-ok';
+      statusText = 'NORMAL';
+    } else if (candidate === 'WARNING' || candidate === 'CONTINGENCY') {
       rowStatusClass = 'status-warning';
-      barClass = 'bar-warning';
-      icon = '<i class="fa-solid fa-triangle-exclamation val-icon"></i>';
-      latencyText = `${latencyMs}ms`;
-      pct = Math.min(Math.max(Math.round((latencyMs / 1500) * 100), 50), 100);
-    } else if (item.status === 'DANGER' || item.status === 'OFF') {
+      statusText = 'INSTÁVEL';
+    } else if (candidate === 'DANGER' || candidate === 'OFF') {
       rowStatusClass = 'status-danger';
-      barClass = 'bar-danger';
-      icon = '<i class="fa-solid fa-circle-xmark val-icon"></i>';
-      latencyText = 'FORA';
-      pct = 100;
-    } else if (item.status === 'CONTINGENCY') {
-      rowStatusClass = 'status-contingency';
-      barClass = 'bar-contingency';
-      icon = '<i class="fa-solid fa-shield-halved val-icon"></i>';
-      latencyText = 'Conting.';
-      pct = 80;
+      statusText = 'INDISPONÍVEL';
+    } else {
+      rowStatusClass = 'status-unknown';
+      statusText = 'SEM DADOS';
     }
 
-    const titleText = `${doc.name} (${item.label || doc.defaultLabel}): ${item.status === 'OK' ? 'Operacional' : item.status}`;
+    const description = isStale ? 'Consulta do painel desatualizada' :
+      (sefazData[doc.key]?.detail || 'Aguardando consulta ao monitor IntegraNotas');
+    const titleText = `${doc.name} (${doc.uf}): ${description}`;
 
     rowsHtml += `
-      <div class="sefaz-radar-row ${rowStatusClass}" title="${titleText}">
+      <div class="sefaz-radar-row ${rowStatusClass}" data-sefaz-document="${doc.key}" title="${escapeAttribute(titleText)}" aria-label="${escapeAttribute(`${doc.name} ${doc.uf}: ${statusText}`)}">
         <div class="radar-row-info">
           <span class="doc-badge">${doc.name}</span>
           <span class="uf-tag">(${doc.uf})</span>
         </div>
-        <div class="radar-bar-container">
-          <div class="radar-bar-fill ${barClass}" style="width: ${pct}%;"></div>
-        </div>
-        <div class="radar-row-val">
-          ${icon}
-          <span class="latency-text">${latencyText}</span>
+        <div class="radar-row-status">
+          <span class="sefaz-status-dot" aria-hidden="true"></span>
+          <span class="latency-text">${statusText}</span>
         </div>
       </div>
     `;
@@ -1360,25 +1355,24 @@ function renderSefazWidget(sefazData) {
 
   const globalBadge = document.getElementById('sefaz-global-badge');
   if (globalBadge) {
-    const hasDanger = Object.values(sefazData).some(d => d && (d.status === 'DANGER' || d.status === 'OFF'));
-    const hasWarning = Object.values(sefazData).some(d => d && d.status === 'WARNING');
+    const hasDanger = statuses.some(status => status === 'DANGER' || status === 'OFF');
+    const hasWarning = statuses.includes('WARNING') || statuses.includes('CONTINGENCY');
+    const hasUnknown = statuses.includes('UNKNOWN') || statuses.includes('STALE');
+    globalBadge.hidden = !(hasDanger || hasWarning || hasUnknown);
 
     if (hasDanger) {
       globalBadge.className = 'sefaz-global-badge status-danger';
-      globalBadge.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> FORA DO AR';
+      globalBadge.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> SERVIÇO OFFLINE';
     } else if (hasWarning) {
       globalBadge.className = 'sefaz-global-badge status-warning';
-      globalBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> INSTÁVEL';
+      globalBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> OSCILANDO';
+    } else if (hasUnknown) {
+      globalBadge.className = 'sefaz-global-badge status-unknown';
+      globalBadge.innerHTML = '<i class="fa-solid fa-circle-question"></i> SEM CONFIRMAÇÃO';
     } else {
       globalBadge.className = 'sefaz-global-badge status-ok';
-      globalBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> TUDO OK';
+      globalBadge.innerHTML = '';
     }
-  }
-
-  if (radarTime) {
-    const now = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
-    radarTime.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   }
 }
 
@@ -1618,7 +1612,7 @@ function launchSideConfetti(photoLeft, photoTop, photoSize) {
     flyEl.style.cssText = `position:fixed;left:${srcRect.left}px;top:${srcRect.top}px;width:${srcRect.width}px;height:${srcRect.height}px;border-radius:50%;z-index:9999;pointer-events:none;overflow:visible;`;
     flyEl.innerHTML = `
       <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;position:relative;z-index:1;background:#1e293b;display:flex;align-items:center;justify-content:center;">
-        <img src="${imgEl.src}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\'font-size:3.5rem;\'>🎂</span>';">
+        <img src="${escapePanelHtml(imgEl.src)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\'font-size:3.5rem;\'>🎂</span>';">
       </div>
       <div class="birthday-hat" style="position:absolute;top:-55%;left:50%;transform:translateX(-60%) rotate(-20deg);font-size:0;z-index:2;transition:font-size 0.5s ease;line-height:1;">🎩</div>`;
     document.body.appendChild(flyEl);
@@ -1682,3 +1676,455 @@ function launchSideConfetti(photoLeft, photoTop, photoSize) {
   setInterval(checkBirthdayPillPosition, 300);
 })();
 
+
+
+// Categorias visuais de pausas observadas no NPX; nenhuma ação é enviada.
+const pauseVisualCategories = [
+  {
+    title: "☕ Pausas Pessoais / Fisiológicas",
+    color: "#ea580c",
+    items: [
+      { id: "Água_5'", label: "Água", time: "5 min", icon: "fa-solid fa-glass-water" },
+      { id: "Banheiro_10'", label: "Banheiro", time: "10 min", icon: "fa-solid fa-restroom" },
+      { id: "Lanche_10'", label: "Lanche", time: "10 min", icon: "fa-solid fa-burger" },
+      { id: "Almoço", label: "Almoço", time: "2h", icon: "fa-solid fa-utensils" },
+      { id: "AssuntoPessoal_45'", label: "Assunto Pessoal", time: "45 min", icon: "fa-solid fa-user-clock" }
+    ]
+  },
+  {
+    title: "💻 Operacional / Atendimento",
+    color: "#2563eb",
+    items: [
+      { id: "Em Atend_45'", label: "Em Atendimento", time: "45 min", icon: "fa-solid fa-headset" },
+      { id: "WhatsApp_45'", label: "WhatsApp", time: "45 min", icon: "fa-brands fa-whatsapp" },
+      { id: "ProcTestes_45'", label: "Processos/Testes", time: "45 min", icon: "fa-solid fa-vial" },
+      { id: "NossaTelecom", label: "Nossa Telecom", time: "Livre", icon: "fa-solid fa-phone" }
+    ]
+  },
+  {
+    title: "🏢 Eventos / Externos",
+    color: "#7c3aed",
+    items: [
+      { id: "Meeting_2h", label: "Reunião / Meeting", time: "2h", icon: "fa-solid fa-users" },
+      { id: "DemoRemota_3h", label: "Demo Remota", time: "3h", icon: "fa-solid fa-desktop" },
+      { id: "Instal.Remota", label: "Instalação Remota", time: "Livre", icon: "fa-solid fa-download" },
+      { id: "Trein.Interno", label: "Treinamento Interno", time: "Livre", icon: "fa-solid fa-chalkboard-user" },
+      { id: "Trein.Remoto", label: "Treinamento Remoto", time: "Livre", icon: "fa-solid fa-laptop-file" },
+      { id: "Serv.Externo", label: "Serviço Externo", time: "Livre", icon: "fa-solid fa-car" },
+      { id: "Representantes", label: "Representantes", time: "Livre", icon: "fa-solid fa-handshake" }
+    ]
+  }
+];
+
+function getPauseCategoryVisual(pauseName) {
+  const raw = String(pauseName || '').trim();
+  const norm = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+  let matchedColor = null;
+  let matchedIcon = 'fa-solid fa-circle-pause';
+  if (Array.isArray(pauseVisualCategories)) {
+    for (const group of pauseVisualCategories) {
+      for (const item of (group.items || [])) {
+        const itemNormId = String(item.id || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+        const itemNormLbl = String(item.label || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+        if (
+          raw === item.id ||
+          raw === item.label ||
+          (norm && (
+            norm === itemNormId ||
+            norm === itemNormLbl ||
+            (norm.length >= 3 && (itemNormId.includes(norm) || norm.includes(itemNormId) || itemNormLbl.includes(norm) || norm.includes(itemNormLbl)))
+          ))
+        ) {
+          matchedColor = group.color;
+          if (item.icon) matchedIcon = item.icon;
+          break;
+        }
+      }
+      if (matchedColor) break;
+    }
+  }
+  if (!matchedColor) {
+    if (/(agua|banheiro|lanche|almoco|pessoal|cafe)/.test(norm)) {
+      matchedColor = '#ea580c';
+    } else if (/(atend|whatsapp|proc|teste|telecom|operac)/.test(norm)) {
+      matchedColor = '#2563eb';
+    } else if (/(meeting|reuniao|demo|instal|trein|externo|representante)/.test(norm)) {
+      matchedColor = '#7c3aed';
+    }
+  }
+  if (matchedColor === '#ea580c') {
+    return { category: 'personal', color: '#ea580c', bg: '#fff7ed', border: '#fdba74', text: '#9a3412', icon: matchedIcon };
+  }
+  if (matchedColor === '#2563eb') {
+    return { category: 'operational', color: '#2563eb', bg: '#eff6ff', border: '#93c5fd', text: '#1e3a8a', icon: matchedIcon };
+  }
+  if (matchedColor === '#7c3aed') {
+    return { category: 'external', color: '#7c3aed', bg: '#f5f3ff', border: '#c4b5fd', text: '#4c1d95', icon: matchedIcon };
+  }
+  return { category: 'default', color: '#0284c7', bg: '#f0f9ff', border: '#7dd3fc', text: '#0c4a6e', icon: matchedIcon };
+}
+
+function buildPausePillHtml(statusLabel, timeStr, isOverLimit) {
+  const visual = getPauseCategoryVisual(statusLabel);
+  const styleAttr = isOverLimit
+    ? ''
+    : ` style="--pause-pill-bg:${visual.bg};--pause-pill-border:${visual.border};--pause-pill-text:${visual.text};--pause-pill-accent:${visual.color};"`;
+  const titleText = isOverLimit ? 'Em Pausa (TEMPO LIMITE EXCEDIDO!)' : 'Em Pausa';
+  return `<span class="status-text-badge status-5 pause-status-pill pause-cat-${visual.category} ${isOverLimit ? 'alert' : ''}" data-pause-category="${visual.category}"${styleAttr} title="${titleText}" aria-label="Pausa observada: ${escapePanelHtml(statusLabel)}"><span class="badge-detail-label"><i class="${escapePanelHtml(visual.icon)} pause-pill-icon" aria-hidden="true"></i><span class="badge-detail-text">${escapePanelHtml(statusLabel)}</span></span><span class="badge-divider">|</span><span class="badge-time">${escapePanelHtml(timeStr || '00:00')}</span></span>`;
+}
+
+function resolveAgentRealPauseState(agent, baseConnection) {
+  const stateApi = window.InfoBoardAgentState;
+  const connection = baseConnection || (stateApi && typeof stateApi.getAgentConnectionState === 'function'
+    ? stateApi.getAgentConnectionState(agent || {})
+    : { pauseName: 'Em Pausa', isRealNpxCall: false, isCallActive: false, isPaused: false, isPbxRegistered: false });
+  let npxFallback = null;
+  if (connection.isPbxRegistered && stateApi && typeof stateApi.getAgentConnectionState === 'function') {
+    npxFallback = stateApi.getAgentConnectionState({ ...(agent || {}), pbxStatus: undefined });
+  }
+  const opStatus = Number(agent?.npxOperational?.status);
+  const rawStatus = Number(agent?.status);
+  const isExplicitlyDisconnected = rawStatus === 0 || opStatus === 0;
+  const isExplicitlyUnpaused = !isExplicitlyDisconnected &&
+    (opStatus === 1 || (rawStatus === 1 && opStatus !== -1)) &&
+    Number(agent?.paused) === 0 &&
+    agent?.paused !== true;
+  const hasExplicitNpxPause = !isExplicitlyDisconnected && !isExplicitlyUnpaused && (
+    Number(agent?.paused) === 1 ||
+    agent?.paused === true ||
+    (rawStatus === -1 && opStatus !== 1) ||
+    opStatus === -1
+  );
+  let isPaused = !isExplicitlyUnpaused && Boolean(connection.isPaused || npxFallback?.isPaused || hasExplicitNpxPause);
+  let pauseName = (
+    (connection.isPaused && connection.pauseName) ||
+    (npxFallback?.isPaused && npxFallback.pauseName) ||
+    String(agent?.pause_type || agent?.npxOperational?.pauseReason || '').trim() ||
+    connection.pauseName ||
+    'Em Pausa'
+  );
+
+  return {
+    connection,
+    pauseName,
+    isRealNpxCall: Boolean(connection.isRealNpxCall),
+    isCallActive: Boolean(connection.isCallActive),
+    isPaused
+  };
+}
+
+// --- LÓGICA DE EVENTOS ANIMADOS ---
+let lastEventShowTime = 0;
+const EVENT_INTERVAL_MS = 60 * 60 * 1000; // 60 MINUTOS
+const EVENT_DURATION_MS = 60 * 1000; // duração do aviso em tela cheia
+const EVENT_AVATAR_FALLBACK = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"%3E%3Crect width="96" height="96" rx="48" fill="%23e2e8f0"/%3E%3Ccircle cx="48" cy="36" r="18" fill="%2394a3b8"/%3E%3Cpath d="M16 88c4-20 17-30 32-30s28 10 32 30" fill="%2394a3b8"/%3E%3C/svg%3E';
+const TRUSTED_EVENT_IMAGE_HOSTS = new Set([
+  '192.168.243.2:8888',
+  'srv-ads002:8888'
+]);
+
+function safeEventImageSrc(src) {
+  if (!src) return EVENT_AVATAR_FALLBACK;
+  try {
+    const url = new URL(String(src), 'http://192.168.243.2:8888/');
+    const trustedProtocol = url.protocol === 'http:' || url.protocol === 'https:';
+    const trustedHost = TRUSTED_EVENT_IMAGE_HOSTS.has(url.host.toLowerCase());
+    if (!trustedProtocol || !trustedHost || url.username || url.password) return EVENT_AVATAR_FALLBACK;
+    return url.href;
+  } catch {
+    return EVENT_AVATAR_FALLBACK;
+  }
+}
+
+function createEventParticipantNode(participant, index, partyMode) {
+  const person = participant && typeof participant === 'object' ? participant : {};
+  const hasInfo = Boolean(person.info);
+  const wrapper = document.createElement('div');
+  wrapper.className = partyMode
+    ? `party-bubble${hasInfo ? ' convidado' : ''}`
+    : `event-participant-badge${hasInfo ? ' convidado' : ''}`;
+  wrapper.style.animationDelay = `${(index % (partyMode ? 4 : 3)) * 0.4}s`;
+
+  const image = document.createElement('img');
+  image.src = safeEventImageSrc(person.imgSrc);
+  image.alt = String(person.nome || 'Participante');
+  image.addEventListener('error', () => {
+    if (image.src !== EVENT_AVATAR_FALLBACK) image.src = EVENT_AVATAR_FALLBACK;
+  }, { once: true });
+  wrapper.appendChild(image);
+
+  const name = document.createElement('span');
+  if (partyMode) name.className = 'name-tag';
+  name.textContent = String(person.nome || 'Participante');
+  wrapper.appendChild(name);
+
+  if (hasInfo) {
+    const info = document.createElement(partyMode ? 'span' : 'small');
+    if (partyMode) info.className = 'info-tag';
+    info.textContent = String(person.info);
+    wrapper.appendChild(info);
+  }
+
+  return wrapper;
+}
+
+function checkEventOverlay(dashData) {
+  const eventos = dashData?.horarios?.eventos;
+  if (!Array.isArray(eventos) || eventos.length === 0) return;
+
+  const evento = eventos[0];
+  if (!evento || typeof evento.data_titulo !== 'string') return;
+  const dateMatch = evento.data_titulo.match(/^(\d{2})\/(\d{2})(?:\/(\d{4}))?/);
+
+  // Só exibe se for HOJE
+  if (dateMatch) {
+     const day = parseInt(dateMatch[1], 10);
+     const month = parseInt(dateMatch[2], 10);
+     const year = dateMatch[3] ? parseInt(dateMatch[3], 10) : new Date().getFullYear();
+     const evtDate = new Date(year, month - 1, day);
+     const today = new Date();
+
+     if (evtDate.getDate() !== today.getDate() || evtDate.getMonth() !== today.getMonth() || evtDate.getFullYear() !== today.getFullYear()) {
+         return; // Não é hoje, então não exibe na tela inteira
+     }
+  }
+
+  const now = Date.now();
+  if (now - lastEventShowTime > EVENT_INTERVAL_MS) {
+    lastEventShowTime = now;
+    showEventOverlay(evento);
+  }
+}
+
+
+
+
+
+
+
+
+function showEventOverlay(evento) {
+  let title = evento.data_titulo || 'Evento';
+  let dateText = '';
+
+  if (title.includes('—')) {
+    const parts = title.split('—'); dateText = parts[0].trim(); title = parts[1].trim();
+  } else if (title.includes('-')) {
+    const parts = title.split('-'); dateText = parts[0].trim(); title = parts[1].trim();
+  }
+
+  // Lógica para transformar a data em "HOJE!" se for a data atual
+  if (dateText) {
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const todayString = `${dd}/${mm}/${yyyy}`;
+
+    // Testa se a string da data contém a data de hoje (ex: '02/10/2026')
+    if (dateText.includes(todayString) || dateText.includes(`${dd}/${mm}`)) {
+      dateText = 'HOJE!';
+    }
+  }
+
+  const grid = document.getElementById('event-overlay-participants');
+  const overlay = document.getElementById('event-overlay');
+  const content = document.querySelector('.event-overlay-content');
+
+  const isParty = title.toLowerCase().includes('happy hour') || title.toLowerCase().includes('churrasco') || (evento.obs && evento.obs.toLowerCase().includes('churrasco'));
+
+  if (isParty) {
+    overlay.style.background = 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)';
+    overlay.style.justifyContent = 'center';
+    overlay.style.paddingTop = '0';
+
+    content.style.background = 'transparent';
+    content.style.boxShadow = 'none';
+    content.style.border = 'none';
+    content.style.backdropFilter = 'none';
+
+    // Remove o ícone grande do topo
+    const iconDiv = document.querySelector('.event-icon');
+    if (iconDiv) {
+      iconDiv.innerHTML = '';
+      iconDiv.style.marginBottom = '0';
+    }
+
+    const dateDiv = document.getElementById('event-overlay-date');
+    dateDiv.className = '';
+    const isHoje = dateText === 'HOJE!';
+    dateDiv.style.cssText = isHoje
+      ? 'background: #ea580c; color: #fff; padding: 6px 25px; border-radius: 30px; font-weight: 900; letter-spacing: 2px; font-size: 1.3rem; display: inline-block; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(234, 88, 12, 0.4); border: 2px solid rgba(255,255,255,0.3); animation: pulseDate 2s infinite;'
+      : 'background: rgba(0,0,0,0.15); color: #fff; padding: 6px 20px; border-radius: 30px; font-weight: 700; letter-spacing: 1px; font-size: 1.1rem; display: inline-block; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 2px solid rgba(255,255,255,0.15);';
+
+    dateDiv.textContent = isHoje ? dateText : ('🗓️ ' + dateText);
+
+    // Coloca os emojis nas laterais e faz o título principal ser MUITO mais chamativo
+    const titleElement = document.getElementById('event-overlay-title');
+    titleElement.textContent = '';
+    const titleRow = document.createElement('div');
+    titleRow.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:30px;margin-bottom:30px;';
+    const leftEmoji = document.createElement('span');
+    leftEmoji.style.cssText = 'font-size:7rem;filter:drop-shadow(0 5px 15px rgba(194,65,12,0.4));animation:partyBounce 2s infinite alternate;';
+    leftEmoji.textContent = '🍻';
+    const partyTitle = document.createElement('span');
+    partyTitle.className = 'party-flashy-title';
+    partyTitle.textContent = title;
+    const rightEmoji = document.createElement('span');
+    rightEmoji.style.cssText = 'font-size:7rem;filter:drop-shadow(0 5px 15px rgba(194,65,12,0.4));animation:partyBounce 2s infinite alternate;animation-delay:0.5s;';
+    rightEmoji.textContent = '🍖';
+    titleRow.append(leftEmoji, partyTitle, rightEmoji);
+    titleElement.appendChild(titleRow);
+
+    titleElement.classList.remove('event-title-glow');
+    document.getElementById('event-overlay-details').textContent = '';
+
+    const obsDiv = document.getElementById('event-overlay-obs');
+    obsDiv.className = '';
+    obsDiv.style.cssText = 'font-size: 1.6rem; color: #fff; background: rgba(0,0,0,0.15); padding: 10px 30px; border-radius: 30px; font-weight: bold; margin-bottom: 35px; display: inline-block; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 2px solid rgba(255,255,255,0.15);';
+    obsDiv.textContent = evento.obs || 'Bora comemorar! 🎉';
+
+    grid.style.display = 'block';
+
+    grid.innerHTML = `
+      <style>
+        .party-flashy-title {
+          font-size: 8rem;
+          font-weight: 900;
+          text-transform: uppercase;
+          background: linear-gradient(90deg, #fffbeb 0%, #fef08a 50%, #fde047 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0px 8px 15px rgba(194, 65, 12, 0.6)) drop-shadow(0px 0px 30px rgba(250, 204, 21, 0.5));
+          letter-spacing: -2px;
+          line-height: 1.1;
+          animation: textPulse 2.5s infinite alternate;
+        }
+
+        .party-bubble-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-top: 20px; max-width: 1100px; margin-left: auto; margin-right: auto; }
+        .party-bubble { display: flex; flex-direction: column; align-items: center; animation: floatBubble 3s ease-in-out infinite alternate; position: relative; }
+        .party-bubble img { width: 95px; height: 95px; border-radius: 50%; border: 5px solid #fff; box-shadow: 0 12px 25px rgba(194, 65, 12, 0.4); object-fit: cover; background: #fff; }
+        .party-bubble .name-tag { background: #fff; color: #c2410c; padding: 5px 18px; border-radius: 20px; font-size: 1.05rem; font-weight: 800; margin-top: -15px; z-index: 2; box-shadow: 0 5px 15px rgba(194, 65, 12, 0.2); white-space: nowrap; }
+        .party-bubble.convidado img { border-color: #fef08a; }
+        .party-bubble.convidado .name-tag { background: #fef08a; color: #854d0e; }
+        .party-bubble.convidado .info-tag { position: absolute; top: -10px; right: -15px; background: #ef4444; color: white; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; font-weight: 900; transform: rotate(15deg); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .festive-bg { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1; background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.4) 4px, transparent 5px), radial-gradient(circle at 80% 40%, rgba(255,255,255,0.3) 6px, transparent 7px), radial-gradient(circle at 30% 70%, rgba(255,255,255,0.4) 3px, transparent 4px), radial-gradient(circle at 90% 80%, rgba(255,255,255,0.3) 5px, transparent 6px), radial-gradient(circle at 50% 10%, rgba(255,255,255,0.2) 8px, transparent 9px); background-size: 150px 150px; animation: driftBg 15s linear infinite; }
+
+        @keyframes floatBubble { 0% { transform: translateY(0px); } 100% { transform: translateY(-20px); } }
+        @keyframes driftBg { 0% { background-position: 0 0; } 100% { background-position: 150px -150px; } }
+        @keyframes partyBounce { 0% { transform: scale(1) translateY(0); } 100% { transform: scale(1.1) translateY(-10px); } }
+        @keyframes pulseDate { 0% { transform: scale(1); box-shadow: 0 4px 15px rgba(234, 88, 12, 0.4); } 50% { transform: scale(1.05); box-shadow: 0 4px 25px rgba(234, 88, 12, 0.8); } 100% { transform: scale(1); box-shadow: 0 4px 15px rgba(234, 88, 12, 0.4); } }
+        @keyframes textPulse { 0% { transform: scale(1); filter: drop-shadow(0px 8px 15px rgba(194, 65, 12, 0.6)) drop-shadow(0px 0px 20px rgba(250, 204, 21, 0.5)); } 100% { transform: scale(1.05); filter: drop-shadow(0px 15px 25px rgba(194, 65, 12, 0.8)) drop-shadow(0px 0px 40px rgba(250, 204, 21, 0.9)); } }
+      </style>
+      <div class="festive-bg"></div>
+      <div class="party-bubble-grid"></div>
+    `;
+
+    const bubbleGrid = grid.querySelector('.party-bubble-grid');
+    if (evento.participantes && evento.participantes.length > 0) {
+      evento.participantes.forEach((p, index) => {
+        bubbleGrid.appendChild(createEventParticipantNode(p, index, true));
+      });
+    }
+  } else {
+    const dateDiv = document.getElementById('event-overlay-date');
+    dateDiv.className = 'event-date-tag';
+    dateDiv.style.cssText = '';
+    dateDiv.innerText = dateText || 'Em breve';
+
+    document.getElementById('event-overlay-title').textContent = title;
+
+    const detailsElement = document.getElementById('event-overlay-details');
+    detailsElement.textContent = '';
+    if (evento.status) {
+      const status = document.createElement('span');
+      status.style.color = '#34d399';
+      const statusIcon = document.createElement('i');
+      statusIcon.className = 'fa-solid fa-clock';
+      statusIcon.setAttribute('aria-hidden', 'true');
+      status.append(statusIcon, document.createTextNode(` ${evento.status}`));
+      detailsElement.append(status, document.createTextNode(' - '));
+    }
+    String(evento.detalhes || '').split('|').map(detail => detail.trim()).filter(Boolean).forEach(detail => {
+      const detailSpan = document.createElement('span');
+      detailSpan.textContent = detail;
+      detailsElement.appendChild(detailSpan);
+    });
+
+    const obsDiv = document.getElementById('event-overlay-obs');
+    obsDiv.className = 'event-overlay-obs';
+    obsDiv.style.cssText = '';
+    obsDiv.textContent = evento.obs || '';
+
+    const iconDiv = document.querySelector('.event-icon');
+    if (iconDiv) { iconDiv.innerHTML = '<i class="fa-solid fa-champagne-glasses"></i>'; iconDiv.style.marginBottom=''; }
+    document.getElementById('event-overlay-title').classList.add('event-title-glow');
+
+    overlay.style.background = ''; overlay.style.justifyContent = ''; content.style.background = ''; content.style.boxShadow = ''; content.style.border = '';
+    grid.style.display = 'flex';
+    grid.innerHTML = '';
+
+    if (evento.participantes && evento.participantes.length > 0) {
+      evento.participantes.forEach((p, index) => {
+        grid.appendChild(createEventParticipantNode(p, index, false));
+      });
+    }
+  }
+
+  overlay.classList.add('active');
+  setTimeout(() => { overlay.classList.remove('active'); }, EVENT_DURATION_MS);
+}
+
+
+// --- BOTAO DISCRETO PARA PAUSAR EVENTOS ---
+window.isEventPaused = false;
+if (!document.getElementById('pause-events-btn')) {
+  const btn = document.createElement('button');
+  btn.id = 'pause-events-btn';
+  btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+  btn.style.position = 'fixed';
+  btn.style.bottom = '15px';
+  btn.style.left = '15px';
+  btn.style.zIndex = '9999999';
+  btn.style.background = 'rgba(255,255,255,0.2)';
+  btn.style.border = '1px solid rgba(255,255,255,0.1)';
+  btn.style.color = '#fff';
+  btn.style.padding = '8px 12px';
+  btn.style.borderRadius = '50%';
+  btn.style.cursor = 'pointer';
+  btn.style.opacity = '0.2';
+  btn.style.transition = 'all 0.3s ease';
+  btn.title = 'Pausar avisos de evento';
+
+  btn.onmouseover = () => { btn.style.opacity = '1'; btn.style.transform = 'scale(1.1)'; };
+  btn.onmouseout = () => {
+    btn.style.transform = 'scale(1)';
+    btn.style.opacity = window.isEventPaused ? '1' : '0.2';
+  };
+
+  btn.onclick = () => {
+    window.isEventPaused = !window.isEventPaused;
+    if (window.isEventPaused) {
+      btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+      btn.style.background = 'rgba(239, 68, 68, 0.6)'; // vermelho discreto
+      btn.style.opacity = '1';
+      btn.title = 'Retomar avisos de evento';
+      // Força fechar se estiver aberto
+      const overlay = document.getElementById('event-overlay');
+      if (overlay) overlay.classList.remove('active');
+    } else {
+      btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+      btn.style.background = 'rgba(255,255,255,0.2)';
+      btn.style.opacity = '0.2';
+      btn.title = 'Pausar avisos de evento';
+    }
+  };
+  document.body.appendChild(btn);
+}
+
+// Interceptar o checkEventOverlay para obedecer o pause
+const oldCheck = checkEventOverlay;
+checkEventOverlay = function(dashData) {
+  if (window.isEventPaused) return;
+  oldCheck(dashData);
+};
