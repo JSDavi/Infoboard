@@ -1,61 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Guia de Instalação e Atualização - Infoboard</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 850px; margin: auto; padding: 40px; color: #1e293b; background: #f8fafc; }
-        .card { background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); margin-bottom: 24px; border: 1px solid #e2e8f0; }
-        h1 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; font-size: 1.8rem; }
-        h2 { color: #2563eb; margin-top: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; font-size: 1.3rem; }
-        h3 { color: #334155; font-size: 1.1rem; }
-        code { background: #f1f5f9; padding: 3px 6px; border-radius: 6px; color: #0284c7; font-family: Consolas, monospace; font-size: 0.9em; }
-        pre { background: #0f172a; color: #f8fafc; padding: 16px; border-radius: 8px; overflow-x: auto; }
-        pre code { background: none; color: inherit; padding: 0; }
-        .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
-        .feature-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; }
-        .alert { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px; margin: 16px 0; border-radius: 0 8px 8px 0; }
-        .success { background: #ecfdf5; border-left: 4px solid #10b981; padding: 14px; margin: 16px 0; border-radius: 0 8px 8px 0; }
-        @media (max-width: 640px) { .feature-grid { grid-template-columns: 1fr; } body { padding: 16px; } }
-    </style>
-</head>
-<body>
-
-    <div class="card">
-        <h1>🚀 Guia de Instalação e Atualização - Infoboard</h1>
-        <p>Este guia explica como implantar e manter o <strong>Infoboard TV</strong> em qualquer servidor ou terminal Windows de forma 100% automatizada.</p>
-
-        <h2>1. Instalação Automática (1 Clique)</h2>
-        <p>Tudo foi preparado na pasta <code>instalador/</code> no arquivo <code>INSTALAR_INFOBOARD.bat</code>.</p>
-        
-        <ol>
-            <li>Abra a pasta <code>instalador/</code> (ou copie ela para o novo computador).</li>
-            <li>Dê dois cliques em <code>INSTALAR_INFOBOARD.bat</code> (ele pedirá permissão de Administrador automaticamente).</li>
-        </ol>
-
-        <div class="feature-grid">
-            <div class="feature-item"><strong>🔍 Verificação do Node.js</strong><br>Detecta ou baixa/instala o Node.js LTS silenciosamente.</div>
-            <div class="feature-item"><strong>📥 Sincronização GitHub</strong><br>Baixa a versão oficial mais recente direto do repositório.</div>
-            <div class="feature-item"><strong>⚙️ Assistente .env</strong><br>Configura credenciais de NPX e PrixChat interativamente.</div>
-            <div class="feature-item"><strong>🛡️ Firewall Automático</strong><br>Libera a porta 3000 para acesso de TVs e computadores.</div>
-            <div class="feature-item"><strong>🔄 Serviço Nativo Windows</strong><br>Registra em <code>services.msc</code> (início automático no boot).</div>
-            <div class="feature-item"><strong>🖥️ Atalhos no Desktop</strong><br>Cria atalhos para Abrir o Painel e Atualizar com 1 clique.</div>
-        </div>
-
-        <div class="success">
-            <strong>✅ Pronto!</strong> O painel já fica rodando em segundo plano e pode ser acessado na rede pelo endereço <code>http://IP_DO_SERVIDOR:3000</code>.
-        </div>
-
-        <h2>2. Como Atualizar o Sistema</h2>
-        <p>Sempre que fizer alterações no código no seu computador e subir para o GitHub:</p>
-        <ol>
-            <li>No servidor/terminal, dê dois cliques em <code>instalador\ATUALIZAR_INFOBOARD.bat</code> (ou no atalho da Área de Trabalho).</li>
-            <li>O script para o serviço com segurança, baixa as novidades, instala dependências e reinicia o servidor em segundos sem perder as configurações do <code>.env</code>.</li>
-        </ol>
-
-        <h2>3. Desinstalação</h2>
-        <p>Caso precise remover o serviço e limpar regras de firewall, basta executar <code>instalador\DESINSTALAR_INFOBOARD.bat</code>.</p>
-    </div>
-
-</body>
-</html>
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>InfoBoard — operação no Windows</title>
+<style>body{font:17px/1.65 system-ui,sans-serif;color:#183047;background:#f4f7fa;margin:0}main{max-width:900px;margin:auto;padding:40px 24px}h1,h2{line-height:1.2}section{background:white;border:1px solid #dce4eb;border-radius:12px;padding:24px;margin:24px 0}code{background:#edf2f7;padding:2px 5px;overflow-wrap:anywhere}a{color:#0759a2}li{margin:9px 0}table{border-collapse:collapse;width:100%}td,th{padding:10px;border:1px solid #ccd7e0;text-align:left}aside{padding:16px;border-left:4px solid #b57709;background:#fff6dc}@media print{body{background:white}main{padding:0}section{break-inside:avoid}}</style></head>
+<body><main><h1>InfoBoard — operação no Windows</h1><p>Guia do responsável pelo servidor. Confira o roteiro completo em <a href="README.md">README</a>.</p>
+<section><h2>Atualizar com o arquivo recebido</h2><ol><li>Salve <code>ATUALIZAR_INFOBOARD.bat</code> na pasta instalada do InfoBoard.</li><li>Dê dois cliques, aceite a solicitação UAC quando autorizado e confirme a pasta identificada.</li><li>Acompanhe as oito etapas: validar pasta; preparar pacote; conferir Node e preparar npm; backup privado e identificação do serviço; parar o serviço; aplicar arquivos; reiniciar e conferir HTTP; finalizar relatório.</li><li>Confira a mensagem final e o local do diagnóstico antes de fechar a janela.</li></ol><p>O arquivo é autônomo. Busca uma revisão publicada no GitHub e não depende de Git instalado. O pacote e as dependências são preparados antes de parar o painel. Configuração <code>.env</code> e mapa de analistas são preservados.</p></section>
+<section><h2>Instalar e desinstalar</h2><p>Execute <code>INSTALAR_INFOBOARD.bat</code> para uma instalação nova. O assistente verifica o Node, prepara os arquivos, configura credenciais, instala dependências e valida os componentes. Não use o instalador para sobrescrever uma instalação ativa; use o atualizador.</p><p><code>DESINSTALAR_INFOBOARD.bat</code> oferece modo padrão, que mantém arquivos, e modo completo, que remove a pasta confirmada após backup privado da configuração. Leia a confirmação final: remover arquivos é uma operação destrutiva.</p></section>
+<section><h2>Node e configuração</h2><p>É necessário Node 22 ou superior e npm funcional. Quando necessário, instalador e atualizador podem instalar o MSI oficial LTS, verificando SHA-256 e assinatura. Versão adequada existente é preservada. Um reinício solicitado pelo Windows é informado antes de continuar.</p><p>A porta deve corresponder ao <code>PORT</code> da instalação. A instalação histórica usa 3000; a homologação deste projeto usa 3001. Confirme o endereço mostrado, incluindo a porta, e teste o acesso local e pela LAN/VPN.</p></section>
+<section><h2>Resultado do atualizador</h2><table><thead><tr><th>Código</th><th>Significado e ação</th></tr></thead><tbody><tr><td>0</td><td>Serviço e HTTP confirmados. Confira também o painel na rede.</td></tr><tr><td>1</td><td>Atualização falhou ou foi cancelada. Leia etapa, diagnóstico e resultado da recuperação.</td></tr><tr><td>2</td><td>Recuperação não confirmada. Preserve os backups e acione o responsável técnico.</td></tr><tr><td>3010</td><td>Reinício do Windows necessário. Reinicie em horário autorizado e execute novamente.</td></tr></tbody></table><p>Em falha após substituição, há tentativa de restaurar fontes, dependências e configuração anterior do serviço sem novo download. Uma falha na recuperação é exibida explicitamente.</p></section>
+<aside>Não compartilhe <code>.env</code>, mapa real ou backups. Os registros ficam em pastas privadas e devem ser revisados antes de envio. Testes automatizados isolados não substituem o ensaio completo em um Windows de homologação separado; serviços, UAC, MSI e firewall precisam dessa validação antes da produção.</aside>
+</main></body></html>

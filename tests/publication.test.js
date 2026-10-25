@@ -21,11 +21,29 @@ test('distribuicao preserva fontes e exclui credenciais, dados reais e historico
   const { directory, write } = fixture(t);
   for (const file of ['.env', '.env.production', 'config/analysts_map.json', 'backups/old.zip',
     'daemon/service.xml', '.git/config', '.maestri/session.json', '.agents/report.md',
-    'docs/re/raw/network.json', 'docs/auditoria/internal-findings.md']) write(file, 'private fixture');
+    '.git_old/objects/private', '.git-backup/config', '.git.backup/HEAD', 'mirror.git/objects/private',
+    'env-before.env', 'Infoboard_env_backup.env',
+    'docs/re/raw/network.json', 'docs/re/openapi.yaml', 'docs/auditoria/internal-findings.md',
+    'instalador/GUIA_OPERACAO.md', 'instalador/REINICIAR_PRODUCAO.bat',
+    'REINICIAR_PRODUCAO.bat', 'test_queues_live.js', 'test_login_wrong.js', 'test_rules.js',
+    'agent-skills/maestri-review/SKILL.md', 'AGENTS.md', 'MAESTRI-POLITICA-OPERACIONAL.md',
+    '--prefix/node_modules/dependency.txt', 'scripts/alinha-perfis-skills-maestri.mjs',
+    'scripts/configure-global-agent-defaults.ps1', 'scripts/instalar-skills-davi.mjs',
+    'scripts/instalar-skills-india.mjs', 'scripts/repair-codex-launchers.ps1']) write(file, 'private fixture');
   for (const file of ['.env.example', 'server.js', 'public/index.html', 'public/happy_hour_bg.jpg',
-    'config/analysts_map.example.json', 'instalador/install_service.js']) write(file, 'public fixture');
+    'config/analysts_map.example.json', 'instalador/install_service.js',
+    'scripts/build-installers.cjs', 'scripts/publication-files.cjs', 'scripts/dev-3001.cjs',
+    'docs/SEGURANCA.md']) write(file, 'public fixture');
   assert.deepEqual(sourceFiles(directory), ['.env.example', 'config/analysts_map.example.json',
-    'instalador/install_service.js', 'public/happy_hour_bg.jpg', 'public/index.html', 'server.js']);
+    'docs/SEGURANCA.md', 'instalador/install_service.js', 'public/happy_hour_bg.jpg',
+    'public/index.html', 'scripts/build-installers.cjs', 'scripts/dev-3001.cjs',
+    'scripts/publication-files.cjs', 'server.js']);
+});
+
+test('protecao de copias Git nao exclui workflows GitHub nem .gitignore', t => {
+  const { directory, write } = fixture(t);
+  for (const file of ['.github/workflows/verify.yml', '.gitignore', '.gitattributes']) write(file, 'public fixture');
+  assert.deepEqual(sourceFiles(directory), ['.gitattributes', '.github/workflows/verify.yml', '.gitignore']);
 });
 
 test('triagem detecta segredo local e variante URL sem imprimir o valor', t => {

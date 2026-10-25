@@ -1,729 +1,764 @@
 @echo off
-chcp 65001 >nul 2>&1
-setlocal EnableDelayedExpansion
-title Atualizador do Infoboard TV - Infobrasil
-
-:: =============================================================================
-:: CONFIGURACAO DE AMBIENTE E CORES ANSI
-:: =============================================================================
-reg add "HKCU\Console" /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>&1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "[char]27"') do set "ESC=%%a"
-
-set "C_RESET=!ESC![0m"
-set "C_BOLD=!ESC![1m"
-set "C_DIM=!ESC![2m"
-set "C_GREEN=!ESC![92m"
-set "C_YELLOW=!ESC![93m"
-set "C_CYAN=!ESC![96m"
-set "C_RED=!ESC![91m"
-set "C_WHITE=!ESC![97m"
-set "C_GRAY=!ESC![90m"
-
-:: =============================================================================
-:: VERIFICACAO E ELEVACAO DE PRIVILEGIOS DE ADMINISTRADOR (COM AVISO PREVIO)
-:: =============================================================================
-net session >nul 2>&1
-if %errorLevel% neq 0 goto :SOLICITAR_ELEVACAO
-goto :INICIAR_ATUALIZACAO
-
-:SOLICITAR_ELEVACAO
-cls
-echo.
-echo ===============================================================================
-echo                    !C_CYAN!!C_BOLD!INFOBRASIL - ATUALIZADOR DO INFOBOARD TV!C_RESET!
-echo ===============================================================================
-echo.
-echo !C_YELLOW!!C_BOLD![AVISO DE ELEVACAO] Privilegios de Administrador Necessarios!C_RESET!
-echo.
-echo  Para atualizar o Infoboard TV com seguranca, este assistente precisa
-echo  de permissoes administrativas do Windows para:
-echo.
-echo    1. Parar e reiniciar o Servico Nativo do Windows (Infoboard TV)
-echo    2. Liberar arquivos bloqueados em uso e gravar no diretorio do sistema
-echo    3. Criar arquivos de backup compactados (.ZIP) com seguranca
-echo    4. Atualizar modulos e dependencias de producao
-echo.
-echo -------------------------------------------------------------------------------
-echo !C_WHITE!Uma janela de solicitacao do Windows (UAC) sera exibida ao confirmar.!C_RESET!
-echo.
-set /p "UAC_CONFIRM=Deseja abrir a solicitacao de Administrador agora? (S/N) [S]: "
-if "!UAC_CONFIRM!"=="" set "UAC_CONFIRM=S"
-
-if /i "!UAC_CONFIRM!"=="S" (
-    echo.
-    echo !C_CYAN!Solicitando elevacao ao Windows... Aguarde...!C_RESET!
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -WorkingDirectory '%~dp0' -Verb RunAs" 2>nul
-    if !errorLevel! neq 0 (
-        echo.
-        echo !C_RED!!C_BOLD![FALHA] A solicitacao de elevacao foi negada ou falhou.!C_RESET!
-        echo !C_YELLOW!Para prosseguir manualmente:!C_RESET!
-        echo   1. Clique com o botao direito no arquivo 'ATUALIZAR_INFOBOARD.bat'
-        echo   2. Selecione a opcao 'Executar como Administrador'
-        echo.
-        pause
-    )
-    exit /b 0
-) else (
-    echo.
-    echo !C_YELLOW!Atualizacao cancelada pelo usuario antes da elevacao.!C_RESET!
-    pause
-    exit /b 0
-)
-
-:: =============================================================================
-:: PROTECAO CONTRA AUTO-ATUALIZACAO (LOCAL COPY)
-:: =============================================================================
-if "%~nx0"=="ATUALIZAR_INFOBOARD_RUNNER.bat" goto :INICIAR_ATUALIZACAO
-copy /y "%~f0" "%~dp0ATUALIZAR_INFOBOARD_RUNNER.bat" >nul 2>&1
-if exist "%~dp0ATUALIZAR_INFOBOARD_RUNNER.bat" (
-    "%~dp0ATUALIZAR_INFOBOARD_RUNNER.bat" %*
-    exit /b 0
-)
-
-:INICIAR_ATUALIZACAO
-:: Ancorar diretorio atual no diretorio onde o script esta localizado
-set "SCRIPT_DIR=%~dp0"
-if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
-cd /d "%SCRIPT_DIR%"
-
-:: =============================================================================
-:: CABECALHO PRINCIPAL E VISUAL DAS ETAPAS
-:: =============================================================================
-cls
-echo ===============================================================================
-echo                    !C_CYAN!!C_BOLD!INFOBRASIL - ATUALIZADOR DO INFOBOARD TV!C_RESET!
-echo ===============================================================================
-echo !C_GRAY!  Modo Seguro com Backup Automatico e Mecanismo de Rollback!C_RESET!
-echo.
-echo !C_BOLD!Etapas do Assistente de Atualizacao:!C_RESET!
-echo   !C_CYAN![ 1/6 ]!C_RESET! Descoberta e Validacao da Pasta Instalada
-echo   !C_CYAN![ 2/6 ]!C_RESET! Verificacao de Versao e Checagem de Downgrade
-echo   !C_CYAN![ 3/6 ]!C_RESET! Encerramento Seguro de Servicos e Processos Ativos
-echo   !C_CYAN![ 4/6 ]!C_RESET! Geracao de Backup Completo com Timestamp (.ZIP)
-echo   !C_CYAN![ 5/6 ]!C_RESET! Sincronizacao de Arquivos e Atualizacao de Dependencias
-echo   !C_CYAN![ 6/6 ]!C_RESET! Reinicializacao do Servico e Validacao de Conectividade
-echo ===============================================================================
-echo.
-
-:: =============================================================================
-:: ETAPA 1/6: DESCOBERTA E VALIDACAO DA PASTA INSTALADA
-:: =============================================================================
-:ETAPA_1
-echo -------------------------------------------------------------------------------
-echo !C_CYAN!!C_BOLD![ ETAPA 1/6 ] Descoberta e Validacao da Pasta Instalada!C_RESET!
-echo -------------------------------------------------------------------------------
-echo   !C_GRAY!* Executando busca automatica da instalacao em 4 camadas...!C_RESET!
-
-set "DETECTED_DIR="
-
-:: Camada 1: Servico Windows via WMI / CIM
-for /f "usebackq delims=" %%s in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$svc = Get-CimInstance Win32_Service -Filter 'Name like ''*Infoboard*''' -ErrorAction SilentlyContinue | Select-Object -First 1; "^
-    "if ($svc -and $svc.PathName) { "^
-    "    $path = $svc.PathName.Trim([char]34); "^
-    "    $dir = Split-Path -Parent $path; "^
-    "    if (Test-Path (Join-Path $dir 'server.js')) { Write-Output $dir } "^
-    "    elseif (Test-Path (Join-Path (Split-Path -Parent $dir) 'server.js')) { Write-Output (Split-Path -Parent $dir) } "^
-    "}"`) do (
-    set "DETECTED_DIR=%%s"
-)
-
-:: Camada 2: Atalhos da Area de Trabalho (Usuario e Publico)
-if not defined DETECTED_DIR (
-    for /f "usebackq delims=" %%k in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-        "$ws = New-Object -ComObject WScript.Shell; "^
-        "$desktops = @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('CommonDesktopDirectory')); "^
-        "foreach ($d in $desktops) { "^
-        "    $lnk = Join-Path $d 'Atualizar Infoboard.lnk'; "^
-        "    if (Test-Path $lnk) { "^
-        "        $target = $ws.CreateShortcut($lnk).TargetPath; "^
-        "        $dir = Split-Path -Parent (Split-Path -Parent $target); "^
-        "        if (Test-Path (Join-Path $dir 'server.js')) { Write-Output $dir; break } "^
-        "    } "^
-        "}"`) do (
-        set "DETECTED_DIR=%%k"
-    )
-)
-
-:: Camada 3: Diretorio Relativo do Script (%SCRIPT_DIR%\..)
-if not defined DETECTED_DIR (
-    if exist "%SCRIPT_DIR%\..\server.js" (
-        pushd "%SCRIPT_DIR%\.."
-        set "DETECTED_DIR=!CD!"
-        popd
-    ) else if exist "%SCRIPT_DIR%\server.js" (
-        set "DETECTED_DIR=%SCRIPT_DIR%"
-    )
-)
-
-:: Camada 4: Diretorios Padrao Conhecidos
-if not defined DETECTED_DIR (
-    if exist "C:\Infoboard\server.js" (
-        set "DETECTED_DIR=C:\Infoboard"
-    ) else if exist "D:\Infoboard\server.js" (
-        set "DETECTED_DIR=D:\Infoboard"
-    ) else if exist "%ProgramFiles%\Infoboard\server.js" (
-        set "DETECTED_DIR=%ProgramFiles%\Infoboard"
-    )
-)
-
-:: Se uma pasta foi detectada:
-if defined DETECTED_DIR (
-    echo   !C_GREEN![OK] Instalacao localizada:!C_RESET! !C_CYAN!!C_BOLD!!DETECTED_DIR!!C_RESET!
-    echo.
-    echo Opcoes para a pasta de atualizacao:
-    echo   !C_WHITE![ENTER/S]!C_RESET! Confirmar e atualizar nesta pasta
-    echo   !C_WHITE![   G   ]!C_RESET! Abrir janela grafica para selecionar outra pasta
-    echo   !C_WHITE![   M   ]!C_RESET! Digitar um caminho diferente manualmente
-    echo.
-    set /p "CONFIRM_LOC=Deseja atualizar em '!DETECTED_DIR!'? [ENTER/G/M]: "
-    
-    set "TMP_CONF_LOC=!CONFIRM_LOC: =!"
-    if "!TMP_CONF_LOC!"=="" set "CONFIRM_LOC=S"
-    if /i "!TMP_CONF_LOC!"=="SIM" set "CONFIRM_LOC=S"
-    if /i "!TMP_CONF_LOC!"=="Y" set "CONFIRM_LOC=S"
-    if /i "!TMP_CONF_LOC!"=="YES" set "CONFIRM_LOC=S"
-    if /i "!TMP_CONF_LOC!"=="S" set "CONFIRM_LOC=S"
-    if /i "!TMP_CONF_LOC!"=="G" set "CONFIRM_LOC=G"
-    if /i "!TMP_CONF_LOC!"=="M" set "CONFIRM_LOC=M"
-
-) else (
-    echo   !C_YELLOW![AVISO] Nenhuma instalacao padrao foi encontrada automaticamente.!C_RESET!
-    set "CONFIRM_LOC=G"
-)
-
-if /i "!CONFIRM_LOC!"=="S" (
-    set "APP_DIR=!DETECTED_DIR!"
-    goto :VALIDAR_APP_DIR
-)
-if /i "!CONFIRM_LOC!"=="G" goto :SELECIONAR_GUI_UPD
-if /i "!CONFIRM_LOC!"=="M" goto :SELECIONAR_MANUAL_UPD
-
-:: Se o usuario colou um caminho diretamente:
-set "APP_DIR=!CONFIRM_LOC!"
-goto :VALIDAR_APP_DIR
-
-:SELECIONAR_GUI_UPD
-echo.
-echo   !C_CYAN!* Abrindo seletor grafico de pastas do Windows...!C_RESET!
-set "SELECTED_GUI_UPD="
-for /f "usebackq delims=" %%I in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "Add-Type -AssemblyName System.Windows.Forms; "^
-    "$f = New-Object System.Windows.Forms.FolderBrowserDialog; "^
-    "$f.Description = 'Selecione a pasta onde o Infoboard TV esta instalado:'; "^
-    "$f.ShowNewFolderButton = $false; "^
-    "if (Test-Path 'C:\Infoboard') { $f.SelectedPath = 'C:\Infoboard' }; "^
-    "$top = New-Object System.Windows.Forms.Form; "^
-    "$top.TopMost = $true; $top.MinimizeBox = $false; $top.MaximizeBox = $false; $top.ShowInTaskbar = $false; "^
-    "if ($f.ShowDialog($top) -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $f.SelectedPath }"`) do (
-    set "SELECTED_GUI_UPD=%%I"
-)
-
-if defined SELECTED_GUI_UPD (
-    set "APP_DIR=!SELECTED_GUI_UPD!"
-    goto :VALIDAR_APP_DIR
-) else (
-    echo   !C_YELLOW![AVISO] Nenhuma pasta selecionada na janela grafica.!C_RESET!
-)
-
-:SELECIONAR_MANUAL_UPD
-echo.
-set /p "APP_DIR=Digite o caminho completo da pasta do Infoboard: "
-
-:VALIDAR_APP_DIR
-:: Sanitizacao de aspas e barras
-set "APP_DIR=!APP_DIR:"=!"
-if "!APP_DIR:~-1!"=="\" set "APP_DIR=!APP_DIR:~0,-1!"
-if "!APP_DIR:~-1!"=="/" set "APP_DIR=!APP_DIR:~0,-1!"
-if "!APP_DIR:~-1!"==":" set "APP_DIR=!APP_DIR!\"
-
-if not exist "!APP_DIR!\server.js" (
-    echo.
-    echo !C_RED!!C_BOLD![ERRO] Pasta invalida! O arquivo 'server.js' nao foi encontrado em '!APP_DIR!'.!C_RESET!
-    echo.
-    echo Deseja tentar novamente? [S/N] [S]:
-    set /p "RETRY_DIR=> "
-    if "!RETRY_DIR!"=="" set "RETRY_DIR=S"
-    if /i "!RETRY_DIR!"=="S" goto :ETAPA_1
-    call :ERRO_FATAL "ETAPA 1/6 - Localizacao" "101" "Nao foi selecionada uma pasta valida do Infoboard." "Selecione a pasta onde os arquivos 'server.js' e 'package.json' estao localizados."
-    exit /b 1
-)
-
-echo   !C_GREEN![OK] Pasta de instalacao confirmada:!C_RESET! !C_CYAN!!C_BOLD!!APP_DIR!!C_RESET!
-echo.
-
-:: =============================================================================
-:: ETAPA 2/6: VERIFICACAO DE VERSAO E CHECAGEM DE DOWNGRADE
-:: =============================================================================
-:ETAPA_2
-echo -------------------------------------------------------------------------------
-echo !C_CYAN!!C_BOLD![ ETAPA 2/6 ] Verificacao de Versao e Checagem de Downgrade!C_RESET!
-echo -------------------------------------------------------------------------------
-echo   !C_GRAY!* Lendo informacoes de versao do sistema...!C_RESET!
-
-set "INSTALLED_VER=1.0.0"
-if exist "!APP_DIR!\package.json" (
-    for /f "usebackq delims=" %%v in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-        "try { (Get-Content -LiteralPath '!APP_DIR!\package.json' -Raw | ConvertFrom-Json).version } catch { '1.0.0' }"`) do (
-        set "INSTALLED_VER=%%v"
-    )
-)
-
-:: Obter versao do pacote novo (local ou remoto)
-set "NEW_VER="
-if exist "%SCRIPT_DIR%\..\package.json" (
-    pushd "%SCRIPT_DIR%\.."
-    set "SOURCE_DIR_CANDIDATE=!CD!"
-    popd
-    if /i not "!SOURCE_DIR_CANDIDATE!"=="!APP_DIR!" (
-        for /f "usebackq delims=" %%v in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-            "try { (Get-Content -LiteralPath '!SOURCE_DIR_CANDIDATE!\package.json' -Raw | ConvertFrom-Json).version } catch { '' }"`) do (
-            set "NEW_VER=%%v"
-        )
-    )
-)
-
-if not defined NEW_VER (
-    for /f "usebackq delims=" %%v in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-        "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; "^
-        "try { (Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/JSDavi/Infoboard/master/package.json' -TimeoutSec 5).version } catch { '' }"`) do (
-        set "NEW_VER=%%v"
-    )
-)
-
-if not defined NEW_VER set "NEW_VER=!INSTALLED_VER!"
-
-echo.
-echo   !C_WHITE!Versao Atual Instalada:!C_RESET! !C_CYAN!v!INSTALLED_VER!!C_RESET!
-echo   !C_WHITE!Versao do Pacote Novo:!C_RESET!  !C_CYAN!v!NEW_VER!!C_RESET!
-echo.
-
-:: Comparacao SemVer via PowerShell
-set "COMPARE_RESULT=EQUAL"
-for /f "usebackq delims=" %%c in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "try { "^
-    "    $v1 = [System.Version]::Parse('!INSTALLED_VER!'.Trim()); "^
-    "    $v2 = [System.Version]::Parse('!NEW_VER!'.Trim()); "^
-    "    if ($v2 -gt $v1) { 'UPGRADE' } elseif ($v2 -lt $v1) { 'DOWNGRADE' } else { 'EQUAL' } "^
-    "} catch { 'EQUAL' }"`) do (
-    set "COMPARE_RESULT=%%c"
-)
-
-if "!COMPARE_RESULT!"=="UPGRADE" goto :VERSAO_UPGRADE
-if "!COMPARE_RESULT!"=="DOWNGRADE" goto :VERSAO_DOWNGRADE
-goto :VERSAO_EQUAL
-
-:VERSAO_UPGRADE
-echo   !C_GREEN!!C_BOLD![UPGRADE DETECTADO] Atualizacao recomendada: v!INSTALLED_VER! -> v!NEW_VER!!C_RESET!
-echo.
-goto :FIM_CHECK_VERSAO
-
-:VERSAO_EQUAL
-echo   !C_YELLOW![AVISO] O sistema ja se encontra na versao v!INSTALLED_VER!.!C_RESET!
-set /p "FORCE_UPD=Deseja forcar a reinstalacao/atualizacao dos arquivos? [S/N] [S]: "
-if "!FORCE_UPD!"=="" set "FORCE_UPD=S"
-if /i not "!FORCE_UPD!"=="S" (
-    echo.
-    echo !C_YELLOW!Atualizacao cancelada pelo usuario.!C_RESET!
-    pause
-    exit /b 0
-)
-echo.
-goto :FIM_CHECK_VERSAO
-
-:VERSAO_DOWNGRADE
-echo ===============================================================================
-echo !C_RED!!C_BOLD![ALERTA CRITICO DE DOWNGRADE]!C_RESET!
-echo -------------------------------------------------------------------------------
-echo  A versao instalada [!C_CYAN!v!INSTALLED_VER!!C_RESET!] e !C_RED!!C_BOLD!MAIS RECENTE!C_RESET! que o pacote a instalar [!C_YELLOW!v!NEW_VER!!C_RESET!].
-echo  Realizar o downgrade pode causar incompatibilidade no banco ou configuracoes.
-echo ===============================================================================
-echo.
-set /p "DOWNGRADE_CONFIRM=Deseja REALMENTE prosseguir com o DOWNGRADE para a versao v!NEW_VER!? [S/N] [N]: "
-if "!DOWNGRADE_CONFIRM!"=="" set "DOWNGRADE_CONFIRM=N"
-if /i not "!DOWNGRADE_CONFIRM!"=="S" (
-    echo.
-    echo !C_GREEN![CANCELADO] Operacao de downgrade abortada com seguranca pelo usuario.!C_RESET!
-    pause
-    exit /b 0
-)
-echo.
-echo   !C_YELLOW![AVISO] Downgrade confirmado pelo operador. Prosseguindo com cautela...!C_RESET!
-echo.
-
-:FIM_CHECK_VERSAO
-
-:: =============================================================================
-:: ETAPA 3/6: ENCERRAMENTO SEGURO DE SERVICOS E PROCESSOS ATIVOS
-:: =============================================================================
-:ETAPA_3
-echo -------------------------------------------------------------------------------
-echo !C_CYAN!!C_BOLD![ ETAPA 3/6 ] Encerramento Seguro de Servicos e Processos Ativos!C_RESET!
-echo -------------------------------------------------------------------------------
-echo   !C_GRAY!* Interrompendo servicos do Windows para liberar arquivos em uso...!C_RESET!
-
-net stop "infoboardservice.exe" >nul 2>&1
-net stop "InfoboardService" >nul 2>&1
-net stop "Infoboard TV" >nul 2>&1
-
-echo   !C_GRAY!* Finalizando processos em segundo plano (daemons e node.exe na porta 3000)...!C_RESET!
-taskkill /F /IM "infoboardservice.exe" >nul 2>&1
-taskkill /F /IM "infoboardtv.exe" >nul 2>&1
-
-:: Encerrar processo node na porta 3000 se houver
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | ForEach-Object { "^
-    "    try { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue } catch {} "^
-    "}" >nul 2>&1
-
-:: Aguardar 1.5 segundo para liberacao completa dos descritores de arquivo
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Sleep -Milliseconds 1500"
-
-echo   !C_GREEN![OK] Servicos e processos interrompidos com seguranca!!C_RESET!
-echo.
-
-:: =============================================================================
-:: ETAPA 4/6: GERACAO DE BACKUP COMPLETO COM TIMESTAMP (.ZIP)
-:: =============================================================================
-:ETAPA_4
-echo -------------------------------------------------------------------------------
-echo !C_CYAN!!C_BOLD![ ETAPA 4/6 ] Geracao de Backup Completo com Timestamp (.ZIP)!C_RESET!
-echo -------------------------------------------------------------------------------
-
-:: Criar diretorio de backups
-if not exist "!APP_DIR!\backups" mkdir "!APP_DIR!\backups" >nul 2>&1
-
-:: Obter timestamp no formato YYYYMMDD_HHMMSS
-for /f "usebackq delims=" %%t in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Date -Format 'yyyyMMdd_HHmmss'"`) do (
-    set "TIMESTAMP=%%t"
-)
-if "!TIMESTAMP!"=="" set "TIMESTAMP=backup_manual"
-
-set "BACKUP_FILE=!APP_DIR!\backups\backup_Infoboard_!TIMESTAMP!.zip"
-
-echo   !C_CYAN!* Compactando recursivamente todos os arquivos e pastas da instalacao...!C_RESET!
-echo   !C_GRAY!  (Excluindo node_modules, backups antigos e logs para otimizar tamanho)!C_RESET!
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem; "^
-    "$src = [System.IO.Path]::GetFullPath('!APP_DIR!').TrimEnd('\', '/'); "^
-    "$prefix = $src + '\'; "^
-    "$dst = '!BACKUP_FILE!'; "^
-    "$excludeDirs = @('node_modules', 'backups', '.git', '.agents'); "^
-    "$zip = [System.IO.Compression.ZipFile]::Open($dst, 'Create'); "^
-    "try { "^
-    "    Get-ChildItem -LiteralPath $src -Recurse -Force | ForEach-Object { "^
-    "        $full = [System.IO.Path]::GetFullPath($_.FullName); "^
-    "        if ($full.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) { "^
-    "            $rel = $full.Substring($prefix.Length); "^
-    "            $skip = $false; "^
-    "            foreach ($ex in $excludeDirs) { "^
-    "                if ($rel -eq $ex -or $rel.StartsWith($ex + '\', [System.StringComparison]::OrdinalIgnoreCase) -or $rel.StartsWith($ex + '/', [System.StringComparison]::OrdinalIgnoreCase)) { "^
-    "                    $skip = $true; break "^
-    "                } "^
-    "            }; "^
-    "            if (-not $skip -and -not $_.PSIsContainer) { "^
-    "                [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $full, $rel, 'Optimal') | Out-Null "^
-    "            } "^
-    "        } "^
-    "    } "^
-    "} finally { "^
-    "    $zip.Dispose() "^
-    "}"
-
-if not exist "!BACKUP_FILE!" (
-    call :ERRO_FATAL "ETAPA 4/6 - Backup" "401" "Falha critica ao gerar o arquivo ZIP de backup." "Verifique se ha espaco suficiente em disco na unidade de '!APP_DIR!'."
-    exit /b 1
-)
-
-for /f "usebackq delims=" %%s in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$b = (Get-Item -LiteralPath '!BACKUP_FILE!').Length; if ($b -gt 1MB) { '{0:N2} MB' -f ($b / 1MB) } else { '{0:N2} KB' -f ($b / 1KB) }"`) do (
-    set "BACKUP_SIZE=%%s"
-)
-
-echo.
-echo   !C_GREEN![OK] Backup 100%% integro gerado com sucesso!!C_RESET!
-echo   !C_WHITE!Localizacao do Backup:!C_RESET! !C_CYAN!!BACKUP_FILE!!C_RESET!
-echo   !C_WHITE!Tamanho do Pacote:!C_RESET!     !C_YELLOW!!BACKUP_SIZE!!C_RESET!
-echo.
-
-:: =============================================================================
-:: ETAPA 5/6: SINCRONIZACAO DE ARQUIVOS E ATUALIZACAO DE DEPENDENCIAS
-:: =============================================================================
-:ETAPA_5
-echo -------------------------------------------------------------------------------
-echo !C_CYAN!!C_BOLD![ ETAPA 5/6 ] Sincronizacao de Arquivos e Dependencias!C_RESET!
-echo -------------------------------------------------------------------------------
-
-:: Verificar se existe fonte local para copia
-set "LOCAL_SRC="
-if exist "%SCRIPT_DIR%\..\server.js" (
-    pushd "%SCRIPT_DIR%\.."
-    set "LOCAL_SRC=!CD!"
-    popd
-)
-
-set "SYNC_SUCCESS=0"
-
-:: Metodo 1: Copia local se a fonte estiver disponivel e for diferente de APP_DIR
-if defined LOCAL_SRC (
-    if /i not "!LOCAL_SRC!"=="!APP_DIR!" (
-        echo   !C_CYAN!* Atualizando a partir da fonte local via Robocopy...!C_RESET!
-        robocopy "!LOCAL_SRC!" "!APP_DIR!" /E /NP /NFL /NDL /R:2 /W:2 /XD node_modules .git .agents backups /XF .env *.log >nul 2>&1
-        if !errorLevel! leq 7 set "SYNC_SUCCESS=1"
-    )
-)
-
-:: Metodo 2: Repositorio Git
-if "!SYNC_SUCCESS!"=="0" (
-    if exist "!APP_DIR!\.git" (
-        echo   !C_CYAN!* Repositorio Git detectado. Executando git pull origin master...!C_RESET!
-        cd /d "!APP_DIR!"
-        git -c core.askPass= -c credential.helper= pull origin master >nul 2>&1
-        if !errorLevel! equ 0 set "SYNC_SUCCESS=1"
-    )
-)
-
-:: Metodo 3: Download do pacote ZIP oficial do GitHub
-if "!SYNC_SUCCESS!"=="0" (
-    echo   !C_CYAN!* Baixando pacote oficial mais recente do GitHub...!C_RESET!
-    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-        "$tmpZip = Join-Path $env:TEMP 'infoboard_upd.zip'; "^
-        "$tmpExt = Join-Path $env:TEMP 'infoboard_upd_extracted'; "^
-        "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; "^
-        "Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile $tmpZip -UseBasicParsing; "^
-        "Expand-Archive -LiteralPath $tmpZip -DestinationPath $tmpExt -Force; "^
-        "Get-ChildItem -Path (Join-Path $tmpExt 'Infoboard-master\*') | ForEach-Object { "^
-        "    if ($_.Name -ne '.env' -and $_.Name -ne 'backups') { "^
-        "        Copy-Item -Path $_.FullName -Destination '!APP_DIR!' -Recurse -Force "^
-        "    } "^
-        "}; "^
-        "Remove-Item -LiteralPath $tmpExt -Recurse -Force -ErrorAction SilentlyContinue; "^
-        "Remove-Item -LiteralPath $tmpZip -Force -ErrorAction SilentlyContinue"
-    if !errorLevel! equ 0 set "SYNC_SUCCESS=1"
-)
-
-if "!SYNC_SUCCESS!"=="0" (
-    call :ROLLBACK "ETAPA 5/6 - Sincronizacao" "501" "Nao foi possivel baixar ou copiar os novos arquivos da aplicacao."
-    exit /b 1
-)
-
-echo   !C_GREEN![OK] Arquivos sincronizados preservando o .env e pasta backups!!C_RESET!
-echo.
-
-echo   !C_CYAN!* Atualizando dependencias de producao (npm install)...!C_RESET!
-cd /d "!APP_DIR!"
-call npm install --omit=dev
-if !errorLevel! neq 0 (
-    call :ROLLBACK "ETAPA 5/6 - Dependencias NPM" "502" "Falha ao instalar ou atualizar os modulos do Node.js."
-    exit /b 1
-)
-
-echo   !C_GREEN![OK] Modulos e dependencias verificados com sucesso!!C_RESET!
-echo.
-
-:: =============================================================================
-:: ETAPA 6/6: REINICIALIZACAO DO SERVICO E VALIDACAO DE CONECTIVIDADE
-:: =============================================================================
-:ETAPA_6
-echo -------------------------------------------------------------------------------
-echo !C_CYAN!!C_BOLD![ ETAPA 6/6 ] Reinicializacao do Servico e Validacao!C_RESET!
-echo -------------------------------------------------------------------------------
-echo   !C_GRAY!* Iniciando o servico nativo 'Infoboard TV' no Windows...!C_RESET!
-
-net start "infoboardservice.exe" >nul 2>&1
-if !errorLevel! neq 0 (
-    net start "InfoboardService" >nul 2>&1
-)
-if !errorLevel! neq 0 (
-    net start "Infoboard TV" >nul 2>&1
-)
-
-:: Se o servico ainda nao estiver ativo, tentar registrar/iniciar via install_service.js
-sc.exe query "infoboardservice.exe" | findstr /i "RUNNING" >nul 2>&1
-if !errorLevel! neq 0 (
-    sc.exe query "InfoboardService" | findstr /i "RUNNING" >nul 2>&1
-    if !errorLevel! neq 0 (
-        sc.exe query "Infoboard TV" | findstr /i "RUNNING" >nul 2>&1
-        if !errorLevel! neq 0 (
-            if exist "!APP_DIR!\instalador\install_service.js" (
-                node "!APP_DIR!\instalador\install_service.js" >nul 2>&1
-            )
-        )
-    )
-)
-
-echo   !C_GRAY!* Aguardando inicializacao do servidor web na porta 3000...!C_RESET!
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Sleep -Seconds 2"
-
-set "HTTP_OK=0"
-for /f "usebackq delims=" %%h in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "try { $res = Invoke-WebRequest -Uri 'http://localhost:3000' -UseBasicParsing -TimeoutSec 4; if ($res.StatusCode -eq 200) { '1' } else { '0' } } catch { '0' }"`) do (
-    set "HTTP_OK=%%h"
-)
-
-if "!HTTP_OK!"=="1" (
-    echo   !C_GREEN![OK] Servidor respondendo perfeitamente na porta 3000!!C_RESET!
-) else (
-    echo   !C_YELLOW![AVISO] Servico iniciado, porem resposta HTTP demorou mais que o previsto.!C_RESET!
-)
-echo.
-
-:: Obter IP local da maquina
-for /f "tokens=2 delims=:" %%i in ('ipconfig ^| findstr /c:"IPv4" 2^>nul') do (
-    set "LOCAL_IP=%%i"
-    set "LOCAL_IP=!LOCAL_IP: =!"
-    goto :IP_UPD_ENCONTRADO
-)
-set "LOCAL_IP=127.0.0.1"
-:IP_UPD_ENCONTRADO
-
-:: Re-ler a versao efetivamente gravada no package.json apos a copia
-set "FINAL_VER=!NEW_VER!"
-if exist "!APP_DIR!\package.json" (
-    for /f "usebackq delims=" %%v in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-        "try { (Get-Content -LiteralPath '!APP_DIR!\package.json' -Raw | ConvertFrom-Json).version } catch { '' }"`) do (
-        if not "%%v"=="" set "FINAL_VER=%%v"
-    )
-)
-
-:: =============================================================================
-:: FINALIZACAO E SUMARIO ANALITICO DE ATUALIZACAO
-:: =============================================================================
-cls
-echo ===============================================================================
-echo            !C_GREEN!!C_BOLD!ATUALIZACAO DO INFOBOARD CONCLUIDA COM SUCESSO!!C_RESET!
-echo ===============================================================================
-echo.
-echo !C_WHITE!!C_BOLD!Relatorio da Atualizacao:!C_RESET!
-echo   !C_CYAN!* Versao Anterior:!C_RESET!   v!INSTALLED_VER!
-echo   !C_CYAN!* Versao Atualizada:!C_RESET! !C_GREEN!!C_BOLD!v!FINAL_VER!!C_RESET!
-echo   !C_CYAN!* Diretorio:!C_RESET!         !APP_DIR!
-echo   !C_CYAN!* Servico Windows:!C_RESET!   'Infoboard TV' (Status: Ativo / Em Execucao)
-echo   !C_CYAN!* Backup de Seguranca:!C_RESET! !BACKUP_FILE!
-echo.
-echo !C_WHITE!!C_BOLD!Enderecos de Acesso ao Painel:!C_RESET!
-echo   !C_GREEN!* Local:!C_RESET!            http://localhost:3000
-echo   !C_GREEN!* Rede Local (TVs):!C_RESET! http://!LOCAL_IP!:3000
-echo.
-echo ===============================================================================
-echo !C_GRAY!Pressione qualquer tecla para finalizar o assistente.!C_RESET!
-echo ===============================================================================
-echo.
-pause
-if "%~nx0"=="ATUALIZAR_INFOBOARD_RUNNER.bat" (
-    (goto) 2>nul & del "%~f0"
-)
-exit /b 0
-
-:: =============================================================================
-:: ROTINA DE ROLLBACK AUTOMATICO EM CASO DE FALHA NA ATUALIZACAO
-:: =============================================================================
-:ROLLBACK
-set "RB_STEP=%~1"
-set "RB_CODE=%~2"
-set "RB_MSG=%~3"
-
-cls
-echo.
-echo ===============================================================================
-echo        !C_RED!!C_BOLD![FALHA NA ATUALIZACAO - DISPARANDO ROLLBACK DE SEGURANCA]!C_RESET!
-echo ===============================================================================
-echo.
-echo   !C_WHITE!Etapa da Falha:!C_RESET! !C_CYAN!!RB_STEP!!C_RESET! (Codigo: ERR_!RB_CODE!)
-echo   !C_WHITE!Motivo:!C_RESET!          !RB_MSG!
-echo.
-echo -------------------------------------------------------------------------------
-echo   !C_YELLOW!Restaurando o estado anterior da aplicacao a partir do backup recem-criado...!C_RESET!
-echo   !C_GRAY!Arquivo: !BACKUP_FILE!!C_RESET!
-echo -------------------------------------------------------------------------------
-echo.
-
-if exist "!BACKUP_FILE!" (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-        "Add-Type -AssemblyName System.IO.Compression.FileSystem; "^
-        "$zip = [System.IO.Compression.ZipFile]::OpenRead('!BACKUP_FILE!'); "^
-        "try { foreach ($entry in $zip.Entries) { "^
-        "    $dest = [System.IO.Path]::Combine('!APP_DIR!', $entry.FullName); "^
-        "    if ($entry.FullName.EndsWith('/') -or $entry.FullName.EndsWith('\')) { "^
-        "        if (-not [System.IO.Directory]::Exists($dest)) { [System.IO.Directory]::CreateDirectory($dest) | Out-Null } "^
-        "    } else { "^
-        "        $parent = [System.IO.Path]::GetDirectoryName($dest); "^
-        "        if (-not [System.IO.Directory]::Exists($parent)) { [System.IO.Directory]::CreateDirectory($parent) | Out-Null }; "^
-        "        [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $dest, $true) "^
-        "    } "^
-        "} } finally { $zip.Dispose() }"
-    
-    if !errorLevel! equ 0 (
-        echo   !C_GREEN![OK] Arquivos da versao anterior restaurados com sucesso!!C_RESET!
-        echo   !C_CYAN!* Reiniciando servico do Windows...!C_RESET!
-        net start "Infoboard TV" >nul 2>&1
-        echo.
-        echo !C_GREEN!!C_BOLD!O sistema foi revertido com seguranca para a versao v!INSTALLED_VER!.!C_RESET!
-    ) else (
-        echo   !C_RED![ERRO] Falha ao extrair backup automaticamente.!C_RESET!
-        echo   Extraia o arquivo manualmente: '!BACKUP_FILE!'
-    )
-) else (
-    echo   !C_RED![ERRO] Arquivo de backup nao foi encontrado para rollback.!C_RESET!
-)
-
+setlocal DisableDelayedExpansion
+set "ERRORLEVEL="
+title InfoBoard - Atualizador
+set "IB_UPDATER_SELF=%~f0"
 (
-    echo [!DATE! !TIME!] FALHA NA ATUALIZACAO - ROLLBACK EXECUTADO
-    echo Etapa: !RB_STEP!
-    echo Codigo: ERR_!RB_CODE!
-    echo Motivo: !RB_MSG!
-    echo Backup Utilizado: !BACKUP_FILE!
-    echo -------------------------------------------------------------------------------
-) >> "!SCRIPT_DIR!\atualizacao_erro.log" 2>nul
-
-echo.
-echo Pressione qualquer tecla para encerrar...
-pause >nul
-if "%~nx0"=="ATUALIZAR_INFOBOARD_RUNNER.bat" (
-    (goto) 2>nul & del "%~f0"
+powershell.exe -NoLogo -NoProfile -Command "$text=[IO.File]::ReadAllText($env:IB_UPDATER_SELF); $start=$text.IndexOf([Environment]::NewLine+'# INFOBOARD_PAYLOAD_BEGIN'); $end=$text.LastIndexOf([Environment]::NewLine+'# INFOBOARD_PAYLOAD_END'); if($start -lt 0 -or $end -le $start){Write-Host 'FALHA: arquivo incompleto.'; exit 1}; $code=$text.Substring($start,$end-$start); . ([scriptblock]::Create($code)); exit (Start-IBUpdater $env:IB_UPDATER_SELF)"
+call exit /b %%errorlevel%%
 )
-exit /b 1
+# INFOBOARD_PAYLOAD_BEGIN
+# Windows PowerShell 5.1; source for embedding inside the autonomous BATs.
+# Loading this file only defines functions. No updater-core dependency.
+# Public contract: Invoke-IBEnsureNode -LogDirectory <absolute directory>
+# returns exactly { NodePath; NpmPath; RebootRequired }, or throws.
+# Adapters are optional trusted scriptblocks for tests; omitted keys use defaults.
 
-:: =============================================================================
-:: PAINEL ANALITICO DE ERRO FATAL
-:: =============================================================================
-:ERRO_FATAL
-set "ERR_STEP=%~1"
-set "ERR_CODE=%~2"
-set "ERR_MSG=%~3"
-set "ERR_FIX=%~4"
+function IBNodeAssertAbsolute([string]$Path) {
+    if ([string]::IsNullOrWhiteSpace($Path) -or $Path -match '[\x00-\x1f"]' -or
+        $Path -notmatch '^(?:[A-Za-z]:[\\/]|\\\\[^\\/]+[\\/][^\\/]+[\\/])') {
+        throw 'Node: informe um caminho absoluto valido.'
+    }
+    return [IO.Path]::GetFullPath($Path)
+}
 
-cls
-echo.
-echo ===============================================================================
-echo                !C_RED!!C_BOLD![FALHA NO ATUALIZADOR DO INFOBOARD TV]!C_RESET!
-echo ===============================================================================
-echo.
-echo   !C_WHITE!!C_BOLD!Etapa da Falha:!C_RESET!    !C_CYAN!!ERR_STEP!!C_RESET!
-echo   !C_WHITE!!C_BOLD!Codigo de Erro:!C_RESET!    !C_RED!ERR_!ERR_CODE!!C_RESET!
-echo   !C_WHITE!!C_BOLD!Diagnostico:!C_RESET!       !ERR_MSG!
-echo.
-echo -------------------------------------------------------------------------------
-echo   !C_YELLOW!!C_BOLD!Como Resolver:!C_RESET!
-echo   !ERR_FIX!
-echo -------------------------------------------------------------------------------
-echo.
+function IBNodeAssertNoReparse([string]$Path) {
+    $walk = IBNodeAssertAbsolute $Path
+    while ($walk) {
+        if (Test-Path -LiteralPath $walk -ErrorAction Stop) {
+            $item = Get-Item -LiteralPath $walk -Force -ErrorAction Stop
+            if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                throw 'Node: reparse point no destino ou ancestral.'
+            }
+        }
+        $parent = [IO.Path]::GetDirectoryName($walk)
+        if ($parent -eq $walk) { break }
+        $walk = $parent
+    }
+}
 
-(
-    echo [!DATE! !TIME!] FALHA NO ATUALIZADOR
-    echo Etapa: !ERR_STEP!
-    echo Codigo: ERR_!ERR_CODE!
-    echo Mensagem: !ERR_MSG!
-    echo Acao Recomendada: !ERR_FIX!
-    echo -------------------------------------------------------------------------------
-) >> "!SCRIPT_DIR!\atualizacao_erro.log" 2>nul
+function IBNodeProtectDirectory([string]$Path) {
+    IBNodeAssertNoReparse $Path
+    if (-not (Test-Path -LiteralPath $Path -ErrorAction Stop)) {
+        $null = New-Item -ItemType Directory -Path $Path -ErrorAction Stop
+    }
+    IBNodeAssertNoReparse $Path
+    if (-not (Get-Item -LiteralPath $Path -Force -ErrorAction Stop).PSIsContainer) {
+        throw 'Node: destino dos logs deve ser uma pasta.'
+    }
+    $ids = @([Security.Principal.WindowsIdentity]::GetCurrent().User,
+        [Security.Principal.SecurityIdentifier]::new('S-1-5-18'))
+    $ids = @($ids | Sort-Object -Property Value -Unique)
+    $acl = Get-Acl -LiteralPath $Path -ErrorAction Stop
+    $acl.SetAccessRuleProtection($true, $false)
+    foreach ($rule in @($acl.Access)) { $null = $acl.RemoveAccessRuleSpecific($rule) }
+    foreach ($id in $ids) {
+        $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+            $id, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+    }
+    Set-Acl -LiteralPath $Path -AclObject $acl -ErrorAction Stop
+    $check = Get-Acl -LiteralPath $Path -ErrorAction Stop
+    $rules = @($check.Access)
+    if (-not $check.AreAccessRulesProtected -or $rules.Count -ne $ids.Count) {
+        throw 'Node: ACL privada nao confirmada.'
+    }
+    $seen = @()
+    foreach ($rule in $rules) {
+        $sid = $rule.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value
+        if ($ids.Value -notcontains $sid -or $seen -contains $sid -or $rule.IsInherited -or
+            $rule.AccessControlType -ne 'Allow' -or $rule.FileSystemRights -ne 'FullControl' -or
+            $rule.InheritanceFlags -ne 'ContainerInherit, ObjectInherit' -or
+            $rule.PropagationFlags -ne 'None') {
+            throw 'Node: ACL privada divergente.'
+        }
+        $seen += $sid
+    }
+    IBNodeAssertNoReparse $Path
+}
 
-echo !C_GRAY!Registro salvo em: '!SCRIPT_DIR!\atualizacao_erro.log'!C_RESET!
-echo.
-echo Pressione qualquer tecla para encerrar...
-pause >nul
-if "%~nx0"=="ATUALIZAR_INFOBOARD_RUNNER.bat" (
-    (goto) 2>nul & del "%~f0"
-)
-exit /b 1
+function IBNodeFetch([string]$Url, [string]$Destination) {
+    $uri = [Uri]$Url
+    if ($uri.Scheme -ne 'https' -or $uri.DnsSafeHost -ne 'nodejs.org' -or
+        $uri.Port -ne 443 -or $uri.UserInfo -or $uri.Query -or $uri.Fragment) {
+        throw 'Node: origem de download nao autorizada.'
+    }
+    IBNodeAssertNoReparse $Destination
+    $previousTls = [Net.ServicePointManager]::SecurityProtocol
+    $response = $null
+    $file = $null
+    $inputStream = $null
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = $previousTls -bor [Net.SecurityProtocolType]::Tls12
+        $request = [Net.HttpWebRequest]::Create($uri)
+        # Refuse redirects, including redirects to another host or to HTTP.
+        $request.AllowAutoRedirect = $false
+        $request.Timeout = 120000
+        $request.ReadWriteTimeout = 120000
+        $response = $request.GetResponse()
+        if ([int]$response.StatusCode -ne 200) { throw 'Node: HTTP inesperado.' }
+        $inputStream = $response.GetResponseStream()
+        $file = [IO.File]::Open($Destination, [IO.FileMode]::CreateNew,
+            [IO.FileAccess]::Write, [IO.FileShare]::None)
+        $inputStream.CopyTo($file)
+    } finally {
+        if ($file) { $file.Dispose() }
+        if ($inputStream) { $inputStream.Dispose() }
+        if ($response) { $response.Dispose() }
+        [Net.ServicePointManager]::SecurityProtocol = $previousTls
+    }
+}
+
+function IBNodeDefaultAdapters {
+    return @{
+        Candidates = {
+            @(Get-Command node.exe -CommandType Application -All -ErrorAction SilentlyContinue |
+                ForEach-Object { $_.Source })
+            foreach ($base in @($env:ProgramW6432, $env:ProgramFiles)) {
+                if ($base) { Join-Path $base 'nodejs\node.exe' }
+            }
+        }
+        FileExists = { param($p) Test-Path -LiteralPath $p -PathType Leaf -ErrorAction Stop }
+        Version = {
+            param($p)
+            $version = & $p --version 2>$null
+            if ($LASTEXITCODE -eq 0) { return ($version -join "`n").Trim() }
+            return ''
+        }
+        NpmVersion = {
+            param($p)
+            $version = & $p --version 2>$null
+            if ($LASTEXITCODE -eq 0) { return ($version -join "`n").Trim() }
+            return ''
+        }
+        InstallDirectory = {
+            $base = $env:ProgramW6432
+            if (-not $base) { $base = $env:ProgramFiles }
+            if (-not $base) { throw 'Node: Program Files indisponivel.' }
+            Join-Path $base 'nodejs'
+        }
+        Architecture = {
+            # Native OS architecture, even under x86/x64 emulation.
+            $arch = $env:PROCESSOR_ARCHITEW6432
+            if (-not $arch) { $arch = $env:PROCESSOR_ARCHITECTURE }
+            switch ($arch) {
+                'AMD64' { return 'x64' }
+                'ARM64' { return 'arm64' }
+                default { throw 'Node: arquitetura nao suportada.' }
+            }
+        }
+        AssertNoReparse = { param($p) IBNodeAssertNoReparse $p }
+        ProtectDirectory = { param($p) IBNodeProtectDirectory $p }
+        Fetch = { param($url, $p) IBNodeFetch $url $p }
+        ReadText = { param($p) Get-Content -LiteralPath $p -Raw -ErrorAction Stop }
+        Hash = { param($p) (Get-FileHash -LiteralPath $p -Algorithm SHA256 -ErrorAction Stop).Hash }
+        Signature = { param($p) Get-AuthenticodeSignature -LiteralPath $p -ErrorAction Stop }
+        Install = {
+            param($msi, $log)
+            # Error-only MSI log: never dump environment, secrets or verbose properties.
+            # No elevation retry, policy bypass, transcript, or machine PATH write.
+            $exe = Join-Path ([Environment]::GetFolderPath('System')) 'msiexec.exe'
+            $arguments = '/i "{0}" /qn /norestart REBOOT=ReallySuppress /Le "{1}"' -f $msi, $log
+            $process = Start-Process -FilePath $exe -ArgumentList $arguments -Wait -PassThru -WindowStyle Hidden -ErrorAction Stop
+            return $process.ExitCode
+        }
+        RefreshPath = {
+            param($preferredDirectory)
+            $parts = @($preferredDirectory,
+                [Environment]::GetEnvironmentVariable('Path', 'Machine'),
+                [Environment]::GetEnvironmentVariable('Path', 'User'), $env:Path)
+            $entries = @()
+            foreach ($part in $parts) {
+                foreach ($entry in ($part -split ';')) {
+                    if ($entry -and $entries -notcontains $entry) { $entries += $entry }
+                }
+            }
+            $env:Path = $entries -join ';'
+        }
+    }
+}
+
+function IBNodeFindRuntime([hashtable]$Adapters) {
+    foreach ($candidate in @(& $Adapters.Candidates)) {
+        if (-not $candidate) { continue }
+        # Ignore relative/foreign command shims; never execute them.
+        if ($candidate -notmatch '^(?:[A-Za-z]:[\\/]|\\\\[^\\/]+[\\/][^\\/]+[\\/])' -or
+            [IO.Path]::GetFileName($candidate) -ine 'node.exe') { continue }
+        $node = IBNodeAssertAbsolute $candidate
+        $npm = [IO.Path]::Combine([IO.Path]::GetDirectoryName($node), 'npm.cmd')
+        if (-not (& $Adapters.FileExists $node) -or -not (& $Adapters.FileExists $npm)) { continue }
+        $version = & $Adapters.Version $node
+        $parsed = $null
+        if ($version -cmatch '^v?(\d+)\.(\d+)\.(\d+)$' -and
+            [version]::TryParse($version.TrimStart('v'), [ref]$parsed) -and $parsed -ge [version]'22.0.0' -and
+            (& $Adapters.NpmVersion $npm) -match '^\d+\.\d+\.\d+$') {
+            return [pscustomobject]@{ NodePath = $node; NpmPath = $npm; RebootRequired = $false }
+        }
+    }
+    return $null
+}
+
+function IBNodeReport([string]$Stage, [string]$Log, $Code) {
+    $status = if ($null -eq $Code) { 'nao executado' } else { [string]$Code }
+    $location = if ($Log) { $Log } else { 'ainda nao criado' }
+    Write-Host ('[Node] Etapa: {0}; MSI: {1}; log: {2}' -f $Stage, $status, $location)
+}
+
+function Invoke-IBEnsureNode {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$LogDirectory,
+        [hashtable]$Adapters = @{}
+    )
+    $ErrorActionPreference = 'Stop'
+    $stage = 'validacao'
+    $log = $null
+    $exitCode = $null
+    try {
+        $actions = IBNodeDefaultAdapters
+        foreach ($key in $Adapters.Keys) {
+            if (-not $actions.ContainsKey($key) -or $Adapters[$key] -isnot [scriptblock]) {
+                throw 'Node: adapter invalido.'
+            }
+            $actions[$key] = $Adapters[$key]
+        }
+        $logRoot = IBNodeAssertAbsolute $LogDirectory
+        $runtime = IBNodeFindRuntime $actions
+        if ($runtime) {
+            IBNodeReport 'runtime adequado preservado' $null $null
+            return $runtime
+        }
+
+        $stage = 'arquitetura'
+        IBNodeReport $stage $log $exitCode
+        $arch = & $actions.Architecture
+        if ($arch -notin @('x64', 'arm64')) { throw 'Node: arquitetura nao suportada.' }
+        $installDirectory = IBNodeAssertAbsolute (& $actions.InstallDirectory)
+        $stage = 'protecao dos logs'
+        IBNodeReport $stage $log $exitCode
+        $null = & $actions.AssertNoReparse $logRoot
+        $null = & $actions.ProtectDirectory $logRoot
+        $null = & $actions.AssertNoReparse $logRoot
+        $work = Join-Path $logRoot ('node-' + [Guid]::NewGuid().ToString('N'))
+        $null = & $actions.ProtectDirectory $work
+        $null = & $actions.AssertNoReparse $work
+
+        # Official LTS release, verified 2026-10-25:
+        # https://github.com/nodejs/node/releases/tag/v24.22.1 (2026-10-21).
+        $release = 'v24.22.1'
+        $name = 'node-' + $release + '-' + $arch + '.msi'
+        $origin = 'https://nodejs.org/dist/' + $release + '/'
+        $msi = Join-Path $work $name
+        $sums = Join-Path $work 'SHASUMS256.txt'
+        $log = Join-Path $work 'node-msi.log'
+        foreach ($p in @($msi, $sums, $log)) { $null = & $actions.AssertNoReparse $p }
+        $stage = 'download oficial'
+        IBNodeReport $stage $log $exitCode
+        $null = & $actions.Fetch ($origin + 'SHASUMS256.txt') $sums
+        $null = & $actions.Fetch ($origin + $name) $msi
+        $stage = 'SHA256'
+        IBNodeReport $stage $log $exitCode
+        $lines = @((& $actions.ReadText $sums) -split '\r?\n' |
+            Where-Object { $_ -cmatch ('^([a-fA-F0-9]{64})[ \t]+\*?' + [regex]::Escape($name) + '$') })
+        if ($lines.Count -ne 1) { throw 'Node: checksum ausente, ambiguo ou invalido.' }
+        $expected = ($lines[0] -split '[ \t]+')[0]
+        $actual = & $actions.Hash $msi
+        if ($actual -notmatch '^[a-fA-F0-9]{64}$' -or $actual -ine $expected) { throw 'Node: SHA256 divergente.' }
+        $stage = 'Authenticode OpenJS Foundation'
+        IBNodeReport $stage $log $exitCode
+        $signature = & $actions.Signature $msi
+        if (-not $signature -or $signature.Status -ne 'Valid' -or -not $signature.SignerCertificate -or
+            $signature.SignerCertificate.Subject -notmatch '(?:^|,\s*)O\s*=\s*(?:"OpenJS Foundation"|OpenJS Foundation)\s*(?:,|$)') {
+            throw 'Node: assinatura OpenJS Foundation invalida.'
+        }
+        # Recheck every destination immediately before handing it to Windows Installer.
+        $stage = 'protecao antes do MSI'
+        IBNodeReport $stage $log $exitCode
+        $null = & $actions.ProtectDirectory $logRoot
+        $null = & $actions.ProtectDirectory $work
+        foreach ($p in @($msi, $sums, $log)) { $null = & $actions.AssertNoReparse $p }
+        $stage = 'MSI'
+        IBNodeReport $stage $log $exitCode
+        $rawCode = & $actions.Install $msi $log
+        $parsedCode = 0
+        if ($null -eq $rawCode -or -not [int]::TryParse([string]$rawCode, [ref]$parsedCode)) {
+            throw 'Node: Windows Installer nao retornou um codigo.'
+        }
+        $exitCode = $parsedCode
+        IBNodeReport 'resultado MSI' $log $exitCode
+        if ($exitCode -notin @(0, 3010, 1641)) {
+            throw 'Node: Windows Installer falhou.'
+        }
+        $stage = 'validacao apos MSI'
+        IBNodeReport $stage $log $exitCode
+        $null = & $actions.RefreshPath $null
+        if ($exitCode -in @(3010, 1641)) {
+            # Do not probe a potentially half-replaced executable before reboot.
+            # These are expected MSI paths, not a claim that they are usable yet.
+            IBNodeReport 'reinicie o Windows antes de continuar; runtime pendente' $log $exitCode
+            return [pscustomobject]@{
+                NodePath = Join-Path $installDirectory 'node.exe'
+                NpmPath = Join-Path $installDirectory 'npm.cmd'
+                RebootRequired = $true
+            }
+        }
+        $runtime = IBNodeFindRuntime $actions
+        if (-not $runtime) { throw 'Node: runtime indisponivel apos MSI.' }
+        $null = & $actions.RefreshPath ([IO.Path]::GetDirectoryName($runtime.NodePath))
+        return $runtime
+    } catch {
+        # Do not print exception payloads, environment, proxy credentials or command output.
+        # A denial is terminal: there is no alternate download/elevation/retry path.
+        IBNodeReport ('falha em ' + $stage + '; operacao interrompida') $log $exitCode
+        $status = if ($null -eq $exitCode) { 'nao executado' } else { [string]$exitCode }
+        $location = if ($log) { $log } else { 'ainda nao criado' }
+        throw [InvalidOperationException]::new(
+            ('Node: falha em {0}; MSI: {1}; log: {2}; operacao interrompida.' -f $stage, $status, $location))
+    }
+}
+
+# Fonte do payload embutido em ATUALIZAR_INFOBOARD.bat. Windows PowerShell 5.1.
+# Gerar novamente com: node scripts/build-installers.cjs
+Set-StrictMode -Version 2
+$ErrorActionPreference = 'Stop'
+
+function Assert-IBPath([string]$Path) {
+    if (-not $Path -or -not [IO.Path]::IsPathRooted($Path)) { throw 'Informe um caminho absoluto.' }
+    $full = [IO.Path]::GetFullPath($Path).TrimEnd('\','/')
+    $walk = $full
+    while ($walk) {
+        if ((Test-Path -LiteralPath $walk) -and ((Get-Item -LiteralPath $walk -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Link ou junction encontrado; revise o caminho antes de continuar.' }
+        $walk = [IO.Path]::GetDirectoryName($walk)
+    }
+    return $full
+}
+
+function Get-IBTarget([string]$Root, [string]$Relative) {
+    $target = Assert-IBPath ([IO.Path]::GetFullPath((Join-Path $Root $Relative)))
+    if (-not $target.StartsWith($Root + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Caminho fora da pasta autorizada.' }
+    return $target
+}
+
+function Protect-IBPath([string]$Path, [switch]$Directory) {
+    $p = Assert-IBPath $Path
+    if ($Directory) { [IO.Directory]::CreateDirectory($p) | Out-Null }
+    elseif (-not [IO.File]::Exists($p)) { [IO.File]::WriteAllBytes($p, @()) }
+    $acl = Get-Acl -LiteralPath $p
+    $acl.SetAccessRuleProtection($true, $false)
+    foreach ($rule in @($acl.Access)) { $acl.RemoveAccessRuleSpecific($rule) | Out-Null }
+    $ids = @([Security.Principal.WindowsIdentity]::GetCurrent().User, [Security.Principal.SecurityIdentifier]::new('S-1-5-18'))
+    $inherit = if ($Directory) { 'ContainerInherit,ObjectInherit' } else { 'None' }
+    foreach ($id in $ids) { $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($id, 'FullControl', $inherit, 'None', 'Allow')) }
+    Set-Acl -LiteralPath $p -AclObject $acl
+    $check = Get-Acl -LiteralPath $p
+    if (-not $check.AreAccessRulesProtected -or @($check.Access).Count -ne 2) { throw 'Nao foi possivel confirmar permissoes privadas.' }
+    foreach ($r in $check.Access) {
+        if ($ids.Value -notcontains $r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value -or $r.IsInherited -or $r.AccessControlType -ne 'Allow' -or $r.FileSystemRights -ne 'FullControl') { throw 'Permissoes privadas divergentes.' }
+    }
+    return $p
+}
+
+function Get-IBFiles([string]$Root, [string]$Relative = '') {
+    foreach ($entry in Get-ChildItem -LiteralPath (Join-Path $Root $Relative) -Force) {
+        $rel = if ($Relative) { $Relative + '/' + $entry.Name } else { $entry.Name }
+        if ($entry.PSIsContainer -and ($entry.Name -in @('node_modules','backups','daemon','.agents','.maestri','agent-skills','artifacts','coverage','dist','raw','--prefix','chrome-preview-profile') -or $entry.Name -match '(^\.git($|[-_.])|\.git$)' -or $rel -match '^docs/(auditoria|re)($|/)')) { continue }
+        if (-not $entry.PSIsContainer -and (($entry.Name -ne '.env.example' -and $entry.Name -like '.env*') -or $entry.Name -match '\.(env|log|zip|tgz|tap|bak|tmp|orig|pem|key)$' -or $entry.Name -match '^test_queues.*\.js$' -or $rel -match '^MAESTRI-[^/]+\.md$' -or $rel -in @('AGENTS.md','config/analysts_map.json','test_nossatelecom_real.js','test_login_wrong.js','test_rules.js','temp.json','html_dump.html','check_url.txt','query','REINICIAR_PRODUCAO.bat','instalador/REINICIAR_PRODUCAO.bat','instalador/GUIA_OPERACAO.md','scripts/alinha-perfis-skills-maestri.mjs','scripts/configure-global-agent-defaults.ps1','scripts/instalar-skills-davi.mjs','scripts/instalar-skills-india.mjs','scripts/repair-codex-launchers.ps1'))) { continue }
+        $null = Assert-IBPath $entry.FullName
+        if ($entry.PSIsContainer) { Get-IBFiles $Root $rel } else { $rel }
+    }
+}
+
+function Test-IBPackage([string]$Root) {
+    $null = Assert-IBPath $Root
+    foreach ($name in @('server.js','package.json','package-lock.json')) {
+        if (-not [IO.File]::Exists((Get-IBTarget $Root $name))) { throw "Pacote incompleto: falta $name." }
+    }
+    $pkg = Get-Content -LiteralPath (Join-Path $Root 'package.json') -Raw | ConvertFrom-Json
+    if ($pkg.name -ne 'infoboard' -or $pkg.version -notmatch '^\d+\.\d+\.\d+$') { throw 'Identidade ou versao do pacote invalida.' }
+    return $pkg
+}
+
+function Remove-IBDependencyTree([string]$Root) {
+    # Esta rotina so recebe o caminho exato node_modules de uma instalacao validada.
+    $target = Assert-IBPath $Root
+    if ((Split-Path -Leaf $target) -ne 'node_modules') { throw 'Caminho de dependencias inesperado.' }
+    $pending = [Collections.Generic.Stack[string]]::new()
+    $pending.Push($target)
+    while ($pending.Count) {
+        foreach ($item in Get-ChildItem -LiteralPath $pending.Pop() -Force) {
+            $null = Assert-IBPath $item.FullName
+            if ($item.PSIsContainer) { $pending.Push($item.FullName) }
+        }
+    }
+    Remove-Item -LiteralPath $target -Recurse -Force
+}
+
+function Write-IBLog($Context, [string]$Message) {
+    $line = ('{0:yyyy-MM-dd HH:mm:ss} {1}' -f (Get-Date), $Message)
+    Write-Host $line
+    if ($Context.Log) {
+        try { [IO.File]::AppendAllText($Context.Log, $line + [Environment]::NewLine, [Text.Encoding]::UTF8) }
+        catch {
+            $Context.LogFailed = $true
+            # Disco cheio/perda do log nunca pode impedir o rollback.
+            Write-Host '[AVISO LOG] Nao foi possivel gravar o registro. Preserve esta tela e confira espaco/permissoes.'
+        }
+    }
+}
+
+function Invoke-IBStage($Context, [int]$Number, [string]$Name, [scriptblock]$Work) {
+    $Context.Stage = $Number
+    Write-IBLog $Context "[ETAPA $Number/8] $Name - INICIO"
+    & $Work
+    Write-IBLog $Context "[ETAPA $Number/8] $Name - CONCLUIDA"
+    if ($Context.LogFailed) { throw 'Nao foi possivel manter o log; confira espaco livre e permissoes.' }
+}
+
+function Get-IBPort([string]$Root) {
+    $port = 3000
+    $envFile = Get-IBTarget $Root '.env'
+    if (Test-Path -LiteralPath $envFile) {
+        foreach ($line in [IO.File]::ReadAllLines($envFile)) {
+            if ($line -match '^\s*PORT\s*=\s*["'']?(\d+)["'']?\s*(?:#.*)?$') { $port = [int]$Matches[1] }
+        }
+    }
+    if ($port -lt 1 -or $port -gt 65535) { throw 'PORT invalida no .env; corrija apenas essa configuracao.' }
+    return $port
+}
+
+function Get-IBService([string]$Root) {
+    $found = @()
+    foreach ($svc in Get-CimInstance Win32_Service -Filter "Name like '%infoboard%' OR DisplayName = 'Infoboard TV'") {
+        if ($svc.PathName -notmatch '^(?:"([^"]+)"|(\S+))') { continue }
+        $exe = if ($Matches[1]) { $Matches[1] } else { $Matches[2] }
+        if ([IO.Path]::IsPathRooted($exe) -and [IO.Path]::GetFullPath($exe).StartsWith($Root + '\', [StringComparison]::OrdinalIgnoreCase)) {
+            $null = Assert-IBPath $exe
+            $found += $svc
+        }
+    }
+    if ($found.Count -ne 1) { throw 'Esperado exatamente um servico Infoboard vinculado a esta pasta. Confira services.msc e o caminho do executavel; nenhum processo sera encerrado por porta.' }
+    return $found[0]
+}
+
+function Get-IBRuntimePlan($Service, $Runtime, [string]$Root, [string]$Work, [int]$Port) {
+    if ($Service.PathName -notmatch '^(?:"([^"]+)"|(\S+))') { throw 'Pacote de servico sem caminho valido.' }
+    $exe = if ($Matches[1]) { $Matches[1] } else { $Matches[2] }
+    $xmlPath = Get-IBTarget $Root ([IO.Path]::GetFullPath([IO.Path]::ChangeExtension($exe, '.xml')).Substring($Root.Length + 1))
+    if (-not [IO.File]::Exists($xmlPath)) { throw 'Pacote de servico sem XML do node-windows; revise a instalacao do servico antes de atualizar.' }
+    $settings = [Xml.XmlReaderSettings]::new()
+    $settings.DtdProcessing = [Xml.DtdProcessing]::Prohibit
+    $settings.XmlResolver = $null
+    $reader = [Xml.XmlReader]::Create($xmlPath, $settings)
+    $xml = [Xml.XmlDocument]::new()
+    $xml.XmlResolver = $null
+    try { $xml.Load($reader) } finally { $reader.Dispose() }
+    $exec = $xml.SelectSingleNode('/service/executable')
+    if (-not $exec) { throw 'Pacote de servico sem executable no XML.' }
+    $saved = Protect-IBPath (Join-Path $Work 'servico-anterior.xml')
+    [IO.File]::Copy($xmlPath, $saved, $true)
+    $exec.InnerText = $Runtime.NodePath
+    $portNode = $xml.SelectSingleNode('/service/env[@name="PORT"]')
+    $oldPort = $Port
+    if ($portNode) {
+        if (-not [int]::TryParse($portNode.GetAttribute('value'), [ref]$oldPort) -or $oldPort -lt 1 -or $oldPort -gt 65535) { throw 'PORT invalida no XML do servico anterior.' }
+    }
+    if (-not $portNode) { $portNode = $xml.CreateElement('env'); $portNode.SetAttribute('name','PORT'); $null = $xml.DocumentElement.AppendChild($portNode) }
+    $portNode.SetAttribute('value', [string]$Port)
+    return @{ Path=$xmlPath; Saved=$saved; Xml=$xml; PreviousPort=$oldPort }
+}
+
+function Get-IBActions {
+    return @{
+        Source = {
+            param($stage, $local)
+            $destination = Join-Path $stage 'source'
+            if ($local) {
+                $local = Assert-IBPath $local
+                $null = Test-IBPackage $local
+                [IO.Directory]::CreateDirectory($destination) | Out-Null
+                foreach ($rel in @(Get-IBFiles $local)) {
+                    $to = Get-IBTarget $destination $rel
+                    [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($to)) | Out-Null
+                    [IO.File]::Copy((Get-IBTarget $local $rel), $to, $false)
+                }
+            } else {
+                Write-Host '[PACOTE] Consultando a revisao publicada no GitHub...'
+                [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+                $head = Invoke-RestMethod -Uri 'https://api.github.com/repos/JSDavi/Infoboard/commits/master' -Headers @{ 'User-Agent'='InfoBoard-Updater' } -TimeoutSec 30
+                if ($head.sha -notmatch '^[a-f0-9]{40}$') { throw 'Revisao GitHub invalida.' }
+                Write-Host ('[PACOTE] Baixando revisao fixa: ' + $head.sha)
+                $archive = Join-Path $stage 'source.zip'
+                Invoke-WebRequest -Uri ('https://github.com/JSDavi/Infoboard/archive/' + $head.sha + '.zip') -OutFile $archive -UseBasicParsing -TimeoutSec 120
+                Expand-Archive -LiteralPath $archive -DestinationPath (Join-Path $stage 'download')
+                $expanded = Assert-IBPath (Join-Path $stage ('download/Infoboard-' + $head.sha))
+                $null = Test-IBPackage $expanded
+                [IO.Directory]::Move($expanded, $destination)
+            }
+            return $destination
+        }
+        Runtime = { param($stage) Invoke-IBEnsureNode -LogDirectory $stage }
+        Dependencies = {
+            param($source, $runtime, $log)
+            # npm.cmd fica junto do Node validado; nao depender de um npm antigo no PATH.
+            Write-Host ('[NPM] Preparando dependencias; aguarde. Registro privado: ' + $log)
+            $cli = Join-Path (Split-Path -Parent $runtime.NpmPath) 'node_modules/npm/bin/npm-cli.js'
+            $null = Assert-IBPath $cli
+            if (-not [IO.File]::Exists($cli)) { throw 'npm CLI nao encontrado junto do Node validado; repare a instalacao oficial do Node.' }
+            $info = [Diagnostics.ProcessStartInfo]::new()
+            $info.FileName = $runtime.NodePath
+            $info.Arguments = '"{0}" ci --omit=dev --prefix "{1}"' -f $cli, $source
+            $info.UseShellExecute = $false
+            $info.CreateNoWindow = $true
+            $info.RedirectStandardOutput = $true
+            $info.RedirectStandardError = $true
+            $process = [Diagnostics.Process]::new()
+            $process.StartInfo = $info
+            try {
+                $null = $process.Start()
+                $stdout = $process.StandardOutput.ReadToEndAsync()
+                $stderr = $process.StandardError.ReadToEndAsync()
+                $process.WaitForExit()
+                [IO.File]::WriteAllText($log, $stdout.Result + [Environment]::NewLine + $stderr.Result)
+                $exitCode = $process.ExitCode
+            } finally { $process.Dispose() }
+            Write-Host ('[NPM] Processo encerrado. Codigo: ' + $exitCode)
+            if ($exitCode -ne 0) { throw ('npm ci falhou, codigo ' + $exitCode + '. Consulte npm.log privado; confira internet/proxy/antivirus/lockfile antes de tentar novamente.') }
+        }
+        Service = { param($root) Get-IBService $root }
+        RuntimePlan = { param($service,$runtime,$root,$work,$port) Get-IBRuntimePlan $service $runtime $root $work $port }
+        Stop = {
+            param($service)
+            $current = Get-Service -Name $service.Name
+            if ($current.Status -ne 'Stopped') {
+                Stop-Service -Name $service.Name -ErrorAction Stop
+                $current.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(45))
+            }
+        }
+        Start = {
+            param($service)
+            Start-Service -Name $service.Name -ErrorAction Stop
+            (Get-Service -Name $service.Name).WaitForStatus('Running', [TimeSpan]::FromSeconds(45))
+        }
+        Health = {
+            param($port, $service)
+            for ($attempt = 0; $attempt -lt 15; $attempt++) {
+                try {
+                    # O HTTP precisa pertencer ao processo do servico escolhido.
+                    # Um site diferente na mesma porta nunca confirma esta atualizacao.
+                    $svc = Get-CimInstance Win32_Service | Where-Object Name -EQ $service.Name
+                    $listeners = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
+                    if (-not $svc -or $svc.State -ne 'Running' -or $listeners.Count -eq 0) { throw 'HTTP ainda indisponivel.' }
+                    $processes = @(Get-CimInstance Win32_Process)
+                    foreach ($listener in $listeners) {
+                        $ownerId = [uint32]$listener.OwningProcess
+                        $owned = $false
+                        for ($depth = 0; $depth -lt 20 -and $ownerId; $depth++) {
+                            if ($ownerId -eq [uint32]$svc.ProcessId) { $owned = $true; break }
+                            $parent = $processes | Where-Object ProcessId -EQ $ownerId | Select-Object -First 1
+                            if (-not $parent -or $parent.ParentProcessId -eq $ownerId) { break }
+                            $ownerId = [uint32]$parent.ParentProcessId
+                        }
+                        if (-not $owned) { throw 'HTTP pertence a outro processo; porta ocupada.' }
+                    }
+                    $res = Invoke-WebRequest -Uri ("http://127.0.0.1:$port/") -UseBasicParsing -TimeoutSec 3
+                    if ($res.StatusCode -eq 200) { return }
+                } catch { }
+                Start-Sleep -Seconds 2
+            }
+            throw 'HTTP nao respondeu 200. Confira logs do servico, PORT e ocupacao da porta; nao ha confirmacao de painel funcionando.'
+        }
+        Confirm = { param($message) (Read-Host ($message + ' [S/N] [N]')) -eq 'S' }
+    }
+}
+
+function Restore-IBUpdate($c, $actions) {
+    Write-IBLog $c '[ROLLBACK] INICIO: restaurando arquivos e dependencias anteriores, sem download.'
+    & $actions.Stop $c.Service
+    foreach ($rel in $c.NewFiles) {
+        $p = Get-IBTarget $c.App $rel
+        if ([IO.File]::Exists($p)) { [IO.File]::Delete($p) }
+    }
+    $zip = [IO.Compression.ZipFile]::OpenRead($c.Backup)
+    try {
+        foreach ($entry in $zip.Entries) {
+            $to = Get-IBTarget $c.App $entry.FullName
+            [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($to)) | Out-Null
+            [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $to, $true)
+        }
+    } finally { $zip.Dispose() }
+    $deps = Get-IBTarget $c.App 'node_modules'
+    if ($c.NewDeps -and (Test-Path -LiteralPath $deps)) { Remove-IBDependencyTree $deps }
+    if ($c.OldDepsMoved) { [IO.Directory]::Move((Get-IBTarget $c.Work 'previous-node_modules'), $deps) }
+    if ($c.ServicePlan) {
+        $null = Assert-IBPath $c.ServicePlan.Path
+        [IO.File]::Copy($c.ServicePlan.Saved, $c.ServicePlan.Path, $true)
+    }
+    if ($c.WasRunning) {
+        & $actions.Start $c.Service
+        $oldPort = if ($c.ServicePlan) { $c.ServicePlan.PreviousPort } else { $c.Port }
+        & $actions.Health $oldPort $c.Service
+    }
+    Write-IBLog $c '[ROLLBACK] CONCLUIDO: estado anterior restaurado; a atualizacao FALHOU.'
+}
+
+function Invoke-IBUpdate {
+    param([string]$ApplicationDirectory, [string]$SourceDirectory, [hashtable]$Actions)
+    $c = @{ App=$null; Work=$null; Log=$null; Lock=$null; LogFailed=$false; Stage=1; Changed=$false; NewDeps=$false; OldDepsMoved=$false; NewFiles=@(); WasRunning=$false; ServicePlan=$null }
+    try {
+        $c.App = Assert-IBPath $ApplicationDirectory
+        if ($c.App -eq [IO.Path]::GetPathRoot($c.App).TrimEnd('\') -or $c.App -eq $env:USERPROFILE -or $c.App -eq $env:WINDIR) { throw 'Pasta de sistema/raiz recusada.' }
+        $installed = Test-IBPackage $c.App
+        if ($SourceDirectory) {
+            $SourceDirectory = Assert-IBPath $SourceDirectory
+            if ($SourceDirectory -eq $c.App -or $SourceDirectory.StartsWith($c.App + '\', [StringComparison]::OrdinalIgnoreCase) -or $c.App.StartsWith($SourceDirectory + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Origem e instalacao sobrepostas.' }
+        }
+        $private = Protect-IBPath (Get-IBTarget $c.App 'backups') -Directory
+        try { $c.Lock = [IO.File]::Open((Get-IBTarget $private 'atualizacao.lock'), 'OpenOrCreate', 'ReadWrite', 'None') }
+        catch { throw 'Outra atualizacao pode estar em andamento, ou o bloqueio nao pode ser criado. Confira antes de tentar novamente.' }
+        $c.Work = Protect-IBPath (Join-Path $private ('update_' + (Get-Date -Format 'yyyyMMdd_HHmmss') + '_' + [guid]::NewGuid().ToString('N'))) -Directory
+        $c.Log = Protect-IBPath (Join-Path $c.Work 'atualizacao.log')
+        Write-IBLog $c '[ETAPA 1/8] Pasta e permissoes privadas validadas - CONCLUIDA'
+        $c.Port = Get-IBPort $c.App
+        Invoke-IBStage $c 2 'Preparar pacote e conferir versao' {
+            $c.Source = Assert-IBPath (& $Actions.Source $c.Work $SourceDirectory)
+            $new = Test-IBPackage $c.Source
+            $c.Version = $new.version
+            Write-IBLog $c ('Versao instalada: ' + $installed.version + '; pacote: ' + $c.Version)
+            if ([version]$c.Version -lt [version]$installed.version) {
+                if (-not (& $Actions.Confirm 'Pacote mais antigo. Autoriza downgrade?')) { throw 'Downgrade cancelado pelo operador.' }
+            }
+        }
+        Invoke-IBStage $c 3 'Conferir Node e preparar dependencias sem parar o painel' {
+            $c.Runtime = & $Actions.Runtime $c.Work
+            if ($c.Runtime.RebootRequired) { throw 'NODE_REBOOT_REQUIRED: reinicie o Windows antes de tentar novamente; o painel ainda nao foi parado.' }
+            $npmLog = Protect-IBPath (Join-Path $c.Work 'npm.log')
+            & $Actions.Dependencies $c.Source $c.Runtime $npmLog
+            if (-not [IO.Directory]::Exists((Get-IBTarget $c.Source 'node_modules'))) { throw 'npm nao gerou node_modules no pacote preparado.' }
+        }
+        Invoke-IBStage $c 4 'Backup privado e identificar servico desta instalacao' {
+            $c.Service = & $Actions.Service $c.App
+            $c.WasRunning = $c.Service.State -eq 'Running'
+            $c.ServicePlan = & $Actions.RuntimePlan $c.Service $c.Runtime $c.App $c.Work $c.Port
+            $envFile = Get-IBTarget $c.App '.env'
+            if ([IO.File]::Exists($envFile)) {
+                $null = Protect-IBPath $envFile
+                $savedEnv = Protect-IBPath (Join-Path $c.Work 'configuracao.env')
+                [IO.File]::WriteAllBytes($savedEnv, [IO.File]::ReadAllBytes($envFile))
+            }
+            $mapFile = Get-IBTarget $c.App 'config/analysts_map.json'
+            if ([IO.File]::Exists($mapFile)) {
+                $null = Protect-IBPath $mapFile
+                $savedMap = Protect-IBPath (Join-Path $c.Work 'mapa-analistas.json')
+                [IO.File]::Copy($mapFile, $savedMap, $true)
+            }
+            Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+            $c.Backup = Protect-IBPath (Join-Path $c.Work 'fontes-anteriores.zip')
+            $stream = [IO.File]::Open($c.Backup, 'Truncate', 'ReadWrite', 'None')
+            $zip = [IO.Compression.ZipArchive]::new($stream, [IO.Compression.ZipArchiveMode]::Create)
+            try {
+                foreach ($rel in @(Get-IBFiles $c.App)) { [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Get-IBTarget $c.App $rel), $rel) | Out-Null }
+            } finally { $zip.Dispose(); $stream.Dispose() }
+            $z = [IO.Compression.ZipFile]::OpenRead($c.Backup)
+            try { if ($z.Entries.Count -eq 0) { throw 'Backup vazio.' } } finally { $z.Dispose() }
+            $c.Files = @(Get-IBFiles $c.Source)
+            foreach ($rel in $c.Files) { $null = Get-IBTarget $c.App $rel }
+            $null = Get-IBTarget $c.App 'node_modules'
+        }
+        Invoke-IBStage $c 5 'Parar somente o servico vinculado a esta pasta' {
+            # Marcar antes da parada: uma falha apos parar exige recuperacao do estado.
+            $c.Changed = $true
+            & $Actions.Stop $c.Service
+        }
+        Invoke-IBStage $c 6 'Aplicar fontes e dependencias preservando configuracao' {
+            $deps = Get-IBTarget $c.App 'node_modules'
+            if (Test-Path -LiteralPath $deps) {
+                [IO.Directory]::Move($deps, (Get-IBTarget $c.Work 'previous-node_modules'))
+                $c.OldDepsMoved = $true
+            }
+            foreach ($rel in $c.Files) {
+                $to = Get-IBTarget $c.App $rel
+                if (-not [IO.File]::Exists($to)) { $c.NewFiles += $rel }
+                [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($to)) | Out-Null
+                [IO.File]::Copy((Get-IBTarget $c.Source $rel), $to, $true)
+            }
+            [IO.Directory]::Move((Get-IBTarget $c.Source 'node_modules'), $deps)
+            $c.NewDeps = $true
+            if ($c.ServicePlan) {
+                $null = Assert-IBPath $c.ServicePlan.Path
+                $c.ServicePlan.Xml.Save($c.ServicePlan.Path)
+            }
+        }
+        Invoke-IBStage $c 7 'Iniciar servico e conferir resposta HTTP' {
+            & $Actions.Start $c.Service
+            & $Actions.Health $c.Port $c.Service
+        }
+        Invoke-IBStage $c 8 'Finalizar relatorio' {
+            Write-IBLog $c ('SUCESSO: versao ' + $c.Version + '; http://localhost:' + $c.Port + '; .env e mapa local preservados.')
+            Write-IBLog $c ('Backup e diagnostico privados: ' + $c.Work)
+        }
+        return 0
+    } catch {
+        # A mensagem pode conter dados de um subprocesso; registrar apenas diagnosticos
+        # nossos e tipo/linha da excecao, sem despejar objetos, env ou transcricoes.
+        $failure = $_
+        $known = $failure.Exception.Message
+        if ($known -notmatch '^(Informe |Link |Caminho |Pacote |Identidade |Pasta |Origem |Outra |Permiss|Nao foi |Esperado |PORT |npm |Node |NODE_|HTTP |Backup |Downgrade )') { $known = 'Falha operacional; confira o detalhe tecnico e a etapa abaixo.' }
+        Write-IBLog $c ("FALHA ERR_U{0:00}: {1}" -f $c.Stage, $known)
+        Write-IBLog $c ('Tipo: ' + $failure.Exception.GetType().Name + '; linha do payload: ' + $failure.InvocationInfo.ScriptLineNumber)
+        Write-IBLog $c 'Acao: confira caminho, permissoes, internet/proxy, espaco livre e services.msc. Nao compartilhe .env ou backups. Corrija a causa antes de tentar novamente.'
+        if ($c.Changed) {
+            try { Restore-IBUpdate $c $Actions }
+            catch {
+                Write-IBLog $c ('ROLLBACK FALHOU: ' + $_.Exception.GetType().Name + '. Nao ha confirmacao de recuperacao. Preserve a pasta de backup e acione o responsavel tecnico.')
+                return 2
+            }
+        } else { Write-IBLog $c 'Arquivos da aplicacao nao substituidos; parada do painel nao solicitada.' }
+        if ($c.Work) { Write-IBLog $c ('Diagnostico privado: ' + $c.Work) }
+        if ($failure.Exception.Message -like '*NODE_REBOOT_REQUIRED*') { return 3010 }
+        return 1
+    } finally {
+        if ($c.Lock) { $c.Lock.Dispose() }
+    }
+}
+
+function Start-IBUpdater([string]$Self) {
+    try {
+        $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+        $admin = ([Security.Principal.WindowsPrincipal]::new($identity)).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        if (-not $admin) {
+            Write-Host 'INFOBOARD - ATUALIZACAO: o Windows solicitara permissao de administrador (UAC).'
+            try {
+                $child = Start-Process -FilePath $env:ComSpec -ArgumentList ('/d /s /c ""' + $Self + '""') -Verb RunAs -Wait -PassThru
+                return $child.ExitCode
+            } catch {
+                Write-Host 'FALHA ERR_UAC: elevacao cancelada ou recusada. Nenhuma atualizacao iniciada. Use Executar como administrador se autorizado.'
+                Read-Host 'Pressione ENTER para fechar' | Out-Null
+                return 1
+            }
+        }
+        Write-Host 'INFOBOARD - ATUALIZADOR AUTONOMO / 8 ETAPAS'
+        $here = Split-Path -Parent $Self
+        $app = $null
+        foreach ($candidate in @($here, (Split-Path -Parent $here))) {
+            if (Test-Path -LiteralPath (Join-Path $candidate 'server.js')) { $app = $candidate; break }
+        }
+        if ($app) {
+            Write-Host ('Instalacao encontrada: ' + $app)
+            $answer = Read-Host 'ENTER confirma; ou digite outro caminho absoluto'
+            if ($answer) { $app = $answer.Trim('"') }
+        } else { $app = (Read-Host 'Caminho absoluto da instalacao Infoboard').Trim('"') }
+        # Arquivo enviado sozinho sempre baixa a revisao publica. Pacote local apenas
+        # quando o BAT esta em instalador/ de uma distribuicao diferente da instalada.
+        $source = $null
+        $parent = Split-Path -Parent $here
+        if ((Split-Path -Leaf $here) -eq 'instalador' -and $parent -ne $app -and (Test-Path -LiteralPath (Join-Path $parent 'package-lock.json'))) { $source = $parent }
+        $result = Invoke-IBUpdate -ApplicationDirectory $app -SourceDirectory $source -Actions (Get-IBActions)
+        Read-Host 'Processo encerrado. Confira o resultado acima. Pressione ENTER para fechar' | Out-Null
+        return $result
+    } catch {
+        Write-Host ('FALHA ERR_INICIO: ' + $_.Exception.GetType().Name + '. Confira a pasta e as permissoes do Windows. Nenhum sucesso confirmado.')
+        Read-Host 'Pressione ENTER para fechar' | Out-Null
+        return 1
+    }
+}
+
+# INFOBOARD_PAYLOAD_END

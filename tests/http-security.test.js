@@ -34,3 +34,31 @@ test('servidor permite leitura local e bloqueia origem falsa sem acessar integra
     assert.equal((await request(fixture.url, file)).status, 404);
   }
 });
+
+test('API exige IP autorizado mesmo na LAN e nao aceita cookie como liberacao', async t => {
+  const fixture = await serverFixture({ remoteAddress: '192.168.20.15',
+    env: { INFOBOARD_ALLOW_PRIVATE_NETWORK: 'false' } });
+  t.after(fixture.close);
+  const response = await request(fixture.url, '/api/data', { Cookie: 'npx_session=fixture' });
+  assert.equal(response.status, 401);
+  assert.match(response.headers['cache-control'], /no-store/);
+  assert.equal(JSON.parse(response.body).departments, undefined);
+});
+
+test('API libera apenas a estacao configurada e respeita a opcao de compatibilidade', async t => {
+  for (const env of [
+    { INFOBOARD_VIEWER_ALLOWED_IPS: '192.168.20.15', INFOBOARD_ALLOW_PRIVATE_NETWORK: 'false' },
+    { INFOBOARD_ALLOW_PRIVATE_NETWORK: 'true' },
+    {}
+  ]) {
+    const fixture = await serverFixture({ remoteAddress: '192.168.20.15', env });
+    t.after(fixture.close);
+    assert.equal((await request(fixture.url, '/api/data')).status, 200);
+    const forwarded = await request(fixture.url, '/api/data', { 'X-Real-IP': '' });
+    assert.equal(forwarded.status, 401);
+  }
+  const fixture = await serverFixture({ remoteAddress: '192.168.20.16',
+    env: { INFOBOARD_VIEWER_ALLOWED_IPS: '192.168.20.15', INFOBOARD_ALLOW_PRIVATE_NETWORK: 'false' } });
+  t.after(fixture.close);
+  assert.equal((await request(fixture.url, '/api/data')).status, 401);
+});

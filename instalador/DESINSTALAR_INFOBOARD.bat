@@ -229,7 +229,7 @@ echo         - !C_GREEN!MANTEM!C_RESET! os arquivos do projeto, banco e configur
 echo.
 echo   !C_YELLOW!!C_BOLD![ 2 ] Desinstalacao Completa (Remocao Total)!C_RESET!
 echo         - Executa todas as etapas da Desinstalacao Padrao
-echo         - !C_CYAN!Salva automaticamente um backup do seu .env na Area de Trabalho!C_RESET!
+echo         - !C_CYAN!Salva automaticamente backup protegido do seu .env (ACL restrita em LocalAppData)!C_RESET!
 echo         - !C_RED!!C_BOLD!EXCLUI!C_RESET! completamente a pasta de instalacao ('!APP_DIR!')
 echo.
 echo   !C_WHITE![ C ] Cancelar a Operacao e Sair!C_RESET!
@@ -374,11 +374,20 @@ if "!UNINST_MODE!"=="1" (
 if "!UNINST_MODE!"=="2" (
     echo   !C_YELLOW!* Modo Completo selecionado: Iniciando remocao total da pasta do sistema...!C_RESET!
     
-    :: Backup de seguranca do .env na Area de Trabalho do usuario
+    :: Backup de seguranca do .env com ACL restrita (Usuario Atual + SYSTEM) em local seguro
+    set "ENV_BACKUP_FILE=%LOCALAPPDATA%\Infoboard\backups\Infoboard_env_backup.env"
     if exist "!APP_DIR!\.env" (
-        echo   !C_CYAN!* Criando copia de seguranca do seu .env no Desktop...!C_RESET!
-        copy /y "!APP_DIR!\.env" "%USERPROFILE%\Desktop\Infoboard_env_backup.env" >nul 2>&1
-        echo   !C_GREEN![OK] Backup do .env salvo em: '%USERPROFILE%\Desktop\Infoboard_env_backup.env'!C_RESET!
+        echo   !C_CYAN!* Criando copia de seguranca protegida do seu .env...!C_RESET!
+        set "ENV_ACL_HELPER=%~dp0protect-env.ps1"
+        if not exist "!ENV_ACL_HELPER!" set "ENV_ACL_HELPER=!APP_DIR!\instalador\protect-env.ps1"
+        powershell -NoProfile -ExecutionPolicy Bypass -File "!ENV_ACL_HELPER!" -Path "!ENV_BACKUP_FILE!" -SourcePath "!APP_DIR!\.env"
+        if errorlevel 1 (
+            echo   !C_RED!!C_BOLD![ERRO CRITICO] Falha ao proteger ou gerar o backup do .env!!C_RESET!
+            echo   A desinstalacao completa foi abortada para evitar perda de dados e exposicao de credenciais.
+            pause
+            exit /b 1
+        )
+        echo   !C_GREEN![OK] Backup do .env protegido e salvo em: '!ENV_BACKUP_FILE!'!C_RESET!
     )
     
     echo   !C_GRAY!* Disparando processo de auto-limpeza desanexada para evitar bloqueio de arquivos...!C_RESET!
@@ -416,7 +425,7 @@ if "!UNINST_MODE!"=="1" (
 ) else (
     echo !C_YELLOW!!C_BOLD!Observacao sobre a limpeza total (Modo Completo):!C_RESET!
     echo   A pasta '!APP_DIR!' sera totalmente excluida em instantes.
-    echo   Seu arquivo '.env' foi preservado em: '%USERPROFILE%\Desktop\Infoboard_env_backup.env'.
+    echo   Seu arquivo '.env' foi preservado com ACL restrita em: '!ENV_BACKUP_FILE!'.
 )
 echo.
 echo ===============================================================================

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { isTvRequest, isInternalViewer, getPanelAccess, filterPanelData } = require('../infoboard-access');
+const { normalizeIp, isTvRequest, isInternalViewer, getPanelAccess, filterPanelData } = require('../infoboard-access');
 
 const departments = {
   InfoBrasil_Suporte: { name: 'Suporte' },
@@ -23,14 +23,18 @@ test('cabeçalhos de proxy nunca concedem perfil TV por IP', () => {
   }
 });
 
-test('rede interna visualiza os dados sem login e rede externa não recebe acesso livre', () => {
+test('modo restrito exige IP explicito e modo LAN preserva rede privada', () => {
   for (const ip of ['10.24.3.10', '172.16.0.1', '172.31.255.254', '192.168.1.25']) {
-    assert.equal(isInternalViewer(req(ip)), true, ip);
-    assert.deepEqual(getPanelAccess(req(ip)), { mode: 'viewer' });
+    assert.equal(isInternalViewer(req(ip), '', false), false, ip);
+    assert.equal(getPanelAccess(req(ip), { INFOBOARD_ALLOW_PRIVATE_NETWORK: 'false' }), null);
+    assert.deepEqual(getPanelAccess(req(ip), {}), { mode: 'viewer' });
+    assert.equal(isInternalViewer(req(ip), '', true), true, ip);
+    assert.deepEqual(getPanelAccess(req(ip), { INFOBOARD_ALLOW_PRIVATE_NETWORK: 'true' }), { mode: 'viewer' });
   }
   for (const ip of ['8.8.8.8', '172.32.1.2', '169.254.1.2']) {
     assert.equal(isInternalViewer(req(ip)), false, ip);
-    assert.equal(getPanelAccess(req(ip)), null);
+    assert.equal(getPanelAccess(req(ip), {}), null);
+    assert.equal(isInternalViewer(req(ip), '', true), false, ip);
   }
   assert.equal(isInternalViewer(req('10.24.3.10', { 'x-forwarded-for': '10.24.3.10' })), false);
   assert.equal(isInternalViewer(req('127.0.0.1', { forwarded: 'for=192.168.1.1' })), false);
@@ -43,9 +47,33 @@ test('rede externa não obtém acesso mesmo que envie cookies ou cabeçalhos de 
   assert.deepEqual(getPanelAccess(req('127.0.0.1')), { mode: 'tv' });
 });
 
-test('rede privada mantém acesso de observação mesmo sem cookies', () => {
+test('computador autorizado recebe observacao sem abrir acesso para o restante da LAN', () => {
   const remote = req('192.168.20.15');
-  assert.deepEqual(getPanelAccess(remote), { mode: 'viewer' });
+  const config = { INFOBOARD_VIEWER_ALLOWED_IPS: '192.168.20.15', INFOBOARD_ALLOW_PRIVATE_NETWORK: 'false' };
+  assert.deepEqual(getPanelAccess(remote, config), { mode: 'viewer' });
+  assert.equal(getPanelAccess(req('192.168.20.16'), config), null);
+  assert.deepEqual(getPanelAccess(remote, { INFOBOARD_TV_ALLOWED_IPS: '192.168.20.15' }), { mode: 'tv' });
+  for (const value of ['false', 'TRUE', '1', 'invalid', '']) {
+    assert.equal(getPanelAccess(remote, { INFOBOARD_ALLOW_PRIVATE_NETWORK: value }), null);
+  }
+});
+
+test('IPs equivalentes IPv6 e IPv4 mapeados usam a mesma allowlist', () => {
+  assert.equal(normalizeIp('0:0:0:0:0:0:0:1'), '::1');
+  assert.equal(normalizeIp('::FFFF:192.168.20.15'), '192.168.20.15');
+  assert.equal(normalizeIp('0:0:0:0:0:ffff:c0a8:140f'), '192.168.20.15');
+  assert.equal(normalizeIp('not-an-ip'), null);
+  assert.equal(normalizeIp('fe80::1%eth0'), null);
+  assert.deepEqual(getPanelAccess(req('2001:db8::1'), {
+    INFOBOARD_VIEWER_ALLOWED_IPS: '2001:0DB8:0:0:0:0:0:1'
+  }), { mode: 'viewer' });
+});
+
+test('cabecalhos de proxy vazios ou em caixa mista tambem negam acesso', () => {
+  for (const key of ['Forwarded', 'X-Forwarded-For', 'X-Real-IP', 'X-Client-IP', 'CF-Connecting-IP']) {
+    assert.equal(getPanelAccess(req('127.0.0.1', { [key]: '' }), {}), null, key);
+    assert.equal(isInternalViewer(req('192.168.20.15', { [key]: '' }), '192.168.20.15', true), false, key);
+  }
 });
 
 test('resposta de leitura preserva dados observados de todas as filas e integrações', () => {

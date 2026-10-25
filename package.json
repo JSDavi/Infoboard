@@ -1,6 +1,6 @@
 {
   "name": "infoboard",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Infoboard - Servidor integrador local e Wallboard para TV NPX",
   "main": "server.js",
   "scripts": {
@@ -9,6 +9,7 @@
     "test": "node --test tests/*.test.js",
     "check": "node scripts/check-syntax.cjs",
     "audit:publication": "node scripts/audit-publication.cjs",
+    "release:verify": "node scripts/verify-release.cjs",
     "audit:history": "node scripts/audit-publication.cjs --history",
     "release:local": "node scripts/create-source-release.cjs",
     "test:browser": "node tests/run-browser-smoke.cjs"

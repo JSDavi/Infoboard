@@ -8,8 +8,16 @@ test_nossatelecom_real.js
 
 # Estado local de agentes, recuperacao e servicos gerados.
 /.maestri/
-/.agents/*
-!/.agents/rules/
+/.agents/
+# Maestri e agentes: arquivos locais de coordenacao, nunca distribuidos.
+/agent-skills/
+/AGENTS.md
+/MAESTRI-*.md
+/scripts/alinha-perfis-skills-maestri.mjs
+/scripts/configure-global-agent-defaults.ps1
+/scripts/instalar-skills-davi.mjs
+/scripts/instalar-skills-india.mjs
+/scripts/repair-codex-launchers.ps1
 /backups/
 /daemon/
 /artifacts/
@@ -17,6 +25,14 @@ test_nossatelecom_real.js
 /dist/
 # Relatorios de seguranca detalhados sao locais; distribuir somente a politica.
 /docs/auditoria/
+# Pesquisa interna de engenharia reversa; nao e dependencia do InfoBoard.
+/docs/re/
+# Parecer de homologacao e BAT legado usados apenas no workspace local.
+/instalador/GUIA_OPERACAO.md
+/instalador/REINICIAR_PRODUCAO.bat
+/REINICIAR_PRODUCAO.bat
+# Residuo local de testes de instalacao npm.
+/--prefix/
 *.zip
 *.tgz
 *.tap
@@ -25,6 +41,10 @@ test_nossatelecom_real.js
 *.orig
 *.pem
 *.key
+*.env
+# Copias de metadados Git antigos nunca devem voltar ao historico saneado.
+.git[-_.]*/
+*.git/
 
 # Dados reais e capturas nunca compoem a distribuicao.
 /config/analysts_map.json

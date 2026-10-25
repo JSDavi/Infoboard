@@ -1,0 +1,383 @@
+@echo off
+chcp 65001 >nul 2>&1
+setlocal EnableExtensions EnableDelayedExpansion
+set "IB_SCRIPT=%~f0"
+set "IB_SCRIPT_DIR=%~dp0"
+if "%~1"=="--finish-files" goto :ETAPA_5
+set "IB_RUN_ID=uninstall-%RANDOM%-%RANDOM%"
+title Desinstalador do Infoboard TV - Infobrasil
+
+:: =============================================================================
+:: CONFIGURACAO DE AMBIENTE E CORES ANSI
+:: =============================================================================
+reg add "HKCU\Console" /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>&1
+for /f "delims=" %%a in ('powershell -NoProfile -Command "[char]27"') do set "ESC=%%a"
+
+set "C_RESET=!ESC![0m"
+set "C_BOLD=!ESC![1m"
+set "C_DIM=!ESC![2m"
+set "C_GREEN=!ESC![92m"
+set "C_YELLOW=!ESC![93m"
+set "C_CYAN=!ESC![96m"
+set "C_RED=!ESC![91m"
+set "C_WHITE=!ESC![97m"
+set "C_GRAY=!ESC![90m"
+
+:: =============================================================================
+:: VERIFICACAO E ELEVACAO DE PRIVILEGIOS DE ADMINISTRADOR (COM AVISO PREVIO)
+:: =============================================================================
+net session >nul 2>&1
+if %errorLevel% neq 0 goto :SOLICITAR_ELEVACAO
+goto :INICIAR_DESINSTALACAO
+
+:SOLICITAR_ELEVACAO
+cls
+echo.
+echo ===============================================================================
+echo                   !C_CYAN!!C_BOLD!INFOBRASIL - DESINSTALADOR DO INFOBOARD TV!C_RESET!
+echo ===============================================================================
+echo.
+echo !C_YELLOW!!C_BOLD![AVISO DE ELEVACAO] Privilegios de Administrador Necessarios!C_RESET!
+echo.
+echo  Para desinstalar o Infoboard TV completamente, este assistente precisa
+echo  de permissoes administrativas do Windows para:
+echo.
+echo    1. Parar e excluir Servicos Nativos do Windows (services.msc)
+echo    2. Remover regras associadas no Windows Defender Firewall (PORT do .env)
+echo    3. Remover atalhos do Desktop Publico do sistema (CommonDesktopDirectory)
+echo    4. Finalizar processos em segundo plano vinculados a aplicacao
+echo.
+echo -------------------------------------------------------------------------------
+echo !C_WHITE!Uma janela de solicitacao do Windows (UAC) sera exibida ao confirmar.!C_RESET!
+echo.
+set /p "UAC_CONFIRM=Deseja abrir a solicitacao de Administrador agora? (S/N) [S]: "
+if "!UAC_CONFIRM!"=="" set "UAC_CONFIRM=S"
+
+if /i "!UAC_CONFIRM!"=="S" (
+    echo.
+    echo !C_CYAN!Solicitando elevacao ao Windows... Aguarde...!C_RESET!
+    powershell -NoProfile -Command "$ErrorActionPreference='Stop'; try { $p=Start-Process -FilePath $env:IB_SCRIPT -WorkingDirectory $env:IB_SCRIPT_DIR -Verb RunAs -Wait -PassThru; exit $p.ExitCode } catch { exit 1 }" 2>nul
+    if !errorLevel! neq 0 (
+        echo.
+        echo !C_RED!!C_BOLD![FALHA] A solicitacao de elevacao foi negada ou falhou.!C_RESET!
+        echo A recusa encerra a operacao, sem tentativa alternativa.
+        pause
+        exit /b 1
+    )
+    exit /b 0
+) else (
+    echo.
+    echo !C_YELLOW!Desinstalacao cancelada pelo usuario antes da elevacao.!C_RESET!
+    pause
+    exit /b 0
+)
+
+:INICIAR_DESINSTALACAO
+call :PS_RUN InitLog
+if errorlevel 1 (
+    echo [FALHA] Nao foi possivel preparar log privado. Operacao interrompida.
+    pause
+    exit /b 1
+)
+echo Log privado: "%LOCALAPPDATA%\Infoboard\installer-logs\!IB_RUN_ID!\events.log"
+:: Ancorar diretorio atual no diretorio onde o script esta localizado
+cd /d "%~dp0"
+if errorlevel 1 exit /b 1
+set "SCRIPT_DIR=%~dp0"
+if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+
+:: =============================================================================
+:: CABECALHO PRINCIPAL E VISUAL
+:: =============================================================================
+cls
+echo ===============================================================================
+echo                   !C_CYAN!!C_BOLD!INFOBRASIL - DESINSTALADOR DO INFOBOARD TV!C_RESET!
+echo ===============================================================================
+echo !C_GRAY!  Assistente de Remocao Limpa e Segura de Servicos e Componentes!C_RESET!
+echo.
+
+:: =============================================================================
+:: ETAPA 1/5: DESCOBERTA E CONFIRMACAO DA PASTA INSTALADA
+:: =============================================================================
+:ETAPA_1
+echo -------------------------------------------------------------------------------
+echo !C_CYAN!!C_BOLD![ ETAPA 1/5 ] Localizacao da Pasta do Infoboard TV!C_RESET!
+echo -------------------------------------------------------------------------------
+echo   !C_GRAY!* Buscando instalacao ativa nos servicos e registros do sistema...!C_RESET!
+
+set "DETECTED_DIR="
+
+:: Camada 1: Servico Windows via CIM / WMI
+for /f "usebackq delims=" %%s in (`powershell -NoProfile -Command ^
+    "$svc = Get-CimInstance Win32_Service -Filter 'Name like ''*Infoboard*''' -ErrorAction SilentlyContinue | Select-Object -First 1; "^
+    "if ($svc -and $svc.PathName) { "^
+    "    $path = $svc.PathName.Trim([char]34); "^
+    "    $dir = Split-Path -Parent $path; "^
+    "    if (Test-Path (Join-Path $dir 'server.js')) { Write-Output $dir } "^
+    "    elseif (Test-Path (Join-Path (Split-Path -Parent $dir) 'server.js')) { Write-Output (Split-Path -Parent $dir) } "^
+    "}"`) do (
+    set "DETECTED_DIR=%%s"
+)
+
+:: Camada 2: Atalhos da Area de Trabalho
+if not defined DETECTED_DIR (
+    for /f "usebackq delims=" %%k in (`powershell -NoProfile -Command ^
+        "$ws = New-Object -ComObject WScript.Shell; "^
+        "$desktops = @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('CommonDesktopDirectory')); "^
+        "foreach ($d in $desktops) { "^
+        "    $lnk = Join-Path $d 'Atualizar Infoboard.lnk'; "^
+        "    if (Test-Path $lnk) { "^
+        "        $target = $ws.CreateShortcut($lnk).TargetPath; "^
+        "        $dir = Split-Path -Parent (Split-Path -Parent $target); "^
+        "        if (Test-Path (Join-Path $dir 'server.js')) { Write-Output $dir; break } "^
+        "    } "^
+        "}"`) do (
+        set "DETECTED_DIR=%%k"
+    )
+)
+
+:: Camada 3: Diretorio Relativo do Script (%SCRIPT_DIR%\..)
+if not defined DETECTED_DIR (
+    if exist "%SCRIPT_DIR%\..\server.js" (
+        pushd "%SCRIPT_DIR%\.."
+        set "DETECTED_DIR=!CD!"
+        popd
+    ) else if exist "%SCRIPT_DIR%\server.js" (
+        set "DETECTED_DIR=%SCRIPT_DIR%"
+    )
+)
+
+:: Camada 4: Diretorios Padrao Conhecidos
+if not defined DETECTED_DIR (
+    if exist "C:\Infoboard\server.js" (
+        set "DETECTED_DIR=C:\Infoboard"
+    ) else if exist "D:\Infoboard\server.js" (
+        set "DETECTED_DIR=D:\Infoboard"
+    ) else if exist "%ProgramFiles%\Infoboard\server.js" (
+        set "DETECTED_DIR=%ProgramFiles%\Infoboard"
+    )
+)
+
+if defined DETECTED_DIR (
+    echo   !C_GREEN![OK] Instalacao identificada em:!C_RESET! !C_CYAN!!C_BOLD!!DETECTED_DIR!!C_RESET!
+    echo.
+    echo Opcoes para a pasta do sistema:
+    echo   !C_WHITE![ENTER/S]!C_RESET! Confirmar e desinstalar esta pasta
+    echo   !C_WHITE![   G   ]!C_RESET! Abrir janela grafica para selecionar outra pasta
+    echo   !C_WHITE![   M   ]!C_RESET! Digitar o caminho manualmente
+    echo.
+    set /p "CONFIRM_LOC=Deseja utilizar a pasta '!DETECTED_DIR!'? [ENTER/G/M]: "
+    if "!CONFIRM_LOC!"=="" set "CONFIRM_LOC=S"
+    if /i "!CONFIRM_LOC!"=="S" (
+        set "APP_DIR=!DETECTED_DIR!"
+        goto :VALIDAR_APP_DIR_UNINST
+    )
+    if /i "!CONFIRM_LOC!"=="G" goto :SELECIONAR_GUI_UNINST
+    if /i "!CONFIRM_LOC!"=="M" goto :SELECIONAR_MANUAL_UNINST
+
+    set "APP_DIR=!CONFIRM_LOC!"
+    goto :VALIDAR_APP_DIR_UNINST
+) else (
+    echo   !C_YELLOW![AVISO] Nenhuma pasta de instalacao padrao foi encontrada.!C_RESET!
+)
+
+:SELECIONAR_GUI_UNINST
+echo.
+echo   !C_CYAN!* Abrindo seletor grafico de pastas do Windows...!C_RESET!
+set "SELECTED_GUI_UNINST="
+for /f "usebackq delims=" %%I in (`powershell -NoProfile -Command ^
+    "Add-Type -AssemblyName System.Windows.Forms; "^
+    "$f = New-Object System.Windows.Forms.FolderBrowserDialog; "^
+    "$f.Description = 'Selecione a pasta do Infoboard TV para desinstalacao:'; "^
+    "$f.ShowNewFolderButton = $false; "^
+    "if (Test-Path 'C:\Infoboard') { $f.SelectedPath = 'C:\Infoboard' }; "^
+    "$top = New-Object System.Windows.Forms.Form; "^
+    "$top.TopMost = $true; $top.MinimizeBox = $false; $top.MaximizeBox = $false; $top.ShowInTaskbar = $false; "^
+    "if ($f.ShowDialog($top) -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $f.SelectedPath }"`) do (
+    set "SELECTED_GUI_UNINST=%%I"
+)
+
+if defined SELECTED_GUI_UNINST (
+    set "APP_DIR=!SELECTED_GUI_UNINST!"
+    goto :VALIDAR_APP_DIR_UNINST
+) else (
+    echo   !C_YELLOW![AVISO] Nenhuma pasta selecionada na janela grafica.!C_RESET!
+)
+
+:SELECIONAR_MANUAL_UNINST
+echo.
+set /p "APP_DIR=Digite o caminho completo da pasta do Infoboard: "
+
+:VALIDAR_APP_DIR_UNINST
+:: Sanitizacao de aspas e barras
+set "APP_DIR=!APP_DIR:"=!"
+if "!APP_DIR:~-1!"=="\" set "APP_DIR=!APP_DIR:~0,-1!"
+if "!APP_DIR:~-1!"=="/" set "APP_DIR=!APP_DIR:~0,-1!"
+if "!APP_DIR:~-1!"==":" set "APP_DIR=!APP_DIR!\"
+
+if "!APP_DIR!"=="" (
+    call :ERRO_FATAL "ETAPA 1/5 - Localizacao" "101" "Caminho da pasta nao informado." "Informe o diretorio onde o Infoboard TV foi instalado."
+    exit /b 1
+)
+
+call :PS_RUN ValidateApp
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 1/5 - Pasta" "102" "Pacote infoboard/server.js, raiz segura ou ausencia de reparse nao confirmados." "Selecione somente a pasta da aplicacao."
+    exit /b 1
+)
+
+echo.
+echo   !C_WHITE!Pasta Alvo da Desinstalacao:!C_RESET! !C_CYAN!!C_BOLD!!APP_DIR!!C_RESET!
+echo.
+
+:: =============================================================================
+:: ESCOLHA DO MODO DE DESINSTALACAO E CONFIRMACAO
+:: =============================================================================
+echo ===============================================================================
+echo                !C_WHITE!!C_BOLD!ESCOLHA O MODO DE DESINSTALACAO DESEJADO!C_RESET!
+echo ===============================================================================
+echo.
+echo   !C_GREEN!!C_BOLD![ 1 ] Desinstalacao Padrao (Recomendado)!C_RESET!
+echo         - Para e desregistra o Servico Windows (Infoboard TV)
+echo         - Remove somente regra no Firewall identificada pela pasta
+echo         - Remove somente atalhos explicitamente vinculados a APP_DIR
+echo         - !C_GREEN!MANTEM!C_RESET! os arquivos do projeto, banco e configuracoes (.env)
+echo.
+echo   !C_YELLOW!!C_BOLD![ 2 ] Desinstalacao Completa (Remocao Total)!C_RESET!
+echo         - Executa todas as etapas da Desinstalacao Padrao
+echo         - !C_CYAN!Antes da parada: backup privado de .env, config, data e bancos/estado locais!C_RESET!
+echo         - !C_RED!!C_BOLD!EXCLUI!C_RESET! completamente a pasta de instalacao ('!APP_DIR!')
+echo.
+echo   !C_WHITE![ C ] Cancelar a Operacao e Sair!C_RESET!
+echo.
+echo -------------------------------------------------------------------------------
+set /p "UNINST_MODE=Selecione a opcao desejada [1/2/C]: "
+
+if /i "!UNINST_MODE!"=="C" (
+    echo.
+    echo !C_YELLOW!Desinstalacao cancelada pelo usuario.!C_RESET!
+    pause
+    exit /b 0
+)
+
+if not "!UNINST_MODE!"=="1" if not "!UNINST_MODE!"=="2" (
+    echo.
+    echo !C_YELLOW!Opcao invalida. Operacao cancelada.!C_RESET!
+    exit /b 1
+)
+
+echo.
+echo !C_YELLOW!!C_BOLD![CONFIRMACAO OBRIGATORIA]!C_RESET!
+set /p "FINAL_CONFIRM=Tem certeza absoluta que deseja desinstalar o Infoboard TV? (S/N) [N]: "
+if "!FINAL_CONFIRM!"=="" set "FINAL_CONFIRM=N"
+if /i not "!FINAL_CONFIRM!"=="S" (
+    echo.
+    echo !C_GREEN!Operacao cancelada. Nenhuma alteracao foi feita no sistema.!C_RESET!
+    pause
+    exit /b 0
+)
+
+echo.
+
+
+:: Backup obrigatorio ANTES de qualquer parada no modo completo.
+echo -------------------------------------------------------------------------------
+echo [PRE-PARADA] Backup privado no modo completo.
+if "!UNINST_MODE!"=="2" (
+    call :PS_RUN Backup
+    if errorlevel 1 (
+        call :ERRO_FATAL "Backup antes da parada" "201" "Backup privado ou hashes nao confirmados. Nenhum servico foi parado." "Verifique ACL, espaco e acesso."
+        exit /b 1
+    )
+    echo [OK] Backup privado de .env, config, data e bancos/estado locais conferido.
+)
+
+:ETAPA_2
+echo -------------------------------------------------------------------------------
+echo [ETAPA 2/5] Parada e exclusao somente dos servicos vinculados a APP_DIR.
+echo Servico marcado para exclusao ainda e pendencia, sem sucesso final.
+call :PS_RUN RemoveServices
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 2/5 - Servicos" "202" "Parada, exclusao ou ausencia de processos da pasta nao confirmadas." "Corrija a causa; recusas nao recebem fallback."
+    exit /b 1
+)
+
+echo [OK] Ausencia dos servicos e processos vinculados conferida.
+
+:ETAPA_3
+echo -------------------------------------------------------------------------------
+echo [ETAPA 3/5] Remocao somente da regra identificada pela pasta.
+call :PS_RUN FirewallRemove
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 3/5 - Firewall" "301" "Ausencia da regra vinculada nao confirmada." "Corrija a causa; recusas nao recebem fallback."
+    exit /b 1
+)
+
+echo [OK] Regra vinculada ausente; regras legadas sem vinculo foram preservadas.
+
+:ETAPA_4
+echo -------------------------------------------------------------------------------
+echo [ETAPA 4/5] Atalhos com destino ou marcador explicito de APP_DIR.
+call :PS_RUN ShortcutsRemove
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 4/5 - Atalhos" "401" "Ausencia dos atalhos vinculados nao confirmada." "Corrija a causa; recusas nao recebem fallback."
+    exit /b 1
+)
+
+echo [OK] Atalhos vinculados removidos; atalhos sem vinculo verificavel preservados.
+
+:ETAPA_5
+:: O CMD deve ler um BAT fora de APP_DIR durante a autoexclusao.
+if "!UNINST_MODE!"=="2" if not "%~1"=="--finish-files" (
+    call :PS_RUN FinishFromPrivateHost
+    exit /b !errorlevel!
+)
+echo -------------------------------------------------------------------------------
+echo [ETAPA 5/5] Processamento final dos arquivos.
+if "!UNINST_MODE!"=="2" (
+    cd /d "%SystemRoot%"
+    if errorlevel 1 (
+        call :ERRO_FATAL "ETAPA 5/5 - Diretorio" "502" "Nao foi possivel sair da pasta alvo." "Feche processos que utilizam a pasta."
+        exit /b 1
+    )
+    call :PS_RUN RemoveFiles
+    if errorlevel 1 (
+        call :ERRO_FATAL "ETAPA 5/5 - Exclusao" "501" "Exclusao nao concluida; podem existir arquivos remanescentes. Nenhuma limpeza foi agendada." "Preserve o backup e confira os arquivos."
+        exit /b 1
+    )
+    echo [OK] Pasta excluida e ausencia verificada.
+) else (
+    echo [PRESERVADO] Arquivos e configuracoes em "!APP_DIR!" mantidos.
+)
+echo.
+echo DESINSTALACAO CONCLUIDA: etapas selecionadas verificadas.
+echo Log privado: "%LOCALAPPDATA%\Infoboard\installer-logs\!IB_RUN_ID!\events.log"
+if "!UNINST_MODE!"=="2" echo Backup privado: "%LOCALAPPDATA%\Infoboard\backups\!IB_RUN_ID!"
+pause
+exit /b 0
+
+:PS_RUN
+set "IB_ACTION=%~1"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop'; try { $text=[IO.File]::ReadAllText($env:IB_SCRIPT); $marker='#'+' INFOBOARD_POWERSHELL'; $index=$text.LastIndexOf($marker,[StringComparison]::Ordinal); if($index -lt 0){exit 1}; & ([scriptblock]::Create($text.Substring($index+$marker.Length))) } catch { [Console]::Error.WriteLine('Falha ao carregar etapa PowerShell.'); exit 1 }"
+exit /b %errorlevel%
+
+:READ_PORT
+set "APP_PORT="
+set "IB_ACTION=ReadPort"
+for /f "delims=" %%p in ('powershell -NoProfile -Command "$ErrorActionPreference='Stop'; try { $text=[IO.File]::ReadAllText($env:IB_SCRIPT); $marker='#'+' INFOBOARD_POWERSHELL'; $index=$text.LastIndexOf($marker,[StringComparison]::Ordinal); if($index -lt 0){exit 1}; & ([scriptblock]::Create($text.Substring($index+$marker.Length))) } catch { [Console]::Error.WriteLine('Falha ao carregar etapa PowerShell.'); exit 1 }"') do set "APP_PORT=%%p"
+if not defined APP_PORT exit /b 1
+exit /b 0
+
+:ERRO_FATAL
+set "ERR_STEP=%~1"
+set "IB_ERR_CODE=%~2"
+echo.
+echo [FALHA] !ERR_STEP! - codigo !IB_ERR_CODE!.
+echo %~3
+echo %~4
+call :PS_RUN LogFailure
+if errorlevel 1 echo [AVISO] Falha ao registrar codigo no log privado.
+echo Log privado: "%LOCALAPPDATA%\Infoboard\installer-logs\!IB_RUN_ID!\events.log"
+echo O assistente registra somente etapas e codigos, sem credenciais.
+pause
+exit /b 1

@@ -1852,7 +1852,7 @@ app.get('/api/data', (req, res) => {
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
 
-  const access = getPanelAccess(req);
+  const access = getPanelAccess(req, process.env);
   if (!access) return res.status(401).json({ error: 'Acesso de leitura disponível somente na rede interna autorizada.' });
   
   if (!lastScrapedData) {

@@ -23,6 +23,8 @@ A autenticação técnica que o servidor usa para ler NPX e PrixChat permanece c
 
 `GET /api/data` é a única rota da API. Ela disponibiliza dados de leitura do NPX, PBX, PrixChat, horários, hospedagens e SEFAZ para a TV e a rede interna autorizada. Uma origem não autorizada recebe HTTP 401. Não existem rotas de sessão de analista, login, logout, pausa, despausa, troca de fila nem administração.
 
+A autorização preserva o acesso pela LAN e VPN com origem IPv4 privada: `INFOBOARD_ALLOW_PRIVATE_NETWORK=true`, ou variável ausente nas instalações anteriores. Para restringir a equipamentos específicos, configure `INFOBOARD_ALLOW_PRIVATE_NETWORK=false` e cadastre os IPs diretos em `INFOBOARD_TV_ALLOWED_IPS` ou `INFOBOARD_VIEWER_ALLOWED_IPS`; o próprio servidor continua liberado via loopback. Os IPs devem ser fixos ou reservados no DHCP. VPN com origem fora das faixas privadas requer cadastro explícito. Nenhum login no NPX concede acesso adicional ao InfoBoard.
+
 O painel estático não contém formulários de login nem modais operacionais. O atalho do Beatrix abre um endereço externo oficial, sem passar por rotas do InfoBoard. Clicar no ícone de informações de um card exibe somente suas métricas. Controles de apresentação, como pausar o carrossel de chat, alteram apenas a visualização local.
 
 ## Homologação

@@ -64,6 +64,7 @@ def create_backup(target_dir, logger):
             if '__pycache__' in dirs: dirs.remove('__pycache__')
             for file in files:
                 if file.endswith('.zip'): continue
+                if file == '.env' or file.startswith('.env.'): continue
                 abs_file = os.path.join(root, file)
                 rel_file = os.path.relpath(abs_file, target_dir)
                 zipf.write(abs_file, rel_file)
@@ -138,6 +139,19 @@ def setup_env_and_npm(target_dir, port, env_content, logger):
         if k not in updated_keys and v.strip():
             output_lines.append(f"{k}={v}\n")
             
+    helper_ps1 = os.path.join(os.path.dirname(__file__), "protect-env.ps1")
+    if not os.path.exists(helper_ps1):
+        helper_ps1 = os.path.join(target_dir, "instalador", "protect-env.ps1")
+    if os.path.exists(helper_ps1):
+        res_acl = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", helper_ps1, "-Path", env_file],
+                                 capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        if res_acl.returncode != 0:
+            logger(f"[ERRO] Falha ao proteger permissões do arquivo .env: {res_acl.stderr.strip()}", "err")
+            raise Exception(f"Falha de segurança ao definir ACL no arquivo .env:\n{res_acl.stderr.strip()}")
+        logger("[OK] Permissões restritas (Usuário + SYSTEM) aplicadas ao .env.", "ok")
+    else:
+        raise RuntimeError("Helper de seguranca protect-env.ps1 ausente; arquivo .env nao foi gravado.")
+
     with open(env_file, "w", encoding="utf-8") as f:
         f.writelines(output_lines)
             

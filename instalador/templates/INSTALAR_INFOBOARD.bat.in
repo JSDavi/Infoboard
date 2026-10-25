@@ -1,0 +1,504 @@
+@echo off
+chcp 65001 >nul 2>&1
+setlocal EnableExtensions EnableDelayedExpansion
+set "IB_SCRIPT=%~f0"
+set "IB_SCRIPT_DIR=%~dp0"
+set "IB_RUN_ID=install-%RANDOM%-%RANDOM%"
+title Instalador do Infoboard TV - Infobrasil
+
+:: =============================================================================
+:: CONFIGURACAO DE AMBIENTE E CORES ANSI
+:: =============================================================================
+reg add "HKCU\Console" /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>&1
+for /f "delims=" %%a in ('powershell -NoProfile -Command "[char]27"') do set "ESC=%%a"
+
+set "C_RESET=!ESC![0m"
+set "C_BOLD=!ESC![1m"
+set "C_DIM=!ESC![2m"
+set "C_GREEN=!ESC![92m"
+set "C_YELLOW=!ESC![93m"
+set "C_CYAN=!ESC![96m"
+set "C_RED=!ESC![91m"
+set "C_WHITE=!ESC![97m"
+set "C_GRAY=!ESC![90m"
+
+:: =============================================================================
+:: VERIFICACAO E ELEVACAO DE PRIVILEGIOS DE ADMINISTRADOR (COM AVISO PREVIO)
+:: =============================================================================
+net session >nul 2>&1
+if %errorLevel% neq 0 goto :SOLICITAR_ELEVACAO
+goto :INICIAR_INSTALACAO
+
+:SOLICITAR_ELEVACAO
+cls
+echo.
+echo ===============================================================================
+echo                    !C_CYAN!!C_BOLD!INFOBRASIL - INSTALADOR DO INFOBOARD TV!C_RESET!
+echo ===============================================================================
+echo.
+echo !C_YELLOW!!C_BOLD![AVISO DE ELEVACAO] Privilegios de Administrador Necessarios!C_RESET!
+echo.
+echo  Para realizar a instalacao completa do Infoboard TV, este assistente
+echo  precisa de permissoes administrativas do Windows para:
+echo.
+echo    1. Instalar e registrar o Servico Nativo do Windows (services.msc)
+echo    2. Criar regras de liberacao de porta (3000) no Windows Defender Firewall
+echo    3. Instalar o Node.js LTS (caso ainda nao esteja presente no sistema)
+echo    4. Criar atalhos na Area de Trabalho Publica (para todos os usuarios)
+echo.
+echo -------------------------------------------------------------------------------
+echo !C_WHITE!Uma janela de solicitacao do Windows (UAC) sera exibida ao confirmar.!C_RESET!
+echo.
+set /p "UAC_CONFIRM=Deseja abrir a solicitacao de Administrador agora? (S/N) [S]: "
+if "!UAC_CONFIRM!"=="" set "UAC_CONFIRM=S"
+
+if /i "!UAC_CONFIRM!"=="S" (
+    echo.
+    echo !C_CYAN!Solicitando elevacao ao Windows... Aguarde...!C_RESET!
+    powershell -NoProfile -Command "$ErrorActionPreference='Stop'; try { $p=Start-Process -FilePath $env:IB_SCRIPT -WorkingDirectory $env:IB_SCRIPT_DIR -Verb RunAs -Wait -PassThru; exit $p.ExitCode } catch { exit 1 }" 2>nul
+    if !errorLevel! neq 0 (
+        echo.
+        echo !C_RED!!C_BOLD![FALHA] A solicitacao de elevacao foi negada ou falhou.!C_RESET!
+        echo A recusa encerra a operacao, sem tentativa alternativa.
+        pause
+        exit /b 1
+    )
+    exit /b 0
+) else (
+    echo.
+    echo !C_YELLOW!Instalacao cancelada pelo usuario antes da elevacao.!C_RESET!
+    pause
+    exit /b 0
+)
+
+:INICIAR_INSTALACAO
+call :PS_RUN InitLog
+if errorlevel 1 (
+    echo [FALHA] Nao foi possivel preparar log privado. Operacao interrompida.
+    pause
+    exit /b 1
+)
+echo Log privado: "%LOCALAPPDATA%\Infoboard\installer-logs\!IB_RUN_ID!\events.log"
+:: Ancorar diretorio atual no diretorio onde o script esta localizado
+cd /d "%~dp0"
+if errorlevel 1 exit /b 1
+set "SCRIPT_DIR=%~dp0"
+if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+
+:: =============================================================================
+:: CABECALHO PRINCIPAL E VISUAL DAS ETAPAS
+:: =============================================================================
+cls
+echo ===============================================================================
+echo                    !C_CYAN!!C_BOLD!INFOBRASIL - INSTALADOR DO INFOBOARD TV!C_RESET!
+echo ===============================================================================
+echo !C_GRAY!  Versao: 1.0.0 ^| Repositorio: https://github.com/JSDavi/Infoboard.git!C_RESET!
+echo.
+echo !C_BOLD!Etapas do Assistente de Instalacao:!C_RESET!
+echo   !C_CYAN![ 1/6 ]!C_RESET! Verificacao e Preparacao do Node.js LTS
+echo   !C_CYAN![ 2/6 ]!C_RESET! Selecao de Pasta e Copia de Arquivos do Projeto
+echo   !C_CYAN![ 3/6 ]!C_RESET! Assistente de Configuracao de Ambiente e Credenciais (.env)
+echo   !C_CYAN![ 4/6 ]!C_RESET! Instalacao de Dependencias de Producao (npm ci)
+echo   !C_CYAN![ 5/6 ]!C_RESET! Liberacao de Porta no Windows Defender Firewall (PORT do .env)
+echo   !C_CYAN![ 6/6 ]!C_RESET! Registro do Servico Windows (services.msc) e Criacao de Atalhos
+echo ===============================================================================
+echo.
+
+:: =============================================================================
+:: ETAPA 1/6: VERIFICACAO E PREPARACAO DO NODE.JS LTS
+:: =============================================================================
+:ETAPA_1
+echo -------------------------------------------------------------------------------
+echo [ETAPA 1/6] Validar Node 22 ou superior e npm funcional.
+echo Se necessario: MSI oficial LTS com SHA256 e assinatura verificados.
+call :PS_RUN EnsureNode
+set "IB_NATIVE_EXIT=!errorlevel!"
+if "!IB_NATIVE_EXIT!"=="3010" (
+    echo [REINICIO NECESSARIO] Reinicie o Windows em horario autorizado e execute novamente.
+    pause
+    exit /b 3010
+)
+if not "!IB_NATIVE_EXIT!"=="0" (
+    call :ERRO_FATAL "ETAPA 1/6 - Node" "101" "Runtime nao confirmado. Operacao interrompida." "Confira o diagnostico Node, internet, ACL e MSI."
+    exit /b 1
+)
+echo [OK] Node e npm validados. Proxima etapa: pasta e arquivos.
+
+:ETAPA_2
+)
+
+echo.
+echo !C_YELLOW!!C_BOLD![ATENCAO] O Node.js NAO foi encontrado neste computador.!C_RESET!
+echo O Node.js LTS e obrigatorio para a execucao do servidor do Infoboard TV.
+echo.
+set /p INSTALAR_NODE="Deseja baixar e instalar o Node.js LTS automaticamente agora? (S/N) [S]: "
+if "!INSTALAR_NODE!"==" " set "INSTALAR_NODE=S"
+if "!INSTALAR_NODE!"=="" set "INSTALAR_NODE=S"
+
+if /i not "!INSTALAR_NODE!"=="S" (
+    call :ERRO_FATAL "ETAPA 1/6 - Node.js" "101" "O Node.js e obrigatorio para o Infoboard, mas a instalacao foi recusada." "Instale o Node.js LTS manualmente a partir de https://nodejs.org e execute o instalador novamente."
+    exit /b 1
+)
+
+echo.
+echo   !C_CYAN!* Baixando instalador oficial do Node.js LTS (64-bit)...!C_RESET!
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$msi = Join-Path $env:TEMP 'nodejs_installer.msi'; "^
+    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; "^
+    "Invoke-WebRequest -Uri 'https://nodejs.org/dist/v20.18.0/node-v20.18.0-x64.msi' -OutFile $msi -UseBasicParsing"
+if %errorLevel% neq 0 (
+    call :ERRO_FATAL "ETAPA 1/6 - Download Node.js" "102" "Nao foi possivel baixar o instalador do Node.js." "Verifique a conexao de internet ou instale o Node.js manualmente via https://nodejs.org."
+    exit /b 1
+)
+
+echo   !C_CYAN!* Instalando Node.js de forma silenciosa... Aguarde...!C_RESET!
+msiexec /i "%TEMP%\nodejs_installer.msi" /quiet /norestart
+if %errorLevel% neq 0 (
+    call :ERRO_FATAL "ETAPA 1/6 - Instalacao Node.js" "103" "O instalador MSI do Node.js retornou erro." "Execute o instalador baixado em '%TEMP%\nodejs_installer.msi' manualmente como Administrador."
+    exit /b 1
+)
+
+set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;!PATH!"
+node -v >nul 2>&1
+if !errorLevel! neq 0 (
+    if exist "%ProgramFiles%\nodejs\node.exe" (
+        set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;!PATH!"
+    )
+)
+
+for /f "delims=" %%v in ('node -v 2^>nul') do set "NODE_VER=%%v"
+if "!NODE_VER!"=="" (
+    call :ERRO_FATAL "ETAPA 1/6 - Validacao Node.js" "104" "Node.js instalado, mas nao acessivel no PATH nesta sessao." "Feche todas as janelas do terminal e execute o instalador novamente."
+    exit /b 1
+)
+
+echo   !C_GREEN![OK] Node.js instalado e configurado com sucesso: !NODE_VER!!C_RESET!
+echo.
+
+:: =============================================================================
+:: ETAPA 2/6: SELECAO DE PASTA E COPIA DE ARQUIVOS DO PROJETO
+:: =============================================================================
+:ETAPA_2
+echo -------------------------------------------------------------------------------
+echo !C_CYAN!!C_BOLD![ ETAPA 2/6 ] Selecao de Pasta e Preparacao dos Arquivos!C_RESET!
+echo -------------------------------------------------------------------------------
+
+:: Definir pasta padrao sugerida
+set "DEFAULT_TARGET=C:\Infoboard"
+set "TARGET_DIR=!DEFAULT_TARGET!"
+
+echo Escolha como deseja definir a pasta de instalacao:
+echo   !C_WHITE![ENTER]!C_RESET! Usar o diretorio padrao recomendado: !C_CYAN!!DEFAULT_TARGET!!C_RESET!
+echo   !C_WHITE![  G  ]!C_RESET! Abrir janela grafica do Windows para procurar pasta
+echo   !C_WHITE![  M  ]!C_RESET! Digitar um caminho personalizado no console
+echo.
+set /p "CHOICE_DIR=Opcao desejada [ENTER/G/M]: "
+
+if /i "!CHOICE_DIR!"=="G" goto :SELECIONAR_GUI
+if /i "!CHOICE_DIR!"=="M" goto :SELECIONAR_MANUAL
+if "!CHOICE_DIR!"=="" goto :PASTA_DEFINIDA
+
+:: Se o usuario colou ou digitou um caminho diretamente:
+set "TARGET_DIR=!CHOICE_DIR!"
+goto :PASTA_DEFINIDA
+
+:SELECIONAR_GUI
+echo.
+echo   !C_CYAN!* Abrindo seletor grafico de pastas do Windows...!C_RESET!
+set "SELECTED_GUI="
+for /f "usebackq delims=" %%I in (`powershell -NoProfile -Command ^
+    "Add-Type -AssemblyName System.Windows.Forms; "^
+    "$f = New-Object System.Windows.Forms.FolderBrowserDialog; "^
+    "$f.Description = 'Selecione a pasta de instalacao para o Infoboard TV:'; "^
+    "$f.ShowNewFolderButton = $true; "^
+    "if (Test-Path '!DEFAULT_TARGET!') { $f.SelectedPath = '!DEFAULT_TARGET!' }; "^
+    "$top = New-Object System.Windows.Forms.Form; "^
+    "$top.TopMost = $true; $top.MinimizeBox = $false; $top.MaximizeBox = $false; $top.ShowInTaskbar = $false; "^
+    "if ($f.ShowDialog($top) -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $f.SelectedPath }"`) do (
+    set "SELECTED_GUI=%%I"
+)
+
+if defined SELECTED_GUI (
+    set "TARGET_DIR=!SELECTED_GUI!"
+    goto :PASTA_DEFINIDA
+) else (
+    echo   !C_YELLOW![AVISO] Nenhuma pasta selecionada na janela grafica. Usando fallback manual.!C_RESET!
+)
+
+:SELECIONAR_MANUAL
+echo.
+set /p "TARGET_DIR=Digite o caminho completo da pasta [Padrao: !DEFAULT_TARGET!]: "
+if "!TARGET_DIR!"=="" set "TARGET_DIR=!DEFAULT_TARGET!"
+
+:PASTA_DEFINIDA
+echo.
+echo [ETAPA 2/6] Validando origem, pacote infoboard/server.js e ausencia de reparse points.
+echo Segredos, backups, .git_old, .maestri e docs/auditoria nao serao copiados.
+echo config/analysts_map.json existente sera preservado.
+echo Qualquer falha do Robocopy interrompe a instalacao, sem fallback.
+call :PS_RUN CopySource
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 2/6 - Copia" "201" "Origem, destino ou copia nao confirmados." "Corrija a causa; recusas nao recebem fallback."
+    exit /b 1
+)
+call :PS_RUN ValidateApp
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 2/6 - Pacote" "202" "Identidade do pacote de destino nao confirmada." "Corrija a causa; recusas nao recebem fallback."
+    exit /b 1
+)
+
+:: =============================================================================
+:: ETAPA 3/6: ASSISTENTE DE CONFIGURACAO E CREDENCIAIS (.ENV)
+:: =============================================================================
+:ETAPA_3
+echo -------------------------------------------------------------------------------
+echo !C_CYAN!!C_BOLD![ ETAPA 3/6 ] Assistente de Configuracao (.env)!C_RESET!
+echo -------------------------------------------------------------------------------
+
+set "APP_PORT=3000"
+if exist "!TARGET_DIR!\.env" (
+    call :READ_PORT
+    if errorlevel 1 (
+        call :ERRO_FATAL "ETAPA 3/6 - Porta" "303" "PORT existente invalido ou nao legivel. Configuracao preservada." "Corrija o PORT no .env antes de repetir."
+        exit /b 1
+    )
+)
+if exist "!TARGET_DIR!\.env" (
+    echo   !C_GREEN![OK] Arquivo .env existente detectado em '!TARGET_DIR!\.env'.!C_RESET!
+    echo.
+    set /p "RECONF_ENV=Deseja manter as configuracoes atuais do .env? [S/N] [S]: "
+    if "!RECONF_ENV!"=="" set "RECONF_ENV=S"
+    if /i "!RECONF_ENV!"=="S" (
+        echo   !C_GREEN![OK] Credenciais e configuracoes atuais preservadas.!C_RESET!
+        echo.
+        goto :ETAPA_4
+    )
+)
+
+echo.
+echo ===============================================================================
+echo                    !C_CYAN!!C_BOLD!ASSISTENTE DE CONFIGURACAO DE CREDENCIAIS!C_RESET!
+echo ===============================================================================
+echo !C_GRAY!Os dados informados serao gravados com seguranca no arquivo .env local.!C_RESET!
+echo.
+
+echo !C_WHITE!!C_BOLD!--- 1. Credenciais do NPXManager ---!C_RESET!
+set /p "NPX_EM=Email de acesso ao NPX: "
+set /p "NPX_PW=Senha de acesso ao NPX: "
+echo.
+
+echo !C_WHITE!!C_BOLD!--- 2. Credenciais do PrixChat ---!C_RESET!
+set /p "PRIX_EM=Email de acesso ao PrixChat: "
+set /p "PRIX_PW=Senha de acesso ao PrixChat: "
+echo.
+
+echo !C_WHITE!!C_BOLD!--- 3. Credenciais da API PBX (Nossa Telecom) ---!C_RESET!
+set /p "PBX_URL=URL Base da API PBX [Padrao: https://sip33.tsinfo.net.br]: "
+if "!PBX_URL!"=="" set "PBX_URL=https://sip33.tsinfo.net.br"
+set /p "PBX_TK=Token da API PBX: "
+set /p "PBX_KEY=Chave API Key PBX: "
+echo.
+
+echo !C_WHITE!!C_BOLD!--- 4. Alertas no Telegram (Opcional) ---!C_RESET!
+set /p "ATIVAR_TG=Deseja habilitar alertas de SLA critico no Telegram? (S/N) [N]: "
+if "!ATIVAR_TG!"=="" set "ATIVAR_TG=N"
+set "TG_ENABLE=false"
+set "TG_TOKEN="
+set "TG_CHAT="
+if /i "!ATIVAR_TG!"=="S" (
+    set "TG_ENABLE=true"
+    set /p "TG_TOKEN=Token do Bot do Telegram: "
+    set /p "TG_CHAT=ID do Chat do Telegram (ex: -100...): "
+)
+
+echo.
+echo   !C_CYAN!* Restringindo permissoes de acesso (ACL: Usuario Atual + SYSTEM) antes de gravar segredos...!C_RESET!
+call :PS_RUN ProtectEnv
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 3/6 - Permissoes .env" "302" "Falha ao definir permissoes restritas (ACL) para o arquivo .env." "Verifique se a pasta de destino permite aplicar permissoes de seguranca."
+    exit /b 1
+)
+
+echo   !C_CYAN!* Gravando arquivo .env de forma protegida contra caracteres especiais...!C_RESET!
+
+:: Gravacao protegida via PowerShell nativo para preservar caracteres como !, %, ^, &, <, >
+powershell -NoProfile -Command ^
+    "$ErrorActionPreference='Stop'; $envPath = Join-Path -Path $env:TARGET_DIR -ChildPath '.env'; "^
+    "$content = @( "^
+    "    '# =============================================================================', "^
+    "    '# Configuracoes Gerais do Servidor Infoboard TV', "^
+    "    '# =============================================================================', "^
+    "    ('PORT=' + $env:APP_PORT), "^
+    "    'UPDATE_INTERVAL_SECONDS=5', "^
+    "    'NODE_ENV=production', "^
+    "    'LOG_LEVEL=info', "^
+    "    '', "^
+    "    '# =============================================================================', "^
+    "    '# Credenciais NPXManager', "^
+    "    '# =============================================================================', "^
+    "    ('NPX_EMAIL=' + [System.Environment]::GetEnvironmentVariable('NPX_EM')), "^
+    "    ('NPX_PASSWORD=' + [System.Environment]::GetEnvironmentVariable('NPX_PW')), "^
+    "    '', "^
+    "    '# =============================================================================', "^
+    "    '# Credenciais PrixChat', "^
+    "    '# =============================================================================', "^
+    "    ('PRIXCHAT_EMAIL=' + [System.Environment]::GetEnvironmentVariable('PRIX_EM')), "^
+    "    ('PRIXCHAT_PASSWORD=' + [System.Environment]::GetEnvironmentVariable('PRIX_PW')), "^
+    "    'PRIXCHAT_BACKEND=https://backapp.prixchat.com.br', "^
+    "    '', "^
+    "    '# =============================================================================', "^
+    "    '# Credenciais API PBX (Nossa Telecom)', "^
+    "    '# =============================================================================', "^
+    "    ('PBX_BASE_URL=' + [System.Environment]::GetEnvironmentVariable('PBX_URL')), "^
+    "    ('PBX_API_TOKEN=' + [System.Environment]::GetEnvironmentVariable('PBX_TK')), "^
+    "    ('PBX_API_KEY=' + [System.Environment]::GetEnvironmentVariable('PBX_KEY')), "^
+    "    'PBX_TLS_REJECT_UNAUTHORIZED=true', "^
+    "    '', "^
+    "    '# =============================================================================', "^
+    "    '# Limites de Alerta de Fila e Espera (SLA)', "^
+    "    '# =============================================================================', "^
+    "    'ALERT_QUEUE_WARNING=2', "^
+    "    'ALERT_QUEUE_CRITICAL=4', "^
+    "    'ALERT_WAIT_WARNING=180', "^
+    "    'ALERT_WAIT_CRITICAL=300', "^
+    "    '', "^
+    "    '# =============================================================================', "^
+    "    '# Alertas no Telegram', "^
+    "    '# =============================================================================', "^
+    "    ('ENABLE_TELEGRAM_ALERTS=' + [System.Environment]::GetEnvironmentVariable('TG_ENABLE')), "^
+    "    ('TELEGRAM_BOT_TOKEN=' + [System.Environment]::GetEnvironmentVariable('TG_TOKEN')), "^
+    "    ('TELEGRAM_CHAT_ID=' + [System.Environment]::GetEnvironmentVariable('TG_CHAT')), "^
+    "    'TELEGRAM_SLA_LIMIT_SEC=420' "^
+    "); "^
+    "[System.IO.File]::WriteAllLines($envPath, $content, [System.Text.Encoding]::UTF8)" >nul 2>&1
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 3/6 - Gravacao" "301" "Gravacao do .env nao concluida." "Verifique permissoes; preserve as credenciais."
+    exit /b 1
+)
+
+if not exist "!TARGET_DIR!\.env" (
+    call :ERRO_FATAL "ETAPA 3/6 - Gravacao .env" "301" "Nao foi possivel gerar o arquivo .env no diretorio alvo." "Verifique se a pasta de destino esta bloqueada contra gravacao."
+    exit /b 1
+)
+
+echo   !C_GREEN![OK] Arquivo .env gerado com sucesso em UTF-8!!C_RESET!
+echo.
+
+
+:ETAPA_4
+call :PS_RUN ProtectEnv
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 4/6 - ACL" "405" "Configuracao nao protegida." "Confira permissoes antes de continuar."
+    exit /b 1
+)
+:: Limpar credenciais do ambiente antes dos processos npm/servico.
+set "NPX_EM="
+set "NPX_PW="
+set "PRIX_EM="
+set "PRIX_PW="
+set "PBX_URL="
+set "PBX_TK="
+set "PBX_KEY="
+set "TG_TOKEN="
+set "TG_CHAT="
+echo -------------------------------------------------------------------------------
+echo [ETAPA 4/6] Instalacao e verificacao das dependencias de producao.
+call :PS_RUN ValidateApp
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 4/6 - Pasta" "402" "Pasta alterada ou identidade invalida." "Corrija a causa; recusas nao recebem fallback."
+    exit /b 1
+)
+
+cd /d "!TARGET_DIR!"
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 4/6 - Diretorio" "403" "Nao foi possivel entrar na pasta validada." "Verifique permissoes."
+    exit /b 1
+)
+call :PS_RUN Dependencies
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 4/6 - NPM" "401" "Dependencias nao confirmadas." "Confira o codigo e npm.log privado, internet/proxy e lockfile."
+    exit /b 1
+)
+echo [OK] npm concluiu e node-windows foi localizado.
+
+:ETAPA_5
+echo -------------------------------------------------------------------------------
+echo [ETAPA 5/6] Firewall da pasta validada, usando PORT do .env.
+echo Regras legadas sem vinculo verificavel com esta pasta serao preservadas.
+call :PS_RUN FirewallInstall
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 5/6 - Firewall" "501" "Regra, programa ou porta nao confirmados." "Corrija a causa; recusas nao recebem fallback."
+    exit /b 1
+)
+
+echo [OK] Regra de entrada, programa e porta conferidos.
+
+:ETAPA_6
+echo -------------------------------------------------------------------------------
+echo [ETAPA 6/6] Servico vinculado a pasta, HTTP e atalhos.
+call :PS_RUN ValidateApp
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 6/6 - Identidade" "601" "Pasta invalida antes dos servicos." "Corrija a causa; recusas nao recebem fallback."
+    exit /b 1
+)
+call :PS_RUN StopServices
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 6/6 - Parada" "602" "Parada nao confirmada ou servico de outra instalacao encontrado." "Corrija a causa; recusas nao recebem fallback."
+    exit /b 1
+)
+
+if not exist "!TARGET_DIR!\instalador\install_service.js" (
+    call :ERRO_FATAL "ETAPA 6/6 - Script" "603" "Script de registro ausente." "Restaure instalador/install_service.js."
+    exit /b 1
+)
+call :PS_RUN InstallService
+set "IB_NATIVE_EXIT=!errorlevel!"
+if not "!IB_NATIVE_EXIT!"=="0" (
+    echo [FALHA] Registro do servico retornou codigo !IB_NATIVE_EXIT!.
+    call :ERRO_FATAL "ETAPA 6/6 - Registro" "604" "Script de registro retornou falha." "Confira o servico e o Visualizador de Eventos."
+    exit /b 1
+)
+call :PS_RUN VerifyService
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 6/6 - Resultado" "605" "Servico automatico, processo da porta ou HTTP 200 nao confirmados." "Corrija a causa; recusas nao recebem fallback."
+    exit /b 1
+)
+call :PS_RUN ShortcutsInstall
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 6/6 - Atalhos" "606" "Atalhos nao confirmados ou vinculados a outra instalacao." "Corrija a causa; recusas nao recebem fallback."
+    exit /b 1
+)
+
+echo.
+echo INSTALACAO CONCLUIDA: pacote, npm, firewall, servico e HTTP verificados.
+echo Pasta: "!TARGET_DIR!"
+echo O atalho Abrir Painel Infoboard usa a porta configurada no .env.
+echo Log privado: "%LOCALAPPDATA%\Infoboard\installer-logs\!IB_RUN_ID!\events.log"
+pause
+exit /b 0
+
+:PS_RUN
+set "IB_ACTION=%~1"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop'; try { $text=[IO.File]::ReadAllText($env:IB_SCRIPT); $marker='#'+' INFOBOARD_POWERSHELL'; $index=$text.LastIndexOf($marker,[StringComparison]::Ordinal); if($index -lt 0){exit 1}; & ([scriptblock]::Create($text.Substring($index+$marker.Length))) } catch { [Console]::Error.WriteLine('Falha ao carregar etapa PowerShell.'); exit 1 }"
+exit /b %errorlevel%
+
+:READ_PORT
+set "APP_PORT="
+set "IB_ACTION=ReadPort"
+for /f "delims=" %%p in ('powershell -NoProfile -Command "$ErrorActionPreference='Stop'; try { $text=[IO.File]::ReadAllText($env:IB_SCRIPT); $marker='#'+' INFOBOARD_POWERSHELL'; $index=$text.LastIndexOf($marker,[StringComparison]::Ordinal); if($index -lt 0){exit 1}; & ([scriptblock]::Create($text.Substring($index+$marker.Length))) } catch { [Console]::Error.WriteLine('Falha ao carregar etapa PowerShell.'); exit 1 }"') do set "APP_PORT=%%p"
+if not defined APP_PORT exit /b 1
+exit /b 0
+
+:ERRO_FATAL
+set "ERR_STEP=%~1"
+set "IB_ERR_CODE=%~2"
+echo.
+echo [FALHA] !ERR_STEP! - codigo !IB_ERR_CODE!.
+echo %~3
+echo %~4
+call :PS_RUN LogFailure
+if errorlevel 1 echo [AVISO] Falha ao registrar codigo no log privado.
+echo Log privado: "%LOCALAPPDATA%\Infoboard\installer-logs\!IB_RUN_ID!\events.log"
+echo O assistente registra somente etapas e codigos, sem credenciais.
+pause
+exit /b 1

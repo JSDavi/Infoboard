@@ -1,43 +1,11 @@
-# Guia de Instalação e Atualização do Infoboard (Servidor Windows)
+# Instalação e manutenção do InfoBoard no Windows
 
-Este guia prático explica como implantar e atualizar o painel do **Infoboard (NPX, PrixChat e PBX)** no Servidor Principal da empresa. O sistema roda como **Serviço Nativo do Windows** em segundo plano e pode ser acessado por qualquer TV ou computador da rede local.
+O roteiro atualizado está em [README.md](README.md), com etapas, códigos de saída, recuperação e limites dos testes.
 
----
+Para atualizar pelo arquivo recebido no Telegram, salve `ATUALIZAR_INFOBOARD.bat` na pasta instalada do InfoBoard, dê dois cliques, aceite o UAC quando autorizado e confirme a pasta mostrada. O BAT contém seu próprio fluxo; não exige copiar um helper junto. Ele baixa a revisão publicada no GitHub; alterações locais ainda não publicadas não chegam ao servidor.
 
-## 1. INSTALAÇÃO AUTOMÁTICA (1 CLIQUE)
+O projeto exige Node 22 ou superior com npm funcional. Instalador e atualizador verificam o runtime e podem instalar o MSI oficial LTS quando necessário. Quando o Windows exige reinício, o processo informa isso e não avança como se estivesse concluído.
 
-Tudo foi automatizado através dos scripts na pasta `instalador/`.
+As etapas e os diagnósticos permanecem na tela. Só considere atualização concluída quando houver confirmação do serviço e do HTTP. Preserve `.env`, mapa local e backups privados; nunca os envie ao GitHub ou junto do chamado de suporte.
 
-### Como Instalar no Servidor:
-
-1. **Acesse a pasta `instalador/`** (ou copie apenas a pasta `instalador/` para o novo computador/servidor).
-2. **Execute o `INSTALAR_INFOBOARD.bat`** com dois cliques.
-3. O instalador fará todo o processo de forma autônoma:
-   - 🔍 **Verificação do Node.js**: Detecta se está instalado (ou baixa e instala para você).
-   - 📥 **Sincronização com o GitHub**: Clona ou baixa os arquivos mais recentes do repositório.
-   - ⚙️ **Assistente de Credenciais (`.env`)**: Solicita os logins/senhas do NPX e PrixChat para configurar o arquivo de ambiente.
-   - 📦 **Instalação das Dependências**: Executa o `npm install` automaticamente.
-   - 🛡️ **Firewall do Windows**: Libera a porta `3000` para acesso das TVs na rede local.
-   - 🔄 **Serviço Nativo do Windows (`services.msc`)**: Registra o serviço `Infoboard TV` que inicia no boot e recupera em caso de falha.
-   - 🖥️ **Atalhos**: Cria atalhos na Área de Trabalho para abrir o painel e atualizar com 1 clique.
-
----
-
-## 2. COMO ATUALIZAR O SISTEMA
-
-Sempre que houver atualizações ou novas funcionalidades enviadas ao GitHub:
-
-1. No servidor/terminal, dê um duplo clique no atalho **`Atualizar Infoboard`** na Área de Trabalho (ou execute `instalador\ATUALIZAR_INFOBOARD.bat`).
-2. O script irá:
-   - Pausar o serviço Windows com segurança;
-   - Puxar as últimas alterações do GitHub (`git pull` ou download);
-   - Atualizar dependências (`npm install`);
-   - Reiniciar o serviço automaticamente em menos de 5 segundos.
-
----
-
-## 3. GERENCIAMENTO E DESINSTALAÇÃO
-
-- **Ver Status do Serviço**: Abra o `services.msc` no Windows e procure por **Infoboard TV**.
-- **Desinstalação**: Para remover o serviço e limpar regras de firewall, execute `instalador\DESINSTALAR_INFOBOARD.bat`.
-- **Acesso na Rede**: `http://IP_DO_SERVIDOR:3000` (ex: `http://192.168.1.100:3000`).
+Os testes automatizados usam pastas temporárias e substituem ações de MSI, serviços e firewall. A validação de implantação real em um Windows de homologação separado deve preceder o uso em produção. Nenhum prazo fixo de atualização é garantido.

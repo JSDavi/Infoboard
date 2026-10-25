@@ -7,7 +7,7 @@ title Instalador do Infoboard TV - Infobrasil
 :: CONFIGURACAO DE AMBIENTE E CORES ANSI
 :: =============================================================================
 reg add "HKCU\Console" /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>&1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "[char]27"') do set "ESC=%%a"
+for /f "delims=" %%a in ('powershell -NoProfile -Command "[char]27"') do set "ESC=%%a"
 
 set "C_RESET=!ESC![0m"
 set "C_BOLD=!ESC![1m"
@@ -52,7 +52,7 @@ if "!UAC_CONFIRM!"=="" set "UAC_CONFIRM=S"
 if /i "!UAC_CONFIRM!"=="S" (
     echo.
     echo !C_CYAN!Solicitando elevacao ao Windows... Aguarde...!C_RESET!
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -WorkingDirectory '%~dp0' -Verb RunAs" 2>nul
+    powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -WorkingDirectory '%~dp0' -Verb RunAs" 2>nul
     if !errorLevel! neq 0 (
         echo.
         echo !C_RED!!C_BOLD![FALHA] A solicitacao de elevacao foi negada ou falhou.!C_RESET!
@@ -83,13 +83,13 @@ cls
 echo ===============================================================================
 echo                    !C_CYAN!!C_BOLD!INFOBRASIL - INSTALADOR DO INFOBOARD TV!C_RESET!
 echo ===============================================================================
-echo !C_GRAY!  Versao: 1.0.0 ^| Repositorio: https://github.com/JSDavi/Infoboard.git!C_RESET!
+echo !C_GRAY!  Versao: 1.2.0 ^| Pacote local de distribuicao!C_RESET!
 echo.
 echo !C_BOLD!Etapas do Assistente de Instalacao:!C_RESET!
 echo   !C_CYAN![ 1/6 ]!C_RESET! Verificacao e Preparacao do Node.js LTS
 echo   !C_CYAN![ 2/6 ]!C_RESET! Selecao de Pasta e Copia de Arquivos do Projeto
 echo   !C_CYAN![ 3/6 ]!C_RESET! Assistente de Configuracao de Ambiente e Credenciais (.env)
-echo   !C_CYAN![ 4/6 ]!C_RESET! Instalacao de Dependencias de Producao (npm install)
+echo   !C_CYAN![ 4/6 ]!C_RESET! Instalacao de Dependencias de Producao (npm ci)
 echo   !C_CYAN![ 5/6 ]!C_RESET! Liberacao de Porta no Windows Defender Firewall (Porta 3000)
 echo   !C_CYAN![ 6/6 ]!C_RESET! Registro do Servico Windows (services.msc) e Criacao de Atalhos
 echo ===============================================================================
@@ -104,75 +104,47 @@ echo !C_CYAN!!C_BOLD![ ETAPA 1/6 ] Verificacao e Preparacao do Node.js LTS!C_RES
 echo -------------------------------------------------------------------------------
 echo   !C_GRAY!* Checando presenca do Node.js no sistema...!C_RESET!
 
-set "NODE_OK=0"
-node -v >nul 2>&1
-if %errorLevel% equ 0 set "NODE_OK=1"
-
-if "!NODE_OK!"=="0" (
-    where node >nul 2>&1
-    if !errorLevel! equ 0 set "NODE_OK=1"
-)
-
-if "!NODE_OK!"=="0" (
-    if exist "%ProgramFiles%\nodejs\node.exe" (
-        set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;!PATH!"
-        set "NODE_OK=1"
+:: Mesmo contrato seguro do atualizador: Node >=22 com npm funcional.
+:: Reaproveita um runtime compativel; caso contrario usa o MSI LTS verificado,
+:: confere SHA256 e assinatura digital antes de instalar.
+set "NODE_RUNTIME_FILE=%TEMP%\infoboard-node-%RANDOM%%RANDOM%.txt"
+powershell.exe -NoLogo -NoProfile -Command ^
+    "$ErrorActionPreference='Stop'; try { "^
+    "  $helper=Join-Path $env:SCRIPT_DIR 'ensure-node.ps1'; "^
+    "  if(-not (Test-Path -LiteralPath $helper -PathType Leaf)){throw 'Arquivo ensure-node.ps1 ausente'}; "^
+    "  . $helper; "^
+    "  $runtime=Invoke-IBEnsureNode -LogDirectory (Join-Path $env:LOCALAPPDATA 'Infoboard\installer-logs'); "^
+    "  if($runtime.RebootRequired){Write-Host '[Node] Reinicie o Windows e execute o instalador novamente.'; exit 10}; "^
+    "  Write-Output ('IB_NODE_DIR=' + [IO.Path]::GetDirectoryName($runtime.NodePath)); exit 0 "^
+    "} catch {Write-Host '[Node] Falha na validacao/instalacao. Confira o diagnostico exibido acima.'; exit 1}" > "!NODE_RUNTIME_FILE!" 2>&1
+set "NODE_RESULT=!errorlevel!"
+if exist "!NODE_RUNTIME_FILE!" type "!NODE_RUNTIME_FILE!"
+set "NODE_DIR="
+if "!NODE_RESULT!"=="0" (
+    for /f "usebackq tokens=1,* delims==" %%a in ("!NODE_RUNTIME_FILE!") do (
+        if "%%a"=="IB_NODE_DIR" set "NODE_DIR=%%b"
     )
 )
-
-if "!NODE_OK!"=="1" (
-    for /f "delims=" %%v in ('node -v 2^>nul') do set "NODE_VER=%%v"
-    echo   !C_GREEN![OK] Node.js detectado com sucesso: !NODE_VER!!C_RESET!
-    echo.
-    goto :ETAPA_2
-)
-
-echo.
-echo !C_YELLOW!!C_BOLD![ATENCAO] O Node.js NAO foi encontrado neste computador.!C_RESET!
-echo O Node.js LTS e obrigatorio para a execucao do servidor do Infoboard TV.
-echo.
-set /p INSTALAR_NODE="Deseja baixar e instalar o Node.js LTS automaticamente agora? (S/N) [S]: "
-if "!INSTALAR_NODE!"==" " set "INSTALAR_NODE=S"
-if "!INSTALAR_NODE!"=="" set "INSTALAR_NODE=S"
-
-if /i not "!INSTALAR_NODE!"=="S" (
-    call :ERRO_FATAL "ETAPA 1/6 - Node.js" "101" "O Node.js e obrigatorio para o Infoboard, mas a instalacao foi recusada." "Instale o Node.js LTS manualmente a partir de https://nodejs.org e execute o instalador novamente."
+if exist "!NODE_RUNTIME_FILE!" del /q "!NODE_RUNTIME_FILE!" >nul 2>&1
+if "!NODE_RESULT!"=="10" (
+    call :ERRO_FATAL "ETAPA 1/6 - Reinicio Node.js" "105" "O Node.js requer reinicio do Windows para concluir a instalacao." "Reinicie o computador e execute o instalador novamente."
     exit /b 1
 )
-
-echo.
-echo   !C_CYAN!* Baixando instalador oficial do Node.js LTS (64-bit)...!C_RESET!
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$msi = Join-Path $env:TEMP 'nodejs_installer.msi'; "^
-    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; "^
-    "Invoke-WebRequest -Uri 'https://nodejs.org/dist/v20.18.0/node-v20.18.0-x64.msi' -OutFile $msi -UseBasicParsing"
-if %errorLevel% neq 0 (
-    call :ERRO_FATAL "ETAPA 1/6 - Download Node.js" "102" "Nao foi possivel baixar o instalador do Node.js." "Verifique a conexao de internet ou instale o Node.js manualmente via https://nodejs.org."
+if not "!NODE_RESULT!"=="0" (
+    call :ERRO_FATAL "ETAPA 1/6 - Node.js" "101" "Nao foi possivel validar ou instalar o Node.js." "Confira o arquivo ensure-node.ps1, internet, permissoes e logs privados do instalador."
     exit /b 1
 )
-
-echo   !C_CYAN!* Instalando Node.js de forma silenciosa... Aguarde...!C_RESET!
-msiexec /i "%TEMP%\nodejs_installer.msi" /quiet /norestart
-if %errorLevel% neq 0 (
-    call :ERRO_FATAL "ETAPA 1/6 - Instalacao Node.js" "103" "O instalador MSI do Node.js retornou erro." "Execute o instalador baixado em '%TEMP%\nodejs_installer.msi' manualmente como Administrador."
+if not defined NODE_DIR (
+    call :ERRO_FATAL "ETAPA 1/6 - Node.js" "104" "O runtime validado nao informou a pasta do Node.js." "Confira os logs privados do instalador."
     exit /b 1
 )
-
-set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;!PATH!"
-node -v >nul 2>&1
-if !errorLevel! neq 0 (
-    if exist "%ProgramFiles%\nodejs\node.exe" (
-        set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;!PATH!"
-    )
-)
-
+set "PATH=!NODE_DIR!;!PATH!"
 for /f "delims=" %%v in ('node -v 2^>nul') do set "NODE_VER=%%v"
-if "!NODE_VER!"=="" (
-    call :ERRO_FATAL "ETAPA 1/6 - Validacao Node.js" "104" "Node.js instalado, mas nao acessivel no PATH nesta sessao." "Feche todas as janelas do terminal e execute o instalador novamente."
+if not defined NODE_VER (
+    call :ERRO_FATAL "ETAPA 1/6 - Node.js" "104" "Node.js validado mas indisponivel nesta sessao." "Confira o runtime e os logs privados do instalador."
     exit /b 1
 )
-
-echo   !C_GREEN![OK] Node.js instalado e configurado com sucesso: !NODE_VER!!C_RESET!
+echo   !C_GREEN![OK] Node.js e npm compativeis: !NODE_VER!!C_RESET!
 echo.
 
 :: =============================================================================
@@ -206,7 +178,7 @@ goto :PASTA_DEFINIDA
 echo.
 echo   !C_CYAN!* Abrindo seletor grafico de pastas do Windows...!C_RESET!
 set "SELECTED_GUI="
-for /f "usebackq delims=" %%I in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+for /f "usebackq delims=" %%I in (`powershell -NoProfile -Command ^
     "Add-Type -AssemblyName System.Windows.Forms; "^
     "$f = New-Object System.Windows.Forms.FolderBrowserDialog; "^
     "$f.Description = 'Selecione a pasta de instalacao para o Infoboard TV:'; "^
@@ -239,6 +211,21 @@ if "!TARGET_DIR:~-1!"==":" set "TARGET_DIR=!TARGET_DIR!\"
 
 echo.
 echo   !C_WHITE!Diretorio de Instalacao Definido:!C_RESET! !C_CYAN!!C_BOLD!!TARGET_DIR!!C_RESET!
+
+:: Instalacao nova: nunca assumir propriedade de outro servico do InfoBoard.
+if exist "!TARGET_DIR!\server.js" (
+    call :ERRO_FATAL "ETAPA 2/6 - Instalacao existente" "205" "Ja ha fontes do InfoBoard na pasta selecionada." "Use o ATUALIZAR_INFOBOARD.bat para uma instalacao existente."
+    exit /b 1
+)
+powershell.exe -NoLogo -NoProfile -Command ^
+    "$ErrorActionPreference='Stop'; try { "^
+    "  $existing=@(Get-CimInstance Win32_Service -ErrorAction Stop | Where-Object { $_.Name -match '(?i)infoboard' -or $_.DisplayName -match '(?i)infoboard' }); "^
+    "  if($existing.Count -gt 0){exit 2}; exit 0 "^
+    "} catch {exit 3}"
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 2/6 - Servico existente" "206" "Ja existe um servico InfoBoard ou a consulta de servicos falhou." "Confira services.msc e use o atualizador para uma instalacao existente."
+    exit /b 1
+)
 
 :: Criar diretorio se nao existir
 if not exist "!TARGET_DIR!" (
@@ -276,44 +263,31 @@ if defined LOCAL_SOURCE (
     )
 )
 
-:: Caso 2: Copia local de alta performance via robocopy a partir de LOCAL_SOURCE
+:: Caso 2: copia somente arquivos publicaveis, sem estado local de agentes,
+:: credenciais, backups, artefatos de homologacao ou diretorio .git.
 if defined LOCAL_SOURCE (
     if exist "!LOCAL_SOURCE!\server.js" (
-        echo   !C_CYAN!* Copiando arquivos locais de '!LOCAL_SOURCE!' para '!TARGET_DIR!' via Robocopy...!C_RESET!
-        robocopy "!LOCAL_SOURCE!" "!TARGET_DIR!" /E /NP /NFL /NDL /R:2 /W:2 /XD node_modules .git .agents backups /XF .env *.log >nul 2>&1
-        if !errorLevel! leq 7 (
-            echo   !C_GREEN![OK] Arquivos locais sincronizados com sucesso via Robocopy.!C_RESET!
+        echo   !C_CYAN!* Copiando somente arquivos de distribuicao do projeto...!C_RESET!
+        if not exist "!LOCAL_SOURCE!\scripts\copy-local-install.cjs" (
+            call :ERRO_FATAL "ETAPA 2/6 - Fonte local" "203" "Pacote local sem script de copia segura." "Use a distribuicao completa e atualizada do InfoBoard."
+            exit /b 1
+        )
+        node "!LOCAL_SOURCE!\scripts\copy-local-install.cjs" "!LOCAL_SOURCE!" "!TARGET_DIR!"
+        if !errorlevel! equ 0 (
+            echo   !C_GREEN![OK] Arquivos permitidos copiados com sucesso.!C_RESET!
             set "COPIA_REALIZADA=1"
             goto :VALIDAR_ARQUIVOS_DESTINO
         ) else (
-            echo   !C_YELLOW![AVISO] Robocopy retornou codigo !errorLevel!. Tentando fallback...!C_RESET!
+            call :ERRO_FATAL "ETAPA 2/6 - Copia local" "204" "A copia dos arquivos publicaveis falhou." "Confira as permissoes, espaco em disco e arquivos da distribuicao."
+            exit /b 1
         )
     )
 )
 
-:: Caso 3: Fallback para Git Clone se arquivos locais nao estiverem presentes
-where git >nul 2>&1
-if !errorLevel! equ 0 (
-    echo   !C_CYAN!* Git detectado. Clonando repositorio oficial para '!TARGET_DIR!'...!C_RESET!
-    git -c core.askPass= -c credential.helper= clone https://github.com/JSDavi/Infoboard.git "!TARGET_DIR!" >nul 2>&1
-    if exist "!TARGET_DIR!\server.js" (
-        echo   !C_GREEN![OK] Repositorio clonado com sucesso via Git.!C_RESET!
-        set "COPIA_REALIZADA=1"
-        goto :VALIDAR_ARQUIVOS_DESTINO
-    )
-)
-
-:: Caso 4: Fallback para Download ZIP oficial do GitHub
-echo   !C_CYAN!* Baixando pacote ZIP oficial do GitHub...!C_RESET!
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$tmpZip = Join-Path $env:TEMP 'infoboard_source.zip'; "^
-    "$tmpExt = Join-Path $env:TEMP 'infoboard_extracted'; "^
-    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; "^
-    "Invoke-WebRequest -Uri 'https://github.com/JSDavi/Infoboard/archive/refs/heads/master.zip' -OutFile $tmpZip -UseBasicParsing; "^
-    "Expand-Archive -LiteralPath $tmpZip -DestinationPath $tmpExt -Force; "^
-    "Copy-Item -Path (Join-Path $tmpExt 'Infoboard-master\*') -Destination '!TARGET_DIR!' -Recurse -Force; "^
-    "Remove-Item -LiteralPath $tmpExt -Recurse -Force -ErrorAction SilentlyContinue; "^
-    "Remove-Item -LiteralPath $tmpZip -Force -ErrorAction SilentlyContinue"
+:: Nao consumir a master remota para instalacao nova; o ZIP homologado inclui
+:: todas as fontes publicaveis, enquanto o GitHub pode estar em outra revisao.
+call :ERRO_FATAL "ETAPA 2/6 - Fonte local ausente" "207" "O Instalador precisa ser executado a partir do pacote completo do InfoBoard." "Extraia InfoBoard-source.zip e execute o BAT da pasta InfoBoard\instalador."
+exit /b 1
 
 :VALIDAR_ARQUIVOS_DESTINO
 if not exist "!TARGET_DIR!\server.js" (
@@ -362,8 +336,8 @@ set /p "PRIX_PW=Senha de acesso ao PrixChat: "
 echo.
 
 echo !C_WHITE!!C_BOLD!--- 3. Credenciais da API PBX (Nossa Telecom) ---!C_RESET!
-set /p "PBX_URL=URL Base da API PBX [Padrao: https://pbx.nossatelecom.com.br]: "
-if "!PBX_URL!"=="" set "PBX_URL=https://pbx.nossatelecom.com.br"
+set /p "PBX_URL=URL Base da API PBX [Padrao: https://sip33.tsinfo.net.br]: "
+if "!PBX_URL!"=="" set "PBX_URL=https://sip33.tsinfo.net.br"
 set /p "PBX_TK=Token da API PBX: "
 set /p "PBX_KEY=Chave API Key PBX: "
 echo.
@@ -381,10 +355,19 @@ if /i "!ATIVAR_TG!"=="S" (
 )
 
 echo.
+echo   !C_CYAN!* Restringindo permissoes de acesso (ACL: Usuario Atual + SYSTEM) antes de gravar segredos...!C_RESET!
+set "ENV_ACL_HELPER=%~dp0protect-env.ps1"
+if not exist "!ENV_ACL_HELPER!" set "ENV_ACL_HELPER=!TARGET_DIR!\instalador\protect-env.ps1"
+powershell -NoProfile -File "!ENV_ACL_HELPER!" -Path "!TARGET_DIR!\.env"
+if errorlevel 1 (
+    call :ERRO_FATAL "ETAPA 3/6 - Permissoes .env" "302" "Falha ao definir permissoes restritas (ACL) para o arquivo .env." "Verifique se a pasta de destino permite aplicar permissoes de seguranca."
+    exit /b 1
+)
+
 echo   !C_CYAN!* Gravando arquivo .env de forma protegida contra caracteres especiais...!C_RESET!
 
 :: Gravacao protegida via PowerShell nativo para preservar caracteres como !, %, ^, &, <, >
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+powershell -NoProfile -Command ^
     "$envPath = Join-Path -Path '!TARGET_DIR!' -ChildPath '.env'; "^
     "$content = @( "^
     "    '# =============================================================================', "^
@@ -414,6 +397,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "    ('PBX_BASE_URL=' + [System.Environment]::GetEnvironmentVariable('PBX_URL')), "^
     "    ('PBX_API_TOKEN=' + [System.Environment]::GetEnvironmentVariable('PBX_TK')), "^
     "    ('PBX_API_KEY=' + [System.Environment]::GetEnvironmentVariable('PBX_KEY')), "^
+    "    'PBX_TLS_REJECT_UNAUTHORIZED=true', "^
     "    '', "^
     "    '# =============================================================================', "^
     "    '# Limites de Alerta de Fila e Espera (SLA)', "^
@@ -442,16 +426,20 @@ echo   !C_GREEN![OK] Arquivo .env gerado com sucesso em UTF-8!!C_RESET!
 echo.
 
 :: =============================================================================
-:: ETAPA 4/6: INSTALACAO DE DEPENDENCIAS (NPM INSTALL)
+:: ETAPA 4/6: INSTALACAO DE DEPENDENCIAS (NPM CI)
 :: =============================================================================
 :ETAPA_4
 echo -------------------------------------------------------------------------------
-echo !C_CYAN!!C_BOLD![ ETAPA 4/6 ] Instalacao de Dependencias de Producao (npm install)!C_RESET!
+echo !C_CYAN!!C_BOLD![ ETAPA 4/6 ] Instalacao de Dependencias de Producao (npm ci)!C_RESET!
 echo -------------------------------------------------------------------------------
-echo   !C_GRAY!* Executando 'npm install --omit=dev' em '!TARGET_DIR!'...!C_RESET!
+echo   !C_GRAY!* Executando 'npm ci --omit=dev' em '!TARGET_DIR!'...!C_RESET!
 
+if not exist "!TARGET_DIR!\package-lock.json" (
+    call :ERRO_FATAL "ETAPA 4/6 - Lockfile" "402" "package-lock.json ausente." "Utilize o pacote homologado completo."
+    exit /b 1
+)
 cd /d "!TARGET_DIR!"
-call npm install --omit=dev
+call npm ci --omit=dev
 if %errorLevel% neq 0 (
     call :ERRO_FATAL "ETAPA 4/6 - Dependencias NPM" "401" "Falha na instalacao dos pacotes Node.js." "Verifique sua conexao de internet ou bloqueio de firewall corporativo para o registro npmjs.org."
     exit /b 1
@@ -470,7 +458,7 @@ echo ---------------------------------------------------------------------------
 echo   !C_GRAY!* Configurando regra de entrada para comunicacao na porta TCP 3000...!C_RESET!
 
 :: Remover regras duplicadas/antigas de forma idempotente
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+powershell -NoProfile -Command ^
     "Remove-NetFirewallRule -DisplayName 'Infoboard TV (Porta 3000)' -ErrorAction SilentlyContinue; "^
     "New-NetFirewallRule -DisplayName 'Infoboard TV (Porta 3000)' -Description 'Permite acesso ao Painel Infoboard TV em rede local' -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow -ErrorAction Stop" >nul 2>&1
 
@@ -491,10 +479,6 @@ echo ---------------------------------------------------------------------------
 echo !C_CYAN!!C_BOLD![ ETAPA 6/6 ] Registro do Servico Windows e Atalhos!C_RESET!
 echo -------------------------------------------------------------------------------
 
-:: Parar servicos legados ou anteriores se estiverem rodando
-net stop "Infoboard TV" >nul 2>&1
-net stop "InfoboardService" >nul 2>&1
-
 echo   !C_GRAY!* Registrando servico nativo 'Infoboard TV' (inicializacao automatica no boot)...!C_RESET!
 cd /d "!TARGET_DIR!"
 
@@ -514,7 +498,7 @@ if %errorLevel% neq 0 (
 
 echo.
 echo   !C_GRAY!* Criando atalhos na Area de Trabalho (Usuario e Publico)...!C_RESET!
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+powershell -NoProfile -Command ^
     "$ws = New-Object -ComObject WScript.Shell; "^
     "$desktops = @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('CommonDesktopDirectory')); "^
     "foreach ($d in $desktops) { "^

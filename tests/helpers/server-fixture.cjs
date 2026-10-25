@@ -13,6 +13,10 @@ async function serverFixture(options = {}) {
   let server;
   const wrappedExpress = Object.assign(() => {
     const app = express();
+    if (options.remoteAddress) app.use((req, _res, next) => {
+      Object.defineProperty(req.socket, 'remoteAddress', { value: options.remoteAddress, configurable: true });
+      next();
+    });
     const listen = app.listen.bind(app);
     app.listen = (_port, callback) => {
       server = listen(0, '127.0.0.1', callback);

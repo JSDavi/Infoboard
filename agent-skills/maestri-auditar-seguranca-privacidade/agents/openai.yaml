@@ -1,4 +1,0 @@
-interface:
-  display_name: "Auditoria de segurança do InfoBoard"
-  short_description: "Auditoria de segurança com evidências verificáveis"
-  default_prompt: "Use $maestri-auditar-seguranca-privacidade para revisar o componente delegado pelo Maestro e relatar evidências."
