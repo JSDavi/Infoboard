@@ -1,5 +1,9 @@
 # Historico de versoes do InfoBoard
 
+## 1.2.1 - 25/10/2026
+
+- Corrige a verificacao do diretorio temporario nos testes do atualizador para ambientes Windows do GitHub Actions, mantendo o comportamento do instalador e do atualizador.
+
 ## 1.2.0 — 25/10/2026
 
 - Atualizador do Windows em arquivo BAT unico: confere a revisao publicada no GitHub, prepara Node/dependencias, compara a versao instalada e valida o servico/HTTP apos aplicar.
