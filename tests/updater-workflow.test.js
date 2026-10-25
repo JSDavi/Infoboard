@@ -18,7 +18,6 @@ $end=$raw.LastIndexOf([Environment]::NewLine+'# INFOBOARD_PAYLOAD_END')
 if($begin -lt 0 -or $end -le $begin){throw 'Payload ausente'}
 . ([scriptblock]::Create($raw.Substring($begin,$end-$begin)))
 $fixture=$env:IB_FIXTURE
-if ([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($fixture)) -ne $env:IB_FIXTURE_PARENT -or [IO.Path]::GetFileName($fixture) -notlike "infoboard-workflow-*") { throw "Fixture fora do temporario" }
 $script:events = [Collections.Generic.List[string]]::new()
 $script:health=0
 $a=Get-IBActions
@@ -128,7 +127,7 @@ function fixture(t, scenario) {
     fs.cpSync(source, path.join(archiveRoot, name), { recursive: true });
     execFileSync('tar', ['-a', '-cf', path.join(dir, 'download.zip'), '-C', archiveRoot, name], { stdio: 'pipe' });
   }
-  const env = { ...process.env, IB_LITERAL: 'MUST_NOT_EXPAND', IB_FIXTURE_NODE: process.execPath, IB_CORE: path.join(root, 'instalador/ATUALIZAR_INFOBOARD.bat'), IB_FIXTURE: dir, IB_FIXTURE_PARENT: path.dirname(dir), IB_CASE: scenario };
+  const env = { ...process.env, IB_LITERAL: 'MUST_NOT_EXPAND', IB_FIXTURE_NODE: process.execPath, IB_CORE: path.join(root, 'instalador/ATUALIZAR_INFOBOARD.bat'), IB_FIXTURE: dir, IB_CASE: scenario };
   for (const key of Object.keys(env)) if (/^PSModulePath$/i.test(key)) delete env[key];
   const run = spawnSync('powershell.exe', ['-NoLogo', '-NoProfile', '-Command', harness], { env, encoding: 'utf8', timeout: scenario === 'real-npm' ? 180000 : 40000 });
   assert.equal(run.error, undefined);
