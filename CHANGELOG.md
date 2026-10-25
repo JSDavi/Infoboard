@@ -1,5 +1,9 @@
 # Historico de versoes do InfoBoard
 
+## 1.2.2 - 25/10/2026
+
+- Consolida a validacao do atualizador em Windows e a distribuicao com a verificacao remota aprovada.
+
 ## 1.2.1 - 25/10/2026
 
 - Corrige a verificacao do diretorio temporario nos testes do atualizador para ambientes Windows do GitHub Actions, mantendo o comportamento do instalador e do atualizador.

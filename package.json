@@ -1,6 +1,6 @@
 {
   "name": "infoboard",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Infoboard - Servidor integrador local e Wallboard para TV NPX",
   "main": "server.js",
   "scripts": {
