@@ -24,3 +24,28 @@ test('sessao NPX invalida interrompe apos uma reautenticacao', async t => {
   assert.equal(fixture.evaluate('fixtureAuthCalls'), 1);
   assert.equal(fixture.evaluate('connectionStatus.authenticated'), false);
 });
+
+test('falha transitória repete uma vez sem descartar a sessão NPX válida', async t => {
+  let requests = 0;
+  const fixture = await serverFixture({ axios: { get: async () => {
+    requests++;
+    if (requests === 1) {
+      const error = new Error('fixture network');
+      error.code = 'ECONNRESET';
+      throw error;
+    }
+    return { data: { ok: true } };
+  } } });
+  t.after(fixture.close);
+  fixture.evaluate(`
+    connectionStatus.authenticated = true;
+    activeSession.cookies = { fixture: 'cookie' };
+    waitForNpxRetry = async () => {};
+  `);
+
+  const result = await fixture.evaluate('apiGet("/fixture")');
+  assert.equal(requests, 2);
+  assert.equal(result.ok, true);
+  assert.equal(fixture.evaluate('activeSession.hasCookies()'), true);
+  assert.equal(fixture.evaluate('connectionStatus.authenticated'), true);
+});

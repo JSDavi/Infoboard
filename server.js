@@ -14,6 +14,7 @@ const { applyPbxObservationToAgent } = require('./pbx-agent-state');
 const { getPanelAccess, filterPanelData } = require('./infoboard-access');
 const { withNpxMonitorObservation } = require('./npx-monitor-state');
 const { safeError, upstreamOptions, validatedUpstreamBaseUrl, sameOriginRedirect, isAllowedApiOrigin } = require('./server-security');
+const { startSerialPolling } = require('./async-control');
 
 // Carrega variáveis de ambiente
 dotenv.config();
@@ -28,7 +29,8 @@ process.on('unhandledRejection', (reason) => {
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const UPDATE_INTERVAL = (process.env.UPDATE_INTERVAL_SECONDS || 6) * 1000;
+const configuredUpdateInterval = Number.parseInt(process.env.UPDATE_INTERVAL_SECONDS, 10);
+const UPDATE_INTERVAL = Math.max(5, Number.isFinite(configuredUpdateInterval) ? configuredUpdateInterval : 10) * 1000;
 // O monitor NPX informa estado operacional, sem comprovar registro SIP.
 // O estado operacional de /rates/details_by_queue.json passa a ser o padrao.
 // Permite desativacao explicita em ambientes legados sem registro confiavel.
@@ -443,6 +445,14 @@ const DEPARTMENTS = {
 };
 
 let npxAuthPromise = null;
+let waitForNpxRetry = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+function isRetryableNpxError(error) {
+  const status = Number(error?.response?.status);
+  if ([404, 408, 425, 429, 500, 502, 503, 504].includes(status)) return true;
+  return ['ECONNABORTED', 'ECONNREFUSED', 'ECONNRESET', 'EHOSTUNREACH', 'ENETUNREACH',
+    'ENOTFOUND', 'ETIMEDOUT', 'ERR_BAD_RESPONSE', 'ERR_NETWORK'].includes(error?.code);
+}
 
 // Função para fazer o login no painel NPXTech
 async function authenticate() {
@@ -534,9 +544,17 @@ async function authenticate() {
 }
 
 // Helper para fazer requisição GET na API do NPX (JSON) com cookies
-async function apiGet(endpoint, params = {}, retried = false) {
+async function apiGet(endpoint, params = {}, retryState = {}) {
   if (!connectionStatus.authenticated || !activeSession.hasCookies()) {
-    await authenticate();
+    try {
+      await authenticate();
+    } catch (error) {
+      if (!retryState.transport && isRetryableNpxError(error)) {
+        await waitForNpxRetry(750);
+        return apiGet(endpoint, params, { ...retryState, transport: true });
+      }
+      throw error;
+    }
   }
 
   const url = `https://app.npxtech.com.br${endpoint}`;
@@ -558,20 +576,62 @@ async function apiGet(endpoint, params = {}, retried = false) {
       activeSession = new CookieJar();
       connectionStatus.authenticated = false;
       // Credenciais inválidas não podem iniciar uma cadeia infinita de logins.
-      if (retried) throw new Error('Sessão NPX não confirmada após autenticação');
+      if (retryState.auth) throw new Error('Sessão NPX não confirmada após autenticação');
       await authenticate();
-      return apiGet(endpoint, params, true);
+      return apiGet(endpoint, params, { ...retryState, auth: true });
     }
 
     return res.data;
   } catch (error) {
-    // Se for 401 ou erro de conexão (ECONNRESET, ETIMEDOUT, etc.), limpa os cookies para forçar login novo
+    const status = Number(error?.response?.status);
+    const authenticationFailed = status === 401 || status === 403;
+    if (authenticationFailed && !retryState.auth) {
+      activeSession = new CookieJar();
+      connectionStatus.authenticated = false;
+      await authenticate();
+      return apiGet(endpoint, params, { ...retryState, auth: true });
+    }
+    if (!retryState.transport && isRetryableNpxError(error)) {
+      console.warn('[NPX Integrator] Falha transitória; repetindo uma vez:', safeError(error));
+      await waitForNpxRetry(750);
+      return apiGet(endpoint, params, { ...retryState, transport: true });
+    }
     console.error('[NPX Integrator] Falha ao buscar dados:', safeError(error));
-    activeSession = new CookieJar();
-    connectionStatus.authenticated = false;
+    if (authenticationFailed) {
+      activeSession = new CookieJar();
+      connectionStatus.authenticated = false;
+    }
     connectionStatus.error = safeError(error);
     throw error;
   }
+}
+
+// Mantém as cinco filas no mesmo ciclo, mas evita uma rajada de 15 chamadas.
+// Cada etapa consulta todas as filas em paralelo; a próxima etapa só começa
+// depois que a anterior termina. O snapshot só é publicado quando as três
+// etapas estiverem completas.
+async function collectNpxQueueSnapshots(departmentsArray) {
+  const collectStage = endpoint => Promise.all(departmentsArray.map(([, dept]) =>
+    apiGet(endpoint, { queue: dept.path, queue_type: 'LOG' })
+  ));
+
+  const totalsByDepartment = await collectStage('/rates/totals_filter_by_queues.json');
+  const detailsByDepartment = await collectStage('/rates/details_by_queue.json');
+  const waitCallsByDepartment = await collectStage('/rates/wait_calls.json');
+
+  return departmentsArray.map(([key, dept], index) => {
+    const rawDetails = detailsByDepartment[index];
+    const details = NPX_REQUIRE_SIP_CONFIRMATION
+      ? { ...rawDetails, details: withNpxMonitorObservation(rawDetails?.details, dept.path) }
+      : rawDetails;
+    return {
+      key,
+      dept,
+      totals: totalsByDepartment[index],
+      details,
+      waitCalls: waitCallsByDepartment[index]
+    };
+  });
 }
 
 // Converte string de duração "HH:MM:SS" em segundos
@@ -896,22 +956,19 @@ async function runUpdateCycle() {
     const pbxDataSnapshot = getPbxConnectionStatus().authenticated ? lastPbxData : {};
 
     // Executa as requisições do NPX e do PrixChat em paralelo
-    const [npxResults, prixMoments] = await Promise.all([
-      Promise.all(departmentsArray.map(async ([key, dept]) => {
-        if (process.env.LOG_LEVEL === 'debug') console.log(`[NPX Integrator] Coletando dados JSON do monitor: ${dept.name}...`);
-        
-        // Busca dados concorrentemente para este setor
-        const [totals, details, waitCalls] = await Promise.all([
-          apiGet('/rates/totals_filter_by_queues.json', { queue: dept.path, queue_type: 'LOG' }),
-          apiGet('/rates/details_by_queue.json', { queue: dept.path, queue_type: 'LOG' }).then(data => {
-            if (!NPX_REQUIRE_SIP_CONFIRMATION) return data;
-            return { ...data, details: withNpxMonitorObservation(data?.details, dept.path) };
-          }),
-          apiGet('/rates/wait_calls.json', { queue: dept.path })
-        ]);
+    const [npxQueueSnapshots, prixMoments] = await Promise.all([
+      collectNpxQueueSnapshots(departmentsArray),
+      getPrixUsersMoments().catch(err => {
+        console.error('[PrixChat] Erro ao coletar tickets reais de WhatsApp:', safeError(err));
+        return null;
+      })
+    ]);
+    connectionStatus.authenticated = true;
+    connectionStatus.error = null;
+    connectionStatus.lastUpdate = new Date().toISOString();
 
-        // Pequena pausa suave (150ms) entre setores para não enviar tudo em rajada (anti rate-limit)
-        await new Promise(resolve => setTimeout(resolve, 150));
+    const npxResults = npxQueueSnapshots.map(({ key, dept, totals, details, waitCalls }) => {
+        if (process.env.LOG_LEVEL === 'debug') console.log(`[NPX Integrator] Coletando dados JSON do monitor: ${dept.name}...`);
 
         // Organiza a contagem de fila e tempos
         const queueCount = totals.total_wait !== undefined ? totals.total_wait : (waitCalls.wait_calls || []).length;
@@ -1072,12 +1129,7 @@ async function runUpdateCycle() {
             agents: sortedAgents
           }
         };
-      })),
-      getPrixUsersMoments().catch(err => {
-        console.error('[PrixChat] Erro ao coletar tickets reais de WhatsApp:', safeError(err));
-        return null;
-      })
-    ]);
+      });
 
     // Preenche as informações dos departamentos NPX
     npxResults.forEach(res => {
@@ -1185,7 +1237,7 @@ async function runUpdateCycle() {
   } catch (err) {
     console.error('[NPX Integrator] Erro no ciclo de atualização. Mantendo último dado conhecido:', safeError(err));
     connectionStatus.error = safeError(err);
-    connectionStatus.authenticated = false;
+    if (!activeSession.hasCookies()) connectionStatus.authenticated = false;
 
     if (lastScrapedData && (!lastScrapedData.status || !lastScrapedData.status.isSimulated)) {
       // Mantém os dados antigos na tela (congelados) e apenas acende o alerta de erro
@@ -1839,10 +1891,15 @@ setTimeout(fetchHorariosData, 2000);
 setInterval(fetchHospedagensData, 5 * 60 * 1000);
 setTimeout(fetchHospedagensData, 2500);
 
-// Inicia o ciclo de atualizações
-setInterval(runUpdateCycle, UPDATE_INTERVAL);
-// Executa o primeiro ciclo imediatamente
-setTimeout(runUpdateCycle, 1000);
+// Agenda a proxima coleta somente depois que a atual terminar. Isso impede
+// sobreposicao quando a API do NPX demora mais que o intervalo configurado.
+startSerialPolling(runUpdateCycle, {
+  intervalMs: UPDATE_INTERVAL,
+  initialDelayMs: 1000,
+  setTimer: setTimeout,
+  clearTimer: clearTimeout,
+  onError: error => console.error('[NPX Integrator] Falha inesperada no agendador:', safeError(error))
+});
 
 // --- ROTAS DA API ---
 

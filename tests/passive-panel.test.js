@@ -14,7 +14,7 @@ test('backend só publica a API de leitura e não importa módulos de comando', 
     .map(([, verb, route]) => [verb, route]);
   assert.deepEqual(routes, [['get', '/api/data']]);
   assert.doesNotMatch(server, /require\(['"]\.\/npx-(?:session|switch|access-policy|queue-state|admin-access)['"]\)/);
-  assert.match(server, /apiGet\('\/rates\/details_by_queue\.json'/);
+  assert.match(server, /collectStage\('\/rates\/details_by_queue\.json'\)/);
   assert.match(server, /getPbxConnectionStatus\(\)/);
 });
 

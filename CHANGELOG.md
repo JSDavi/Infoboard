@@ -1,5 +1,11 @@
 # Historico de versoes do InfoBoard
 
+## 1.2.3 - 26/10/2026
+
+- Impede sobreposicao das coletas NPX e consulta as cinco filas em etapas sincronizadas, reduzindo rajadas sem defasar os setores.
+- Recupera falhas transitorias sem descartar uma sessao NPX valida e identifica dados de analistas nao confirmados durante indisponibilidade.
+- Amplia a validacao HTTP do atualizador e registra a ultima causa observada para tornar a inicializacao e o rollback mais confiaveis.
+
 ## 1.2.2 - 25/10/2026
 
 - Consolida a validacao do atualizador em Windows e a distribuicao com a verificacao remota aprovada.

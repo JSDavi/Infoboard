@@ -13,6 +13,8 @@ test('BAT distribuido corresponde ao gerador e contem Node e fluxo completos', (
   assert.equal(bat, buildUpdater(helper));
   assert.match(bat, /function Invoke-IBEnsureNode/);
   assert.match(bat, /function Invoke-IBUpdate/);
+  assert.match(bat, /\$attempt -lt 45/);
+  assert.match(bat, /Ultima verificacao:/);
   assert.doesNotMatch(bat, /ExecutionPolicy|taskkill|git pull/i);
 });
 

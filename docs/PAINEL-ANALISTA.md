@@ -14,6 +14,7 @@ O integrador consulta as cinco filas do monitor oficial NPX e os estados do PBX.
 
 - **Livre / em chamada / chamando / pausado:** estados observados; métricas e durações são somente informativas.
 - **Sem conexão NPX/PBX:** ambos os sistemas confirmaram desconexão.
+- **NPX não confirmado:** a coleta do NPX está indisponível; somente estados atuais confirmados pelo PBX continuam sendo exibidos.
 - **PBX não confirmado:** o NPX confirmou desconexão, mas ainda falta confirmação atual do PBX.
 - **Status NPX não confirmado:** não há uma leitura operacional válida e recente.
 

@@ -745,6 +745,15 @@ function categorizeError(errText, tagLabel) {
       msg: `${tagHtml} 🔑 FALHA DE LOGIN: E-mail ou senha incorretos.`
     };
   }
+
+  if (text.includes('404')) {
+    return {
+      type: 'server',
+      className: 'alert-banner-server',
+      iconHtml: '<i class="fa-solid fa-globe"></i>',
+      msg: `${tagHtml} API RESPONDEU HTTP 404: Tentando novamente; se persistir, revise a integração.`
+    };
+  }
   
   if (text.includes('502') || text.includes('500') || text.includes('503') || text.includes('504') || text.includes('bad gateway') || text.includes('server error')) {
     return {
@@ -822,6 +831,7 @@ function updateUI(data) {
   if (typeof checkEventOverlay === 'function') checkEventOverlay(data);
   // 1. Atualiza Status de Conexão no topo e no rodapé (F11)
   const status = data.status || {};
+  const npxMonitorAvailable = status.npx?.authenticated === true && !status.npx.error;
   const pbxMonitorAvailable = status.pbx?.authenticated === true && !status.pbx.error;
   const alertBanner = document.getElementById('npx-alert-banner');
   const alertMsg = document.getElementById('npx-alert-message');
@@ -1113,6 +1123,9 @@ function updateUI(data) {
           } else if (connection.isPbxRegistered) {
             statusClass = 'status-pbx-free';
             badgeHtml = '';
+          } else if (!npxMonitorAvailable) {
+            statusClass = 'status-npx-unverified';
+            badgeHtml = '<span class="status-text-badge status-npx-unverified" title="A coleta do NPX está indisponível; o estado atual deste analista não pode ser confirmado">NPX não confirmado</span>';
           } else if (connection.isNpxBusy) {
             statusClass = 'status-2';
             badgeHtml = '<span class="status-text-badge status-2" title="O monitor oficial NPX informa ocupado; sem numero de chamada confirmado">Ocupado na NPX</span>';

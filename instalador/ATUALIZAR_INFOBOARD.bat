@@ -540,7 +540,8 @@ function Get-IBActions {
         }
         Health = {
             param($port, $service)
-            for ($attempt = 0; $attempt -lt 15; $attempt++) {
+            $lastFailure = 'servico ainda nao respondeu.'
+            for ($attempt = 0; $attempt -lt 45; $attempt++) {
                 try {
                     # O HTTP precisa pertencer ao processo do servico escolhido.
                     # Um site diferente na mesma porta nunca confirma esta atualizacao.
@@ -561,10 +562,11 @@ function Get-IBActions {
                     }
                     $res = Invoke-WebRequest -Uri ("http://127.0.0.1:$port/") -UseBasicParsing -TimeoutSec 3
                     if ($res.StatusCode -eq 200) { return }
-                } catch { }
+                    $lastFailure = 'HTTP respondeu codigo ' + $res.StatusCode + '.'
+                } catch { $lastFailure = $_.Exception.Message }
                 Start-Sleep -Seconds 2
             }
-            throw 'HTTP nao respondeu 200. Confira logs do servico, PORT e ocupacao da porta; nao ha confirmacao de painel funcionando.'
+            throw ('HTTP nao respondeu 200 em 90 segundos. Ultima verificacao: ' + $lastFailure + ' Confira logs do servico, PORT e ocupacao da porta; nao ha confirmacao de painel funcionando.')
         }
         Confirm = { param($message) (Read-Host ($message + ' [S/N] [N]')) -eq 'S' }
     }

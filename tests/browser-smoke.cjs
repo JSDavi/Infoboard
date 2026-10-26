@@ -87,6 +87,7 @@ async function main() {
     expression: `(async () => {
       const data = await (await fetch('/api/data')).json();
       const sample = JSON.parse(JSON.stringify(data));
+      sample.status.npx = { authenticated: true, error: null };
       sample.status.pbx = { authenticated: true, error: null };
       const [queue, dept] = Object.entries(sample.departments || {})[0] || [];
       if (!dept || !window.InfoBoardAgentState) return { ok: false, reason: 'Falta setor/classificador' };
@@ -119,9 +120,19 @@ async function main() {
         agent.npxOperational.status = 0; const offlineAgain = show();
         sample.status.pbx.authenticated = false; const pbxUnknown = show();
         sample.status.pbx.authenticated = true;
+        sample.status.npx = { authenticated: false, error: 'Falha de integração (ECONNABORTED)' };
+        agent.npxQueuePresent = false;
+        const npxUnknown = show();
+        const alertBanner = document.getElementById('npx-alert-banner');
+        const npxErrorBannerVisible = !!alertBanner &&
+          !alertBanner.classList.contains('hidden') && getComputedStyle(alertBanner).display !== 'none';
+        sample.status.npx = { authenticated: true, error: null };
+        agent.npxQueuePresent = true;
         agent.npxOperational.status = 1;
         agent.npxOperational.observedAt = new Date(Date.now() - 31000).toISOString();
         const stale = show();
+        const recoveredBannerHidden = !!alertBanner &&
+          alertBanner.classList.contains('hidden') && getComputedStyle(alertBanner).display === 'none';
         agent.pbxStatus = 'Free'; const pbx = show();
         // Mesmo estado monitorado deve produzir o mesmo card nos cinco setores.
         // As alterações são somente em memória no Chromium descartável de QA.
@@ -173,12 +184,15 @@ async function main() {
           offlineAgain.css.includes('status-offline') &&
           pbxUnknown.css.includes('status-npx-unverified') && pbxUnknown.badge === 'PBX não confirmado' &&
           pbxUnknown.nameWeight === offline.nameWeight && pbxUnknown.nameColor === offline.nameColor &&
+          npxUnknown.css.includes('status-npx-unverified') && npxUnknown.badge === 'NPX não confirmado' &&
+          npxErrorBannerVisible && recoveredBannerHidden &&
           stale.badge === 'Status NPX não confirmado' && stale.category === 'offline' &&
           pbx.css.includes('status-pbx-free') && pbx.category === 'free' && uniformCards &&
-          [offline, free, busy, ringing, paused, offlineAgain, pbxUnknown, stale, pbx]
+          [offline, free, busy, ringing, paused, offlineAgain, pbxUnknown, npxUnknown, stale, pbx]
             .every(state => state.cursor === 'default') &&
           cardClickIgnored && metricsIconOpens && metricsIconCloses,
-          offline, free, busy, ringing, paused, offlineAgain, pbxUnknown, stale, pbx,
+          offline, free, busy, ringing, paused, offlineAgain, pbxUnknown, npxUnknown, stale, pbx,
+          npxErrorBannerVisible, recoveredBannerHidden,
           uniformCards, cardClickIgnored, metricsIconOpens, metricsIconCloses,
           uniformSnapshots: snapshots };
       } finally { updateUI(data); }
