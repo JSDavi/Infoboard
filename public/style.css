@@ -1290,6 +1290,10 @@ body.fullscreen-mode .analyst-ramal-center {
     margin-bottom: 15px;
     align-items: flex-start;
   }
+  /* Reserva espaço para a versão sem alterar a posição do letreiro. */
+  .header-left {
+    padding-bottom: 1.25rem;
+  }
   .header-right {
     width: 100%;
     justify-content: space-between;
