@@ -7,6 +7,7 @@ function isLocalOnly(relative) {
   const parts = normalized.split('/');
   const name = parts.at(-1);
   return (parts[0] === 'docs' && ['auditoria', 're'].includes(parts[1])) ||
+    normalized === '.infoboard-installation.json' ||
     ['agent-skills', '--prefix'].includes(parts[0]) ||
     normalized === 'AGENTS.md' || /^MAESTRI-[^/]+\.md$/i.test(normalized) ||
     ['scripts/alinha-perfis-skills-maestri.mjs', 'scripts/configure-global-agent-defaults.ps1',

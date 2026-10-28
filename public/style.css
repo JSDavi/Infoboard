@@ -80,9 +80,32 @@ body {
 }
 
 .logo-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.logo-heading {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.app-version {
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 2px;
+  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #334155;
+  cursor: help;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-version:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
 }
 
 .logo-text {
@@ -2703,7 +2726,7 @@ body.fullscreen-mode .ticker-pill {
     gap: 10px;
   }
 
-  .logo-wrapper {
+  .logo-heading {
     flex: 0 0 auto;
     white-space: nowrap;
     gap: 6px;

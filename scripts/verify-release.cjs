@@ -17,6 +17,12 @@ if (pkg.version !== lock.version || pkg.version !== lock.packages?.['']?.version
 if (!installer.includes(`Versao: ${pkg.version} ^| Pacote local de distribuicao`)) {
   issues.push('Versao exibida pelo instalador divergente.');
 }
+if (!fs.readFileSync(path.join(root, 'public/index.html'), 'utf8').includes(`>Versão ${pkg.version}</span>`)) {
+  issues.push('Versao inicial mostrada no painel divergente.');
+}
+if (!fs.readFileSync(path.join(root, 'README.md'), 'utf8').includes(`**Versao de publicacao: ${pkg.version}**`)) {
+  issues.push('Versao de publicacao no README divergente.');
+}
 if (!fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8').includes(`## ${pkg.version}`)) {
   issues.push('CHANGELOG.md nao documenta esta versao.');
 }

@@ -119,6 +119,17 @@ async function main() {
         agent.npxOperational.status = -1; const paused = show();
         agent.npxOperational.status = 0; const offlineAgain = show();
         sample.status.pbx.authenticated = false; const pbxUnknown = show();
+        const pbxAlertText = document.getElementById('npx-alert-message')?.textContent || '';
+        const pbxAlertCorrect = pbxAlertText.includes('NOSSATEL PBX') &&
+          pbxAlertText.includes('API do PBX') && !pbxAlertText.includes('API do NPX');
+        sample.status.pbx.error = 'Falha de integração (ERR_TLS_CERT_ALTNAME_INVALID)';
+        show();
+        const pbxTlsAlertText = document.getElementById('npx-alert-message')?.textContent || '';
+        const pbxTlsAlertCorrect = pbxTlsAlertText.includes('NOSSATEL PBX') &&
+          pbxTlsAlertText.includes('CERTIFICADO TLS INCOMPATÍVEL') &&
+          pbxTlsAlertText.includes('API do PBX') &&
+          !pbxTlsAlertText.includes('CONEXÃO OSCILOU');
+        sample.status.pbx.error = null;
         sample.status.pbx.authenticated = true;
         sample.status.npx = { authenticated: false, error: 'Falha de integração (ECONNABORTED)' };
         agent.npxQueuePresent = false;
@@ -126,6 +137,26 @@ async function main() {
         const alertBanner = document.getElementById('npx-alert-banner');
         const npxErrorBannerVisible = !!alertBanner &&
           !alertBanner.classList.contains('hidden') && getComputedStyle(alertBanner).display !== 'none';
+        // Falha global aparece no banner, e coleta parcial não desliga o estado operacional.
+        sample.status.npx = { authenticated: true, error: null, warning: 'Coleta parcial NPX: 6 consultas auxiliares indisponiveis' };
+        agent.npxQueuePresent = true;
+        agent.npxOperational.status = 1;
+        agent.npxOperational.observedAt = new Date().toISOString();
+        const previousQueue = dept.queue;
+        const previousWait = dept.wait_time_sec;
+        dept.queue = null;
+        dept.wait_time_sec = null;
+        const partial = show();
+        const partialWarningText = document.getElementById('npx-alert-message')?.textContent || '';
+        const partialWarningVisible = partialWarningText.includes('COLETA PARCIAL') &&
+          partialWarningText.includes('INFOBRASIL NPX') &&
+          document.getElementById('status-text-npx')?.textContent === 'NPX PARCIAL';
+        const prefix = ({ InfoBrasil_Comercial: 'comercial', Infobrasil_finan: 'finan',
+          InfoBrasil_SPED_Fiscal: 'sped', InfoBrasil_Suporte: 'suporte', InfoBrasil_Ponto: 'ponto' })[queue];
+        const partialMetricsUnknown = document.getElementById(prefix + '-queue')?.textContent === '—' &&
+          document.getElementById(prefix + '-wait')?.textContent === '—';
+        dept.queue = previousQueue;
+        dept.wait_time_sec = previousWait;
         sample.status.npx = { authenticated: true, error: null };
         agent.npxQueuePresent = true;
         agent.npxOperational.status = 1;
@@ -182,17 +213,20 @@ async function main() {
           ringing.badge === 'Chamando' && ringing.category === 'busy' &&
           paused.css.includes('status-5') && paused.category === 'paused' &&
           offlineAgain.css.includes('status-offline') &&
-          pbxUnknown.css.includes('status-npx-unverified') && pbxUnknown.badge === 'PBX não confirmado' &&
+          pbxUnknown.css.includes('status-npx-unverified') && pbxUnknown.badge === '' &&
           pbxUnknown.nameWeight === offline.nameWeight && pbxUnknown.nameColor === offline.nameColor &&
-          npxUnknown.css.includes('status-npx-unverified') && npxUnknown.badge === 'NPX não confirmado' &&
-          npxErrorBannerVisible && recoveredBannerHidden &&
+          npxUnknown.css.includes('status-npx-unverified') && npxUnknown.badge === '' &&
+          partial.css.includes('status-1') && partial.category === 'free' &&
+          partialWarningVisible && partialMetricsUnknown &&
+          pbxAlertCorrect && pbxTlsAlertCorrect && npxErrorBannerVisible && recoveredBannerHidden &&
           stale.badge === 'Status NPX não confirmado' && stale.category === 'offline' &&
           pbx.css.includes('status-pbx-free') && pbx.category === 'free' && uniformCards &&
           [offline, free, busy, ringing, paused, offlineAgain, pbxUnknown, npxUnknown, stale, pbx]
             .every(state => state.cursor === 'default') &&
           cardClickIgnored && metricsIconOpens && metricsIconCloses,
-          offline, free, busy, ringing, paused, offlineAgain, pbxUnknown, npxUnknown, stale, pbx,
-          npxErrorBannerVisible, recoveredBannerHidden,
+          offline, free, busy, ringing, paused, offlineAgain, pbxUnknown, npxUnknown, partial, stale, pbx,
+          pbxAlertCorrect, pbxAlertText, pbxTlsAlertCorrect, pbxTlsAlertText,
+          npxErrorBannerVisible, partialWarningVisible, partialMetricsUnknown, recoveredBannerHidden,
           uniformCards, cardClickIgnored, metricsIconOpens, metricsIconCloses,
           uniformSnapshots: snapshots };
       } finally { updateUI(data); }

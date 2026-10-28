@@ -111,6 +111,11 @@ function fixture(t, scenario) {
   write(source, 'docs/re/internal.md', 'FORBIDDEN');
   write(source, 'scripts/instalar-skills-davi.mjs', 'FORBIDDEN');
   write(source, 'public/new.js', 'new-file');
+  // O pacote de origem pode conter um registro externo: nao deve ser copiado.
+  write(source, '.infoboard-installation.json', '{"version":"9.9.9","installedAt":"2020-01-01T00:00:00.000Z"}');
+  if (scenario === 'success-with-old-date') {
+    write(app, '.infoboard-installation.json', '{"version":"1.0.0","installedAt":"2026-01-01T12:00:00.000Z"}');
+  }
   write(source, '.github/workflows/check.yml', 'public-workflow');
   write(dir, 'npm home/npm.cmd', 'fixture-only');
   write(dir, 'npm home/node_modules/npm/bin/npm-cli.js', `const fs=require('node:fs');const path=require('node:path');const dest=process.argv[process.argv.indexOf('--prefix')+1];fs.mkdirSync(path.join(dest,'node_modules'),{recursive:true});fs.writeFileSync(path.join(dest,'node_modules/dependency.txt'),'new-dependency');process.stderr.write('npm WARN fixture');process.exit(${scenario === 'native-failure' ? 9 : 0});`);
@@ -143,6 +148,10 @@ test('atualizador real prepara, protege, atualiza e valida sem perder configurac
   assert.equal(fs.readFileSync(path.join(app, '.env'), 'utf8'), 'PORT=3001\nFIXTURE_SECRET=not-for-logs');
   assert.equal(fs.readFileSync(path.join(app, 'config/analysts_map.json'), 'utf8'), '{"local":true}');
   assert.equal(fs.readFileSync(path.join(app, 'node_modules/dependency.txt'), 'utf8'), 'new-dependency');
+  const install = JSON.parse(fs.readFileSync(path.join(app, '.infoboard-installation.json'), 'utf8'));
+  assert.equal(install.version, releaseVersion);
+  assert.ok(Number.isFinite(Date.parse(install.installedAt)));
+  assert.notEqual(install.installedAt, '2020-01-01T00:00:00.000Z');
   assert.match(fs.readFileSync(path.join(app, 'daemon/fixture.xml'), 'utf8'), /value="3001"/);
   assert.ok(fs.existsSync(path.join(app, '.github/workflows/check.yml')));
   for (const forbidden of ['.git_old', '.env.backup', 'private.env', '.agents', '.maestri', 'agent-skills', 'AGENTS.md', 'MAESTRI-POLITICA-OPERACIONAL.md', 'docs/re', 'scripts/instalar-skills-davi.mjs']) assert.equal(fs.existsSync(path.join(app, forbidden)), false);
@@ -153,6 +162,18 @@ test('atualizador real prepara, protege, atualiza e valida sem perder configurac
   const log = fs.readFileSync(path.join(work, 'atualizacao.log'), 'utf8');
   assert.match(log, /ETAPA 8\/8.*CONCLUIDA/);
   assert.doesNotMatch(log + run.stdout + run.stderr, /not-for-logs|FORBIDDEN/);
+});
+
+test('atualizador guarda a versao anterior no ZIP e renova a data ao concluir', { skip: process.platform !== 'win32' }, t => {
+  const { app, run, result } = fixture(t, 'success-with-old-date');
+  assert.equal(result.Code, 0, run.stderr + run.stdout);
+  const after = JSON.parse(fs.readFileSync(path.join(app, '.infoboard-installation.json'), 'utf8'));
+  assert.equal(after.version, releaseVersion);
+  assert.notEqual(after.installedAt, '2026-01-01T12:00:00.000Z');
+  const work = path.join(app, 'backups', fs.readdirSync(path.join(app, 'backups')).find(x => x.startsWith('update_')));
+  const list = spawnSync('tar', ['-tf', path.join(work, 'fontes-anteriores.zip')], { encoding: 'utf8' });
+  assert.equal(list.status, 0, list.stderr);
+  assert.match(list.stdout, /\.infoboard-installation\.json/);
 });
 
 for (const scenario of ['package', 'npm', 'reboot', 'downgrade', 'native-failure', 'locked']) {

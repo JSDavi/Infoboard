@@ -12,7 +12,7 @@ const css = fs.readFileSync(path.join(root, 'public', 'style.css'), 'utf8');
 test('backend só publica a API de leitura e não importa módulos de comando', () => {
   const routes = [...server.matchAll(/\bapp\.(get|post|put|patch|delete)\s*\(\s*['"]([^'"]+)/g)]
     .map(([, verb, route]) => [verb, route]);
-  assert.deepEqual(routes, [['get', '/api/data']]);
+  assert.deepEqual(routes, [['get', '/api/version'], ['get', '/api/data']]);
   assert.doesNotMatch(server, /require\(['"]\.\/npx-(?:session|switch|access-policy|queue-state|admin-access)['"]\)/);
   assert.match(server, /collectStage\('\/rates\/details_by_queue\.json'\)/);
   assert.match(server, /getPbxConnectionStatus\(\)/);

@@ -343,7 +343,9 @@ function Invoke-IBUpdate {
             } finally { $zip.Dispose(); $stream.Dispose() }
             $z = [IO.Compression.ZipFile]::OpenRead($c.Backup)
             try { if ($z.Entries.Count -eq 0) { throw 'Backup vazio.' } } finally { $z.Dispose() }
-            $c.Files = @(Get-IBFiles $c.Source)
+            # Estado da maquina que instalou a versao nunca vem do pacote fonte.
+            # O registro local entra no ZIP anterior para restauracao no rollback.
+            $c.Files = @(Get-IBFiles $c.Source | Where-Object { $_ -ne '.infoboard-installation.json' })
             foreach ($rel in $c.Files) { $null = Get-IBTarget $c.App $rel }
             $null = Get-IBTarget $c.App 'node_modules'
         }
@@ -375,7 +377,20 @@ function Invoke-IBUpdate {
             & $Actions.Start $c.Service
             & $Actions.Health $c.Port $c.Service
         }
-        Invoke-IBStage $c 8 'Finalizar relatorio' {
+        Invoke-IBStage $c 8 'Registrar versao instalada e finalizar relatorio' {
+            # Registrar apenas apos o health check do servico. O arquivo anterior
+            # esta no backup. Se nao existia, o rollback remove o novo.
+            $metadata = Get-IBTarget $c.App '.infoboard-installation.json'
+            $tempMetadata = Get-IBTarget $c.App ('.infoboard-installation.json-' + [guid]::NewGuid().ToString('N') + '.tmp')
+            if (-not [IO.File]::Exists($metadata)) { $c.NewFiles += '.infoboard-installation.json' }
+            try {
+                $value = @{ version = $c.Version; installedAt = [DateTime]::UtcNow.ToString('o', [Globalization.CultureInfo]::InvariantCulture) } | ConvertTo-Json -Compress
+                [IO.File]::WriteAllText($tempMetadata, $value + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
+                if ([IO.File]::Exists($metadata)) { [IO.File]::Replace($tempMetadata, $metadata, $null) }
+                else { [IO.File]::Move($tempMetadata, $metadata) }
+            } finally {
+                if ([IO.File]::Exists($tempMetadata)) { [IO.File]::Delete($tempMetadata) }
+            }
             Write-IBLog $c ('SUCESSO: versao ' + $c.Version + '; http://localhost:' + $c.Port + '; .env e mapa local preservados.')
             Write-IBLog $c ('Backup e diagnostico privados: ' + $c.Work)
         }

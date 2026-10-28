@@ -1,5 +1,11 @@
 # Historico de versoes do InfoBoard
 
+## 1.2.4 - 28/10/2026
+
+- Exibe a versao instalada com tamanho legivel abaixo da marca, sem deslocar o titulo do painel; a data e hora da aplicacao aparecem ao passar o mouse ou focar o indicador.
+- Registra a data e hora reais apos cada instalacao ou reinstalacao, mesmo na mesma versao, e apos cada atualizacao validada pelo servico.
+- Revisa a integracao NPX, incluindo tratamento de indisponibilidade e consistencia dos dados apresentados aos analistas.
+
 ## 1.2.3 - 26/10/2026
 
 - Impede sobreposicao das coletas NPX e consulta as cinco filas em etapas sincronizadas, reduzindo rajadas sem defasar os setores.

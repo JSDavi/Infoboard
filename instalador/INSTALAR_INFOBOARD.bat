@@ -83,7 +83,7 @@ cls
 echo ===============================================================================
 echo                    !C_CYAN!!C_BOLD!INFOBRASIL - INSTALADOR DO INFOBOARD TV!C_RESET!
 echo ===============================================================================
-echo !C_GRAY!  Versao: 1.2.3 ^| Pacote local de distribuicao!C_RESET!
+echo !C_GRAY!  Versao: 1.2.4 ^| Pacote local de distribuicao!C_RESET!
 echo.
 echo !C_BOLD!Etapas do Assistente de Instalacao:!C_RESET!
 echo   !C_CYAN![ 1/6 ]!C_RESET! Verificacao e Preparacao do Node.js LTS
@@ -519,6 +519,15 @@ powershell -NoProfile -Command ^
     "}" >nul 2>&1
 
 echo   !C_GREEN![OK] Atalhos 'Abrir Painel Infoboard' e 'Atualizar Infoboard' criados com sucesso!!C_RESET!
+echo.
+
+:: Registrar a versao e a data somente apos concluir a instalacao.
+node "!TARGET_DIR!\scripts\record-installation.cjs" "!TARGET_DIR!"
+if !errorlevel! neq 0 (
+    call :ERRO_FATAL "ETAPA 6/6 - Registro da Versao" "603" "Falha ao gravar versao e data da instalacao." "Confira as permissoes da pasta do InfoBoard e execute novamente o instalador."
+    exit /b 1
+)
+echo   !C_GREEN![OK] Versao instalada e data registradas!!C_RESET!
 echo.
 
 :: Obter IP local da maquina para exibir no sumario

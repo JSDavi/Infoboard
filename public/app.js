@@ -715,20 +715,50 @@ function renderPrixChat(realData) {
 // --- RENDERIZAÇÃO E ATUALIZAÇÃO DA UI ---
 
 // Helper para categorizar erros de APIs externas com Selo da Plataforma
-function categorizeError(errText, tagLabel) {
+function categorizeError(errText, tagLabel, service = 'NPX') {
   const text = (errText || '').toLowerCase();
   const tagHtml = `<span class="alert-tag-badge">${tagLabel}</span>`;
+  const serviceName = { NPX: 'NPX', PBX: 'PBX', PRIX: 'PrixChat' }[service] || 'serviço';
 
   if (text.includes('modo simulador')) {
     return {
       type: 'simulated',
       className: 'alert-banner-auth',
       iconHtml: '<i class="fa-solid fa-flask"></i>',
-      msg: `${tagHtml} MODO SIMULADO: Dados de demonstracao, sem conexao ao NPX real.`
+      msg: `${tagHtml} MODO SIMULADO: Dados de demonstracao, sem conexao ao ${serviceName} real.`
     };
   }
 
-  if (text.includes('status npx indisponivel') || text.includes('status prixchat indisponivel')) {
+  if (text.includes('coleta parcial npx')) {
+    return {
+      type: 'partial',
+      className: 'alert-banner-network',
+      iconHtml: '<i class="fa-solid fa-triangle-exclamation"></i>',
+      msg: `${tagHtml} COLETA PARCIAL: Estados dos analistas disponíveis; algumas métricas de fila não puderam ser atualizadas.`
+    };
+  }
+
+  if (text.includes('err_tls_cert_altname_invalid') ||
+      text.includes('hostname/ip does not match certificate')) {
+    return {
+      type: 'tls',
+      className: 'alert-banner-server',
+      iconHtml: '<i class="fa-solid fa-shield-halved"></i>',
+      msg: `${tagHtml} CERTIFICADO TLS INCOMPATÍVEL: O endereço da API do ${serviceName} não corresponde ao certificado apresentado. Verifique a URL e o certificado.`
+    };
+  }
+
+  if (text.includes('cert_has_expired') || text.includes('self_signed_cert') ||
+      text.includes('unable_to_verify_leaf_signature') || text.includes('unable_to_get_issuer_cert')) {
+    return {
+      type: 'tls',
+      className: 'alert-banner-server',
+      iconHtml: '<i class="fa-solid fa-shield-halved"></i>',
+      msg: `${tagHtml} FALHA NO CERTIFICADO TLS: Não foi possível validar o certificado da API do ${serviceName}. Verifique o certificado e sua cadeia de confiança.`
+    };
+  }
+
+  if (text.includes('status npx indisponivel') || text.includes('status pbx indisponivel') || text.includes('status prixchat indisponivel')) {
     return {
       type: 'unavailable',
       className: 'alert-banner-network',
@@ -742,7 +772,9 @@ function categorizeError(errText, tagLabel) {
       type: 'auth',
       className: 'alert-banner-auth',
       iconHtml: '<i class="fa-solid fa-key"></i>',
-      msg: `${tagHtml} 🔑 FALHA DE LOGIN: E-mail ou senha incorretos.`
+      msg: service === 'PBX'
+        ? `${tagHtml} FALHA DE AUTENTICAÇÃO: Verifique as credenciais de integração do PBX.`
+        : `${tagHtml} FALHA DE AUTENTICAÇÃO: Verifique as credenciais de integração do ${serviceName}.`
     };
   }
 
@@ -768,7 +800,7 @@ function categorizeError(errText, tagLabel) {
     type: 'network',
     className: 'alert-banner-network',
     iconHtml: '<i class="fa-solid fa-satellite-dish"></i>',
-    msg: `${tagHtml} 📡 CONEXÃO OSCILOU: Reconectando à API do NPX automaticamente...`
+    msg: `${tagHtml} 📡 CONEXÃO OSCILOU: Tentando restabelecer a comunicação com a API do ${serviceName} automaticamente...`
   };
 }
 
@@ -837,6 +869,7 @@ function updateUI(data) {
   const alertMsg = document.getElementById('npx-alert-message');
 
   let npxErrorMsg = null;
+  let npxWarningMsg = null;
   let pbxErrorMsg = null;
   let prixErrorMsg = null;
 
@@ -852,6 +885,9 @@ function updateUI(data) {
       const errLabel = errCodeMatch ? `NPX ERRO ${errCodeMatch[0]}` : 'NPX OFF';
       const errClass = getErrorStateClass(errText);
       setConnectionStatus('npx', errClass, errLabel);
+    } else if (status.npx.warning) {
+      npxWarningMsg = status.npx.warning;
+      setConnectionStatus('npx', 'warning', 'NPX PARCIAL');
     } else {
       setConnectionStatus('npx', 'connected', 'NPX');
     }
@@ -879,6 +915,7 @@ function updateUI(data) {
       setConnectionStatus('pbx', 'connected', 'PBX');
     }
   } else {
+    pbxErrorMsg = 'Status PBX indisponivel';
     setConnectionStatus('pbx', 'offline', 'PBX Off');
   }
 
@@ -909,9 +946,10 @@ function updateUI(data) {
   }
 
   // Gerencia a exibição do Banner Inteligente de Alerta com Selo da Plataforma
-  const activeErrInfo = npxErrorMsg ? categorizeError(npxErrorMsg, '<i class="fa-solid fa-phone"></i> INFOBRASIL NPX') :
-                        pbxErrorMsg ? categorizeError(pbxErrorMsg, '<i class="fa-solid fa-phone-volume"></i> NOSSATEL PBX') :
-                        prixErrorMsg ? categorizeError(prixErrorMsg, '<i class="fa-brands fa-whatsapp"></i> PRIXCHAT') : null;
+  const activeErrInfo = npxErrorMsg ? categorizeError(npxErrorMsg, '<i class="fa-solid fa-phone"></i> INFOBRASIL NPX', 'NPX') :
+                        pbxErrorMsg ? categorizeError(pbxErrorMsg, '<i class="fa-solid fa-phone-volume"></i> NOSSATEL PBX', 'PBX') :
+                        prixErrorMsg ? categorizeError(prixErrorMsg, '<i class="fa-brands fa-whatsapp"></i> PRIXCHAT', 'PRIX') :
+                        npxWarningMsg ? categorizeError(npxWarningMsg, '<i class="fa-solid fa-phone"></i> INFOBRASIL NPX', 'NPX') : null;
 
   if (alertBanner) {
     if (activeErrInfo) {
@@ -932,6 +970,7 @@ function updateUI(data) {
   }
 
   let currentTotalQueue = 0;
+  let allQueueCountsKnown = true;
 
   // Mapeamento dos elementos HTML de cada coluna/subsetor
   const deptMapping = {
@@ -947,7 +986,8 @@ function updateUI(data) {
     const deptData = data.departments[key];
     if (!deptData) return;
 
-    currentTotalQueue += (deptData.queue || 0);
+    if (deptData.queue == null) allQueueCountsKnown = false;
+    else currentTotalQueue += Number(deptData.queue) || 0;
     const prefix = domInfo.prefix;
 
     // Fila e Tempo de Espera
@@ -956,8 +996,8 @@ function updateUI(data) {
     const queueBar = document.getElementById(`${prefix}-queue-bar`);
 
     // Atualiza valores
-    if (queueEl) queueEl.textContent = deptData.queue;
-    if (waitEl) waitEl.textContent = formatTime(deptData.wait_time_sec);
+    if (queueEl) queueEl.textContent = deptData.queue == null ? '—' : deptData.queue;
+    if (waitEl) waitEl.textContent = deptData.wait_time_sec == null ? '—' : formatTime(deptData.wait_time_sec);
 
     // Alerta de SLA na barra de fila (se o elemento existir, como no Suporte)
     if (queueBar) {
@@ -1125,7 +1165,8 @@ function updateUI(data) {
             badgeHtml = '';
           } else if (!npxMonitorAvailable) {
             statusClass = 'status-npx-unverified';
-            badgeHtml = '<span class="status-text-badge status-npx-unverified" title="A coleta do NPX está indisponível; o estado atual deste analista não pode ser confirmado">NPX não confirmado</span>';
+            // Falha global da coleta aparece no cabeçalho, sem rótulo repetido por analista.
+            badgeHtml = '';
           } else if (connection.isNpxBusy) {
             statusClass = 'status-2';
             badgeHtml = '<span class="status-text-badge status-2" title="O monitor oficial NPX informa ocupado; sem numero de chamada confirmado">Ocupado na NPX</span>';
@@ -1141,8 +1182,10 @@ function updateUI(data) {
               card.classList.add('offline-card');
               badgeHtml = '<span class="status-text-badge status-offline" title="NPX: desligado na fila. PBX: dispositivo sem registro, confirmado por consulta atual. O MicroSIP pode estar aberto.">Sem conexão NPX/PBX</span>';
             } else {
+              // Falta de observação do PBX é diagnóstico interno, não um aviso
+              // operacional a ser repetido em cada cartão de analista.
               statusClass = 'status-npx-unverified';
-              badgeHtml = '<span class="status-text-badge status-npx-unverified" title="NPX confirma desligamento, mas o estado do registro PBX nao foi confirmado em uma consulta atual">PBX não confirmado</span>';
+              badgeHtml = '';
             }
           } else if (connection.isNpxOperationalUnknown) {
             statusClass = 'status-npx-unverified';
@@ -1278,10 +1321,10 @@ function updateUI(data) {
   }
 
   // 7. Efeito Sonoro quando a fila total aumenta
-  if (currentTotalQueue > previousTotalQueue) {
+  if (allQueueCountsKnown && previousTotalQueue != null && currentTotalQueue > previousTotalQueue) {
     playQueueBeep();
   }
-  previousTotalQueue = currentTotalQueue;
+  previousTotalQueue = allQueueCountsKnown ? currentTotalQueue : null;
 }
 
 // --- CONTROLE DE TELA CHEIA (F11) ---

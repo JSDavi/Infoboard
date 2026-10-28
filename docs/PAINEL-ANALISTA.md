@@ -14,9 +14,13 @@ O integrador consulta as cinco filas do monitor oficial NPX e os estados do PBX.
 
 - **Livre / em chamada / chamando / pausado:** estados observados; métricas e durações são somente informativas.
 - **Sem conexão NPX/PBX:** ambos os sistemas confirmaram desconexão.
-- **NPX não confirmado:** a coleta do NPX está indisponível; somente estados atuais confirmados pelo PBX continuam sendo exibidos.
-- **PBX não confirmado:** o NPX confirmou desconexão, mas ainda falta confirmação atual do PBX.
+- **Falha geral de coleta NPX:** o aviso aparece no cabeçalho; os cartões sem estado confirmado permanecem neutros, enquanto os estados atuais confirmados pelo PBX continuam exibidos.
+- **NPX PARCIAL:** os estados dos analistas foram coletados, mas algumas métricas auxiliares de fila estão indisponíveis e aparecem como “—”.
 - **Status NPX não confirmado:** não há uma leitura operacional válida e recente.
+
+Quando o NPX indica desconexão e a leitura atual do PBX ainda não está disponível, o cartão permanece em estado visual neutro, sem a etiqueta repetitiva "PBX não confirmado". A incerteza do registro SIP continua preservada internamente; o painel não apresenta um ramal como desconectado dos dois serviços até que ambos confirmem. A confirmação do PBX é uma consulta automática à API sobre o registro do ramal, não uma ação manual ao trocar de ramal no MicroSIP. Falhas na comunicação com o PBX continuam visíveis no alerta geral do cabeçalho, identificado como NOSSATEL PBX, sem atribuir a falha ao NPX.
+
+Se a coleta do PBX retornar `ERR_TLS_CERT_ALTNAME_INVALID`, o banner informa que o certificado TLS apresentado não corresponde ao endereço utilizado na API. A solução é revisar o endereço configurado ou o certificado do provedor, mantendo a validação TLS habilitada.
 
 A autenticação técnica que o servidor usa para ler NPX e PrixChat permanece configurada em `.env` e é independente do login que o analista faz no aplicativo principal.
 

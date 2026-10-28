@@ -15,6 +15,7 @@ const { getPanelAccess, filterPanelData } = require('./infoboard-access');
 const { withNpxMonitorObservation } = require('./npx-monitor-state');
 const { safeError, upstreamOptions, validatedUpstreamBaseUrl, sameOriginRedirect, isAllowedApiOrigin } = require('./server-security');
 const { startSerialPolling } = require('./async-control');
+const { readInstallationInfo } = require('./installation-info');
 
 // Carrega variáveis de ambiente
 dotenv.config();
@@ -606,32 +607,45 @@ async function apiGet(endpoint, params = {}, retryState = {}) {
   }
 }
 
-// Mantém as cinco filas no mesmo ciclo, mas evita uma rajada de 15 chamadas.
-// Cada etapa consulta todas as filas em paralelo; a próxima etapa só começa
-// depois que a anterior termina. O snapshot só é publicado quando as três
-// etapas estiverem completas.
+// Detalhes dos agentes são obrigatórios para confirmar seus estados. Totais e
+// chamadas aguardando são auxiliares: sua falha não invalida o monitor dos ramais.
 async function collectNpxQueueSnapshots(departmentsArray) {
   const collectStage = endpoint => Promise.all(departmentsArray.map(([, dept]) =>
     apiGet(endpoint, { queue: dept.path, queue_type: 'LOG' })
   ));
+  const collectOptionalStage = async endpoint => {
+    const results = await Promise.allSettled(departmentsArray.map(([, dept]) =>
+      apiGet(endpoint, { queue: dept.path, queue_type: 'LOG' })
+    ));
+    return {
+      values: results.map(result => result.status === 'fulfilled' ? result.value : null),
+      failures: results.filter(result => result.status === 'rejected').length
+    };
+  };
 
-  const totalsByDepartment = await collectStage('/rates/totals_filter_by_queues.json');
+  const totalsByDepartment = await collectOptionalStage('/rates/totals_filter_by_queues.json');
+  const waitCallsByDepartment = await collectOptionalStage('/rates/wait_calls.json');
+  // Captura os detalhes por último para não envelhecer a observação operacional
+  // enquanto as consultas auxiliares aguardam timeout/retry.
   const detailsByDepartment = await collectStage('/rates/details_by_queue.json');
-  const waitCallsByDepartment = await collectStage('/rates/wait_calls.json');
 
-  return departmentsArray.map(([key, dept], index) => {
+  const queues = departmentsArray.map(([key, dept], index) => {
     const rawDetails = detailsByDepartment[index];
+    if (!Array.isArray(rawDetails?.details)) {
+      throw new Error(`Monitor NPX sem detalhes validos para fila ${key}`);
+    }
     const details = NPX_REQUIRE_SIP_CONFIRMATION
       ? { ...rawDetails, details: withNpxMonitorObservation(rawDetails?.details, dept.path) }
       : rawDetails;
     return {
       key,
       dept,
-      totals: totalsByDepartment[index],
+      totals: totalsByDepartment.values[index],
       details,
-      waitCalls: waitCallsByDepartment[index]
+      waitCalls: waitCallsByDepartment.values[index]
     };
   });
+  return { queues, auxiliaryFailures: totalsByDepartment.failures + waitCallsByDepartment.failures };
 }
 
 // Converte string de duração "HH:MM:SS" em segundos
@@ -956,7 +970,7 @@ async function runUpdateCycle() {
     const pbxDataSnapshot = getPbxConnectionStatus().authenticated ? lastPbxData : {};
 
     // Executa as requisições do NPX e do PrixChat em paralelo
-    const [npxQueueSnapshots, prixMoments] = await Promise.all([
+    const [npxSnapshotResult, prixMoments] = await Promise.all([
       collectNpxQueueSnapshots(departmentsArray),
       getPrixUsersMoments().catch(err => {
         console.error('[PrixChat] Erro ao coletar tickets reais de WhatsApp:', safeError(err));
@@ -967,13 +981,13 @@ async function runUpdateCycle() {
     connectionStatus.error = null;
     connectionStatus.lastUpdate = new Date().toISOString();
 
-    const npxResults = npxQueueSnapshots.map(({ key, dept, totals, details, waitCalls }) => {
+    const npxResults = npxSnapshotResult.queues.map(({ key, dept, totals, details, waitCalls }) => {
         if (process.env.LOG_LEVEL === 'debug') console.log(`[NPX Integrator] Coletando dados JSON do monitor: ${dept.name}...`);
 
         // Organiza a contagem de fila e tempos
-        const queueCount = totals.total_wait !== undefined ? totals.total_wait : (waitCalls.wait_calls || []).length;
-        const waitTimeSec = parseTimeToSeconds(totals.wait);
-        const online = (totals.total_free || 0) + (totals.total_busy || 0) + (totals.total_paused || 0);
+        const queueCount = totals?.total_wait != null ? totals.total_wait :
+          (Array.isArray(waitCalls?.wait_calls) ? waitCalls.wait_calls.length : null);
+        const waitTimeSec = totals ? parseTimeToSeconds(totals.wait) : null;
 
         // Constrói lista unificada de ligações (Fila + Em Atendimento)
         const calls = [];
@@ -1220,7 +1234,10 @@ async function runUpdateCycle() {
         npx: {
           authenticated: connectionStatus.authenticated,
           isSimulated: connectionStatus.isSimulated,
-          error: connectionStatus.error
+          error: connectionStatus.error,
+          warning: npxSnapshotResult.auxiliaryFailures > 0
+            ? `Coleta parcial NPX: ${npxSnapshotResult.auxiliaryFailures} consultas auxiliares indisponiveis`
+            : null
         },
         pbx: getPbxConnectionStatus(),
         prix: {
@@ -1902,6 +1919,12 @@ startSerialPolling(runUpdateCycle, {
 });
 
 // --- ROTAS DA API ---
+
+app.get('/api/version', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!getPanelAccess(req, process.env)) return res.status(401).json({ error: 'Acesso restrito.' });
+  res.json(readInstallationInfo(__dirname));
+});
 
 // Endpoint principal de dados para o painel de TV (Com trava no-store para desativar cache do navegador na TV)
 app.get('/api/data', (req, res) => {
