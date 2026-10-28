@@ -16,7 +16,8 @@ call exit /b %%errorlevel%%
 )
 # INFOBOARD_PAYLOAD_BEGIN
 `;
-  return (launcher + nodeSource + '\n' + core + '\n# INFOBOARD_PAYLOAD_END\n').replace(/\r?\n/g, '\r\n');
+  const pbx = fs.readFileSync(path.join(root, 'instalador/pbx-config.ps1'), 'utf8');
+  return (launcher + nodeSource + '\n' + pbx + '\n' + core + '\n# INFOBOARD_PAYLOAD_END\n').replace(/\r?\n/g, '\r\n');
 }
 function build() {
   const helper = path.join(root, 'instalador/ensure-node.ps1');

@@ -831,6 +831,11 @@ body {
 
 /* Homologacao SIP NPX: diferenciar estado desconhecido de desconexao confirmada. */
 .analyst-card.status-npx-unverified {
+  background-color: #e2e8f0;
+  border-color: #94a3b8;
+  color: #334155;
+}
+.analyst-card.status-npx-unverified.status-npx-ringing {
   background-color: #fffbeb;
   border-color: #d97706;
   color: #78350f;
@@ -851,7 +856,8 @@ body {
   color: #334155;
   text-shadow: none;
 }
-.status-text-badge.status-npx-unverified { background-color: #fde68a; color: #78350f; }
+.status-text-badge.status-npx-unverified { background-color: #cbd5e1; color: #334155; }
+.status-npx-ringing .status-text-badge.status-npx-unverified { background-color: #fde68a; color: #78350f; }
 .status-text-badge.status-npx-disconnected { background-color: #fecdd3; color: #881337; }
 
 

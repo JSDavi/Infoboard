@@ -257,6 +257,9 @@ function Get-IBActions {
 function Restore-IBUpdate($c, $actions) {
     Write-IBLog $c '[ROLLBACK] INICIO: restaurando arquivos e dependencias anteriores, sem download.'
     & $actions.Stop $c.Service
+    if ($c.EnvChanged) {
+        [IO.File]::WriteAllBytes((Get-IBTarget $c.App '.env'), [IO.File]::ReadAllBytes((Get-IBTarget $c.Work 'configuracao.env')))
+    }
     foreach ($rel in $c.NewFiles) {
         $p = Get-IBTarget $c.App $rel
         if ([IO.File]::Exists($p)) { [IO.File]::Delete($p) }
@@ -286,7 +289,7 @@ function Restore-IBUpdate($c, $actions) {
 
 function Invoke-IBUpdate {
     param([string]$ApplicationDirectory, [string]$SourceDirectory, [hashtable]$Actions)
-    $c = @{ App=$null; Work=$null; Log=$null; Lock=$null; LogFailed=$false; Stage=1; Changed=$false; NewDeps=$false; OldDepsMoved=$false; NewFiles=@(); WasRunning=$false; ServicePlan=$null }
+    $c = @{ App=$null; Work=$null; Log=$null; Lock=$null; LogFailed=$false; Stage=1; Changed=$false; NewDeps=$false; OldDepsMoved=$false; NewFiles=@(); WasRunning=$false; ServicePlan=$null; EnvChanged=$false }
     try {
         $c.App = Assert-IBPath $ApplicationDirectory
         if ($c.App -eq [IO.Path]::GetPathRoot($c.App).TrimEnd('\') -or $c.App -eq $env:USERPROFILE -or $c.App -eq $env:WINDIR) { throw 'Pasta de sistema/raiz recusada.' }
@@ -368,6 +371,19 @@ function Invoke-IBUpdate {
             }
             [IO.Directory]::Move((Get-IBTarget $c.Source 'node_modules'), $deps)
             $c.NewDeps = $true
+            $envPath = Get-IBTarget $c.App '.env'
+            if ([IO.File]::Exists($envPath)) {
+                $text = [IO.File]::ReadAllText($envPath)
+                $updated = Convert-IBPbxConfigText $text
+                if ($updated -cne $text) {
+                    # Backup ja foi protegido na etapa 4; marcar antes da escrita.
+                    $c.EnvChanged = $true
+                    $bytes = [IO.File]::ReadAllBytes($envPath)
+                    $bom = $bytes.Length -ge 3 -and $bytes[0] -eq 239 -and $bytes[1] -eq 187 -and $bytes[2] -eq 191
+                    [IO.File]::WriteAllText($envPath, $updated, [Text.UTF8Encoding]::new($bom))
+                    Write-IBLog $c 'PBX: endereco legado migrado para sip33.tsinfo.net.br; demais configuracoes preservadas.'
+                }
+            }
             if ($c.ServicePlan) {
                 $null = Assert-IBPath $c.ServicePlan.Path
                 $c.ServicePlan.Xml.Save($c.ServicePlan.Path)
@@ -386,7 +402,7 @@ function Invoke-IBUpdate {
             try {
                 $value = @{ version = $c.Version; installedAt = [DateTime]::UtcNow.ToString('o', [Globalization.CultureInfo]::InvariantCulture) } | ConvertTo-Json -Compress
                 [IO.File]::WriteAllText($tempMetadata, $value + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
-                if ([IO.File]::Exists($metadata)) { [IO.File]::Replace($tempMetadata, $metadata, $null) }
+                if ([IO.File]::Exists($metadata)) { [IO.File]::Replace($tempMetadata, $metadata, [NullString]::Value) }
                 else { [IO.File]::Move($tempMetadata, $metadata) }
             } finally {
                 if ([IO.File]::Exists($tempMetadata)) { [IO.File]::Delete($tempMetadata) }

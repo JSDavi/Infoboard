@@ -156,6 +156,13 @@ def setup_env_and_npm(target_dir, port, env_content, logger):
         f.writelines(output_lines)
             
     logger(f"[OK] Arquivo .env configurado na porta {port}.", "ok")
+    migration_env = os.environ.copy()
+    migration_env["IB_PBX_ROOT"] = target_dir
+    migration = subprocess.run(["powershell.exe", "-NoProfile", "-Command",
+        "$ErrorActionPreference='Stop'; try { . ([scriptblock]::Create([IO.File]::ReadAllText((Join-Path $env:IB_PBX_ROOT 'instalador/pbx-config.ps1')))); Invoke-IBPbxInstallMigration $env:IB_PBX_ROOT } catch { exit 1 }"],
+        env=migration_env, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+    if migration.returncode != 0:
+        raise RuntimeError("Migracao PBX nao confirmada; confira permissoes e o backup privado do .env.")
     
     logger("Instalando dependências (npm install)... Isso pode demorar.", "warn")
     npm_cmd = shutil.which("npm") or "npm.cmd"
@@ -339,6 +346,8 @@ class SetupGUI(tk.Tk):
             tk.Label(frame, text=label).grid(row=i, column=0, sticky="e", pady=5, padx=5)
             ent = ttk.Entry(frame, width=35)
             ent.grid(row=i, column=1, pady=5, padx=5)
+            if key == "PBX_BASE_URL" and key not in self.env_content:
+                ent.insert(0, "https://sip33.tsinfo.net.br")
             if key in self.env_content:
                 ent.insert(0, self.env_content[key])
             entries[key] = ent

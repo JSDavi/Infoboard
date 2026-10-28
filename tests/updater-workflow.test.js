@@ -57,7 +57,7 @@ $a.Start={param($svc) $script:events.Add('start')}
 $a.Health={param($port)
   $script:events.Add('health:'+$port); $script:health++
   if($script:health -gt 1 -and $port -ne 3000){throw 'HTTP rollback na porta incorreta'}
-  if($env:IB_CASE -eq 'rollback-failure' -or ($env:IB_CASE -eq 'health' -and $script:health -eq 1)){throw 'HTTP fixture falhou.'}
+  if($env:IB_CASE -eq 'rollback-failure' -or ($env:IB_CASE -in @('health','pbx-health') -and $script:health -eq 1)){throw 'HTTP fixture falhou.'}
 }
 $a.Confirm={param($message) return $false}
 $local=if($env:IB_CASE -eq 'remote-success'){$null}else{Join-Path $fixture "source d'operador & equipe! %IB_LITERAL%"}
@@ -94,6 +94,10 @@ function fixture(t, scenario) {
     write(base, 'server.js', `// ${version}`);
   }
   write(app, '.env', 'PORT=3001\nFIXTURE_SECRET=not-for-logs');
+  if (scenario.startsWith('pbx-')) {
+    const url = scenario === 'pbx-custom' ? 'https://custom.example.test' : 'https://pbx.nossatelecom.com.br';
+    write(app, '.env', `PORT=3001\r\nPBX_BASE_URL="${url}/" # manter comentario\r\nFIXTURE_SECRET=not-for-logs\r\n`);
+  }
   write(app, 'config/analysts_map.json', '{"local":true}');
   write(app, 'node_modules/dependency.txt', 'old-dependency');
   write(app, 'daemon/fixture.exe', 'fixture-only');
@@ -163,6 +167,19 @@ test('atualizador real prepara, protege, atualiza e valida sem perder configurac
   assert.match(log, /ETAPA 8\/8.*CONCLUIDA/);
   assert.doesNotMatch(log + run.stdout + run.stderr, /not-for-logs|FORBIDDEN/);
 });
+
+for (const scenario of ['pbx-success', 'pbx-health', 'pbx-custom']) {
+  test(`migracao de URL PBX: ${scenario}`, { skip: process.platform !== 'win32' }, t => {
+    const { app, run, result } = fixture(t, scenario);
+    assert.equal(result.Code, scenario === 'pbx-health' ? 1 : 0, run.stderr + run.stdout);
+    const work = path.join(app, 'backups', fs.readdirSync(path.join(app, 'backups')).find(x => x.startsWith('update_')));
+    const before = fs.readFileSync(path.join(work, 'configuracao.env'), 'utf8');
+    const after = fs.readFileSync(path.join(app, '.env'), 'utf8');
+    assert.equal(after, scenario === 'pbx-success'
+      ? before.replace('https://pbx.nossatelecom.com.br/', 'https://sip33.tsinfo.net.br') : before);
+    assert.doesNotMatch(run.stdout + run.stderr, /not-for-logs/);
+  });
+}
 
 test('atualizador guarda a versao anterior no ZIP e renova a data ao concluir', { skip: process.platform !== 'win32' }, t => {
   const { app, run, result } = fixture(t, 'success-with-old-date');

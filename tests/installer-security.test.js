@@ -91,3 +91,44 @@ test('GUI preserva protecao de credenciais antes da gravacao e exclui env do ZIP
   assert.match(py, /protect-env\.ps1/);
   assert.match(py, /res_acl\.returncode != 0/);
 });
+
+test('instalador migra somente URL legada, guarda backup privado e e idempotente', { skip: process.platform !== 'win32' }, t => {
+  const dir = temporary(t);
+  const envFile = path.join(dir, '.env');
+  const original = '\ufeff# Configuração\r\nPORT=3000\r\nPBX_BASE_URL = "https://PBX.NOSSATELECOM.COM.BR/" # PBX\r\nPBX_API_TOKEN=fixture-private\r\n';
+  fs.writeFileSync(envFile, original);
+  const command = "$ErrorActionPreference='Stop'; . ([scriptblock]::Create([IO.File]::ReadAllText($env:IB_HELPER))); Invoke-IBPbxInstallMigration $env:IB_ROOT; Invoke-IBPbxInstallMigration $env:IB_ROOT";
+  const output = run('powershell.exe', ['-NoProfile', '-Command', command], {
+    IB_ROOT: dir, IB_HELPER: path.join(root, 'instalador/pbx-config.ps1')
+  });
+  assert.equal(fs.readFileSync(envFile, 'utf8'), original.replace('https://PBX.NOSSATELECOM.COM.BR/', 'https://sip33.tsinfo.net.br'));
+  const backups = fs.readdirSync(dir).filter(n => n.startsWith('.env.pbx-backup-'));
+  assert.equal(backups.length, 1);
+  assert.equal(fs.readFileSync(path.join(dir, backups[0]), 'utf8'), original);
+  assert.doesNotMatch(output, /fixture-private/);
+  const rules = JSON.parse(run('powershell.exe', ['-NoProfile', '-Command',
+    '$a=Get-Acl -LiteralPath $env:IB_ENV; @{Protected=$a.AreAccessRulesProtected; Sids=@($a.Access | ForEach-Object {$_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value}); Current=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value} | ConvertTo-Json'], {IB_ENV: path.join(dir, backups[0])}));
+  assert.equal(rules.Protected, true);
+  assert.deepEqual(rules.Sids.sort(), [rules.Current, 'S-1-5-18'].sort());
+});
+
+test('migracao preserva endpoints personalizados, campos ausentes e comentarios', { skip: process.platform !== 'win32' }, t => {
+  const dir = temporary(t);
+  const cases = [
+    'PBX_BASE_URL=https://custom.example.test',
+    'PBX_BASE_URL=https://pbx.nossatelecom.com.br/custom',
+    'PBX_BASE_URL=https://pbx.nossatelecom.com.br.evil.test',
+    '# PBX_BASE_URL=https://pbx.nossatelecom.com.br\nPORT=3000',
+    'PBX_BASE_URL=https://sip33.tsinfo.net.br',
+    "export PBX_BASE_URL='https://pbx.nossatelecom.com.br'\nTOKEN=fixture"
+  ];
+  const input = path.join(dir, 'cases.json');
+  const output = path.join(dir, 'result.json');
+  fs.writeFileSync(input, JSON.stringify(cases));
+  run('powershell.exe', ['-NoProfile', '-Command',
+    "$ErrorActionPreference='Stop'; . ([scriptblock]::Create([IO.File]::ReadAllText($env:IB_HELPER))); $values=@(([IO.File]::ReadAllText($env:IB_INPUT)|ConvertFrom-Json) | ForEach-Object {Convert-IBPbxConfigText $_}); [IO.File]::WriteAllText($env:IB_OUTPUT, (ConvertTo-Json -InputObject $values))"],
+    { IB_HELPER: path.join(root, 'instalador/pbx-config.ps1'), IB_INPUT: input, IB_OUTPUT: output });
+  const converted = JSON.parse(fs.readFileSync(output, 'utf8'));
+  assert.deepEqual(converted.slice(0, -1), cases.slice(0, -1));
+  assert.equal(converted.at(-1), cases.at(-1).replace('pbx.nossatelecom.com.br', 'sip33.tsinfo.net.br'));
+});

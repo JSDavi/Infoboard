@@ -1,6 +1,6 @@
 # InfoBoard
 
-**Versao de publicacao: 1.2.4** — veja as alteracoes em [CHANGELOG.md](CHANGELOG.md).
+**Versao de publicacao: 1.2.5** — veja as alteracoes em [CHANGELOG.md](CHANGELOG.md).
 
 Painel local de acompanhamento de filas, telefonia, chat, escalas e disponibilidade fiscal. O servidor consulta NPX, PrixChat, PBX e fontes auxiliares; o navegador apenas exibe os dados. O login do analista abre o aplicativo oficial NPX em outra janela.
 
@@ -71,5 +71,7 @@ A API é de leitura e restringe acesso por IP de origem e Host/Origin. O modo de
 Para restringir a equipamentos específicos, configure `INFOBOARD_ALLOW_PRIVATE_NETWORK=false` e informe os IPs diretos das TVs em `INFOBOARD_TV_ALLOWED_IPS` e das estações em `INFOBOARD_VIEWER_ALLOWED_IPS`, separados por vírgula. Reserve esses IPs no DHCP. As listas aceitam IPs individuais IPv4 e IPv6, sem CIDR; também permitem VPN com origem fora das faixas privadas. O próprio servidor permanece liberado via loopback. Valores configurados diferentes de `true` desabilitam a liberação geral da LAN. Cabeçalhos de proxy são rejeitados mesmo quando vazios; proxies reversos exigem desenho próprio e não são habilitados automaticamente. TV e visualizador recebem os mesmos dados de leitura, sem sessões individuais. Não exponha o serviço diretamente à internet.
 
 O conector PBX valida certificados por padrão. Para CA interna, configure `NODE_EXTRA_CA_CERTS`. Existe uma opção explícita de compatibilidade TLS para legado; suas consequências estão descritas em [Segurança](docs/SEGURANCA.md).
+
+A partir da versao 1.2.5, instaladores e atualizador migram somente a URL legada `https://pbx.nossatelecom.com.br` para `https://sip33.tsinfo.net.br`. Credenciais, validacao TLS e outros endpoints sao preservados. A instalacao guarda um backup privado `.env.pbx-backup-*`; o atualizador usa seu backup privado e restaura a configuracao anterior no rollback.
 
 Nunca inclua configurações reais, backups nem relatórios de auditoria interna no repositório. Em caso de exposição de uma credencial, a limpeza do histórico Git não substitui sua revogação. Consulte as orientações em [Segurança](docs/SEGURANCA.md).

@@ -316,6 +316,47 @@ function Invoke-IBEnsureNode {
     }
 }
 
+# Migracao restrita ao endereco legado confirmado do PBX; outras URLs sao preservadas.
+function Convert-IBPbxConfigText([string]$Text) {
+    $pattern = '(?m)^(?<prefix>[ \t]*(?:export[ \t]+)?PBX_BASE_URL[ \t]*=[ \t]*)(?<quote>["'']?)(?i:https://pbx\.nossatelecom\.com\.br)/?\k<quote>(?<suffix>[ \t]*(?:#[^\r\n]*)?)(?=\r?$)'
+    return [regex]::Replace($Text, $pattern, '${prefix}${quote}https://sip33.tsinfo.net.br${quote}${suffix}')
+}
+
+# Usado pelos instaladores. O atualizador usa seu proprio backup privado/rollback.
+function Invoke-IBPbxInstallMigration([string]$Root) {
+    $ErrorActionPreference = 'Stop'
+    $file = Join-Path $Root '.env'
+    $text = [IO.File]::ReadAllText($file)
+    $updated = Convert-IBPbxConfigText $text
+    if ($updated -ceq $text) { return }
+    $backup = $file + '.pbx-backup-' + [guid]::NewGuid().ToString('N')
+    foreach ($target in @($file, $backup)) {
+        $probe = [IO.Path]::GetFullPath($target)
+        while ($probe) {
+            if ((Test-Path -LiteralPath $probe) -and ((Get-Item -LiteralPath $probe -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Link ou junction recusado.' }
+            $probe = [IO.Path]::GetDirectoryName($probe)
+        }
+        if (-not [IO.File]::Exists($target)) { [IO.File]::WriteAllBytes($target, @()) }
+        $acl = [Security.AccessControl.FileSecurity]::new()
+        $acl.SetAccessRuleProtection($true, $false)
+        $sids = @([Security.Principal.WindowsIdentity]::GetCurrent().User, [Security.Principal.SecurityIdentifier]::new('S-1-5-18'))
+        foreach ($sid in $sids) { $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($sid, 'FullControl', 'Allow')) }
+        Set-Acl -LiteralPath $target -AclObject $acl
+        $check = Get-Acl -LiteralPath $target
+        if (-not $check.AreAccessRulesProtected -or @($check.Access).Count -ne 2) { throw 'Permissoes privadas PBX nao confirmadas.' }
+        foreach ($rule in $check.Access) {
+            if ($rule.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value -notin @($sids.Value) -or
+                $rule.IsInherited -or $rule.AccessControlType -ne 'Allow' -or
+                ($rule.FileSystemRights -band [Security.AccessControl.FileSystemRights]::FullControl) -ne [Security.AccessControl.FileSystemRights]::FullControl) { throw 'Permissoes privadas PBX invalidas.' }
+        }
+    }
+    [IO.File]::WriteAllBytes($backup, [IO.File]::ReadAllBytes($file))
+    $bom = [IO.File]::ReadAllBytes($file)
+    $hasBom = $bom.Length -ge 3 -and $bom[0] -eq 239 -and $bom[1] -eq 187 -and $bom[2] -eq 191
+    [IO.File]::WriteAllText($file, $updated, [Text.UTF8Encoding]::new($hasBom))
+    Write-Host 'PBX: endereco legado corrigido; backup privado criado.'
+}
+
 # Fonte do payload embutido em ATUALIZAR_INFOBOARD.bat. Windows PowerShell 5.1.
 # Gerar novamente com: node scripts/build-installers.cjs
 Set-StrictMode -Version 2
@@ -575,6 +616,9 @@ function Get-IBActions {
 function Restore-IBUpdate($c, $actions) {
     Write-IBLog $c '[ROLLBACK] INICIO: restaurando arquivos e dependencias anteriores, sem download.'
     & $actions.Stop $c.Service
+    if ($c.EnvChanged) {
+        [IO.File]::WriteAllBytes((Get-IBTarget $c.App '.env'), [IO.File]::ReadAllBytes((Get-IBTarget $c.Work 'configuracao.env')))
+    }
     foreach ($rel in $c.NewFiles) {
         $p = Get-IBTarget $c.App $rel
         if ([IO.File]::Exists($p)) { [IO.File]::Delete($p) }
@@ -604,7 +648,7 @@ function Restore-IBUpdate($c, $actions) {
 
 function Invoke-IBUpdate {
     param([string]$ApplicationDirectory, [string]$SourceDirectory, [hashtable]$Actions)
-    $c = @{ App=$null; Work=$null; Log=$null; Lock=$null; LogFailed=$false; Stage=1; Changed=$false; NewDeps=$false; OldDepsMoved=$false; NewFiles=@(); WasRunning=$false; ServicePlan=$null }
+    $c = @{ App=$null; Work=$null; Log=$null; Lock=$null; LogFailed=$false; Stage=1; Changed=$false; NewDeps=$false; OldDepsMoved=$false; NewFiles=@(); WasRunning=$false; ServicePlan=$null; EnvChanged=$false }
     try {
         $c.App = Assert-IBPath $ApplicationDirectory
         if ($c.App -eq [IO.Path]::GetPathRoot($c.App).TrimEnd('\') -or $c.App -eq $env:USERPROFILE -or $c.App -eq $env:WINDIR) { throw 'Pasta de sistema/raiz recusada.' }
@@ -686,6 +730,19 @@ function Invoke-IBUpdate {
             }
             [IO.Directory]::Move((Get-IBTarget $c.Source 'node_modules'), $deps)
             $c.NewDeps = $true
+            $envPath = Get-IBTarget $c.App '.env'
+            if ([IO.File]::Exists($envPath)) {
+                $text = [IO.File]::ReadAllText($envPath)
+                $updated = Convert-IBPbxConfigText $text
+                if ($updated -cne $text) {
+                    # Backup ja foi protegido na etapa 4; marcar antes da escrita.
+                    $c.EnvChanged = $true
+                    $bytes = [IO.File]::ReadAllBytes($envPath)
+                    $bom = $bytes.Length -ge 3 -and $bytes[0] -eq 239 -and $bytes[1] -eq 187 -and $bytes[2] -eq 191
+                    [IO.File]::WriteAllText($envPath, $updated, [Text.UTF8Encoding]::new($bom))
+                    Write-IBLog $c 'PBX: endereco legado migrado para sip33.tsinfo.net.br; demais configuracoes preservadas.'
+                }
+            }
             if ($c.ServicePlan) {
                 $null = Assert-IBPath $c.ServicePlan.Path
                 $c.ServicePlan.Xml.Save($c.ServicePlan.Path)
@@ -704,7 +761,7 @@ function Invoke-IBUpdate {
             try {
                 $value = @{ version = $c.Version; installedAt = [DateTime]::UtcNow.ToString('o', [Globalization.CultureInfo]::InvariantCulture) } | ConvertTo-Json -Compress
                 [IO.File]::WriteAllText($tempMetadata, $value + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
-                if ([IO.File]::Exists($metadata)) { [IO.File]::Replace($tempMetadata, $metadata, $null) }
+                if ([IO.File]::Exists($metadata)) { [IO.File]::Replace($tempMetadata, $metadata, [NullString]::Value) }
                 else { [IO.File]::Move($tempMetadata, $metadata) }
             } finally {
                 if ([IO.File]::Exists($tempMetadata)) { [IO.File]::Delete($tempMetadata) }

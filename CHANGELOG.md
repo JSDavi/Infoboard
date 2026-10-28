@@ -1,5 +1,11 @@
 # Historico de versoes do InfoBoard
 
+## 1.2.5 - 28/10/2026
+
+- Instalador e atualizador corrigem a URL legada do PBX para `https://sip33.tsinfo.net.br`, com backup privado e preservacao de credenciais e URLs personalizadas. O rollback do atualizador restaura o `.env` anterior.
+- Estado de ramal nao confirmado aparece em cinza com explicacao ao passar o mouse; amarelo fica reservado a chamada tocando.
+- Corrige a substituicao do registro de versao existente no Windows PowerShell 5.1.
+
 ## 1.2.4 - 28/10/2026
 
 - Exibe a versao instalada com tamanho legivel abaixo da marca, sem deslocar o titulo do painel; a data e hora da aplicacao aparecem ao passar o mouse ou focar o indicador.

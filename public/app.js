@@ -1172,6 +1172,7 @@ function updateUI(data) {
             badgeHtml = '<span class="status-text-badge status-2" title="O monitor oficial NPX informa ocupado; sem numero de chamada confirmado">Ocupado na NPX</span>';
           } else if (connection.isNpxRinging) {
             statusClass = 'status-npx-unverified';
+            card.classList.add('status-npx-ringing');
             badgeHtml = '<span class="status-text-badge status-npx-unverified" title="O monitor oficial NPX informa chamada tocando neste ramal">Chamando</span>';
           } else if (connection.isNpxQueueOnline) {
             statusClass = 'status-1';
@@ -1203,6 +1204,11 @@ function updateUI(data) {
 
           // Aplica a mesma cor de estado em todos os departamentos.
           card.classList.add(statusClass);
+          if (statusClass === 'status-npx-unverified' && !connection.isNpxRinging) {
+            card.title = connection.isNpxQueueDisconnected
+              ? 'NPX: desconectado. PBX: consulta indisponível; conexão do ramal não confirmada.'
+              : 'Estado não confirmado: aguardando dados atuais dos monitores NPX/PBX.';
+          }
           if (isOverLimit) card.classList.add('alert-blink');
 
           const ramalRightHtml = ramalDisplay ? `<span class="analyst-ramal-center" title="Ramal ${escapePanelHtml(ramalDisplay)}">${escapePanelHtml(ramalDisplay)}</span>` : '<span class="analyst-ramal-center"></span>';

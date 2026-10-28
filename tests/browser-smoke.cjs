@@ -89,6 +89,8 @@ async function main() {
       const sample = JSON.parse(JSON.stringify(data));
       sample.status.npx = { authenticated: true, error: null };
       sample.status.pbx = { authenticated: true, error: null };
+      // O cenário verifica alertas NPX/PBX sem falhas independentes do chat.
+      sample.status.prix = { authenticated: true, error: null };
       const [queue, dept] = Object.entries(sample.departments || {})[0] || [];
       if (!dept || !window.InfoBoardAgentState) return { ok: false, reason: 'Falta setor/classificador' };
       const agent = { name: 'QA MONITOR 2002', code: '4422002', ramal: '2002', status: 1, paused: 0,
@@ -108,6 +110,8 @@ async function main() {
         const name = card?.querySelector('.analyst-name');
         return { css: card?.className || '', badge: card?.querySelector('.status-text-badge')?.textContent || '',
           cursor: card ? getComputedStyle(card).cursor : null,
+          background: card ? getComputedStyle(card).backgroundColor : '',
+          title: card?.title || '',
           nameWeight: name ? getComputedStyle(name).fontWeight : '',
           nameColor: name ? getComputedStyle(name).color : '', category };
       };
@@ -214,6 +218,9 @@ async function main() {
           paused.css.includes('status-5') && paused.category === 'paused' &&
           offlineAgain.css.includes('status-offline') &&
           pbxUnknown.css.includes('status-npx-unverified') && pbxUnknown.badge === '' &&
+          pbxUnknown.background === 'rgb(226, 232, 240)' &&
+          pbxUnknown.background !== ringing.background &&
+          pbxUnknown.title.includes('NPX: desconectado. PBX: consulta indisponível') &&
           pbxUnknown.nameWeight === offline.nameWeight && pbxUnknown.nameColor === offline.nameColor &&
           npxUnknown.css.includes('status-npx-unverified') && npxUnknown.badge === '' &&
           partial.css.includes('status-1') && partial.category === 'free' &&
