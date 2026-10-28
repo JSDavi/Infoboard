@@ -1,6 +1,6 @@
 # InfoBoard
 
-**Versao de publicacao: 1.2.5** — veja as alteracoes em [CHANGELOG.md](CHANGELOG.md).
+**Versao de publicacao: 1.2.6** — veja as alteracoes em [CHANGELOG.md](CHANGELOG.md).
 
 Painel local de acompanhamento de filas, telefonia, chat, escalas e disponibilidade fiscal. O servidor consulta NPX, PrixChat, PBX e fontes auxiliares; o navegador apenas exibe os dados. O login do analista abre o aplicativo oficial NPX em outra janela.
 

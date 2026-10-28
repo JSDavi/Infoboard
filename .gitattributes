@@ -1,0 +1,3 @@
+# Preservar CRLF nos BATs publicados: o launcher identifica o payload no Windows.
+instalador/ATUALIZAR_INFOBOARD.bat -text whitespace=trailing-space,space-before-tab,cr-at-eol
+instalador/INSTALAR_INFOBOARD.bat -text whitespace=trailing-space,space-before-tab,cr-at-eol

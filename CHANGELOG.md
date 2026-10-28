@@ -1,5 +1,9 @@
 # Historico de versoes do InfoBoard
 
+## 1.2.6 - 28/10/2026
+
+- Preserva as quebras de linha Windows nos BATs baixados do GitHub, mantendo o atualizador publicado identico ao arquivo validado localmente.
+
 ## 1.2.5 - 28/10/2026
 
 - Instalador e atualizador corrigem a URL legada do PBX para `https://sip33.tsinfo.net.br`, com backup privado e preservacao de credenciais e URLs personalizadas. O rollback do atualizador restaura o `.env` anterior.
