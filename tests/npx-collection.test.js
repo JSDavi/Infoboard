@@ -74,3 +74,69 @@ test('falha nos detalhes obrigatórios impede publicar estados não confirmados'
     /Detalhes NPX indisponíveis/
   );
 });
+
+test('PBX registrado sem presença na fila NPX não cria cartão de analista', async t => {
+  const fixture = await serverFixture({
+    env: { NPX_EMAIL: 'qa@example.test', INFOBOARD_NPX_REQUIRE_SIP_CONFIRMATION: 'true' }
+  });
+  t.after(fixture.close);
+  fixture.evaluate(`
+    loadAnalystsMap = () => ({
+      'Davi Oliveira': { ramal: '2002', departamento: 'InfoBrasil_Suporte' }
+    });
+    lastPbxData = {
+      '2002': { status: 'Free', number: '', duration: 0, durationStr: '', direction: null }
+    };
+    getPbxConnectionStatus = () => ({ authenticated: true, error: null });
+    getPrixUsersMoments = async () => [];
+    apiGet = async endpoint => {
+      if (endpoint.includes('details')) return { details: [] };
+      if (endpoint.includes('totals')) return { total_wait: 0, wait: '00:00' };
+      return { wait_calls: [] };
+    };
+  `);
+
+  await fixture.evaluate('runUpdateCycle()');
+  const support = JSON.parse(fixture.evaluate(
+    'JSON.stringify(lastScrapedData.departments.InfoBrasil_Suporte)'
+  ));
+
+  assert.deepEqual(support.agents, []);
+  assert.equal(support.agents_online, 0);
+  assert.equal(support.agents_free, 0);
+});
+
+test('PBX apenas complementa cartão que já veio da fila NPX', async t => {
+  const fixture = await serverFixture({
+    env: { NPX_EMAIL: 'qa@example.test', INFOBOARD_NPX_REQUIRE_SIP_CONFIRMATION: 'true' }
+  });
+  t.after(fixture.close);
+  fixture.evaluate(`
+    loadAnalystsMap = () => ({
+      'Davi Oliveira': { ramal: '2002', departamento: 'InfoBrasil_Suporte' }
+    });
+    lastPbxData = {
+      '2002': { status: 'Free', number: '', duration: 0, durationStr: '', direction: null }
+    };
+    getPbxConnectionStatus = () => ({ authenticated: true, error: null });
+    getPrixUsersMoments = async () => [];
+    apiGet = async (endpoint, params) => {
+      if (endpoint.includes('details')) return { details: params.queue === 'InfoBrasil_Suporte'
+        ? [{ name: 'Davi', code: '4422002', extension: '4422002', status: 1, paused: 0 }]
+        : [] };
+      if (endpoint.includes('totals')) return { total_wait: 0, wait: '00:00' };
+      return { wait_calls: [] };
+    };
+  `);
+
+  await fixture.evaluate('runUpdateCycle()');
+  const support = JSON.parse(fixture.evaluate(
+    'JSON.stringify(lastScrapedData.departments.InfoBrasil_Suporte)'
+  ));
+
+  assert.equal(support.agents.length, 1);
+  assert.equal(support.agents[0].npxQueuePresent, true);
+  assert.equal(support.agents[0].pbxStatus, 'Free');
+  assert.equal(support.agents_online, 1);
+  assert.equal(support.agents_free, 1);
+});

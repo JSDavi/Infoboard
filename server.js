@@ -1054,45 +1054,6 @@ async function runUpdateCycle() {
         });
         sortedAgents = sortedAgents.filter(agent => !pbxInOtherDepartment.has(agent));
 
-        // Injeta analistas mapeados que estão offline no NPX mas logados no PBX (Free ou Busy)
-        Object.entries(analystsMap).forEach(([name, val]) => {
-           const ramal = typeof val === 'object' ? val.ramal : val;
-           const dept = typeof val === 'object' ? val.departamento : 'InfoBrasil_Suporte';
-
-           // Só injeta o analista se o seu departamento/setor cadastrado for igual à fila atual
-           if (dept === key) {
-              if (pbxData[ramal] && pbxData[ramal].status !== 'Offline') {
-                 const alreadyExists = sortedAgents.find(a => {
-                   const aName = a.name.toLowerCase().trim();
-                   const mName = name.toLowerCase().trim();
-                   return aName.includes(mName) || mName.includes(aName);
-                 });
-                 if (!alreadyExists) {
-                   const pbxInfo = pbxData[ramal];
-                   // Adiciona o analista offline ao array com status NPX=0 para seguir o padrão PBX
-                   sortedAgents.push({
-                      name: name,
-                      ramal: ramal,
-                      status: 0,
-                      npxQueuePresent: false,
-                      npxSipRegistered: false,
-                      npxRequireSipConfirmation: NPX_REQUIRE_SIP_CONFIRMATION,
-                      pbxMonitorConfirmed: true,
-                      pbxStatus: pbxInfo.status,
-                      pbxNumber: pbxInfo.number,
-                      pbxDuration: pbxInfo.duration,
-                      pbxDurationStr: pbxInfo.durationStr,
-                      pbxDirection: pbxInfo.direction,
-                      total_loged_time: "00:00:00",
-                      total_paused_time: "00:00:00",
-                      total_call_time: "00:00:00",
-                      total_lazy_time: "00:00:00"
-                   });
-                 }
-              }
-           }
-        });
-
         // Chamadas ativas NPX somente após aplicar a precedência PBX e remover
         // eventuais presenças residuais em outras filas.
         sortedAgents.forEach(agent => {
@@ -1115,8 +1076,8 @@ async function runUpdateCycle() {
         let finalOnline = 0;
 
         sortedAgents.forEach(agent => {
-          // Um analista pode estar conectado apenas no PBX. Contabiliza uma
-          // única vez por pessoa, respeitando a precedência pausa > ocupado > livre.
+          // A lista contém somente presenças observadas na fila NPX. O PBX
+          // complementa o estado do cartão, mas não cria presença na fila.
            const category = getAgentCategory(agent);
            if (category === 'paused') finalPaused++;
            else if (category === 'busy') finalBusy++;

@@ -10,11 +10,11 @@ O Beatrix retorna `X-Frame-Options: SAMEORIGIN`. Por isso, as telas oficiais nã
 
 ## Atualização dos cards
 
-O integrador consulta as cinco filas do monitor oficial NPX e os estados do PBX. Quando o analista se conecta ao aplicativo NPX, a próxima coleta atualiza automaticamente o card no InfoBoard. Os setores Suporte, Comercial, Financeiro, SPED Fiscal e Ponto utilizam as mesmas regras de classificação e as mesmas cores. A fila exibida vem da observação do NPX; não existe seleção de fila no InfoBoard.
+O integrador consulta as cinco filas do monitor oficial NPX e os estados do PBX. Quando o analista se conecta ao aplicativo NPX, a próxima coleta atualiza automaticamente o card no InfoBoard. Os setores Suporte, Comercial, Financeiro, SPED Fiscal e Ponto utilizam as mesmas regras de classificação e as mesmas cores. A fila exibida vem da observação do NPX; não existe seleção de fila no InfoBoard. Um registro ativo somente no PBX não cria card nem aumenta a contagem da fila.
 
 - **Livre / em chamada / chamando / pausado:** estados observados; métricas e durações são somente informativas.
 - **Sem conexão NPX/PBX:** ambos os sistemas confirmaram desconexão.
-- **Falha geral de coleta NPX:** o aviso aparece no cabeçalho; os cartões sem estado confirmado permanecem neutros, enquanto os estados atuais confirmados pelo PBX continuam exibidos.
+- **Falha geral de coleta NPX:** o aviso aparece no cabeçalho; os cartões já observados sem estado confirmado permanecem neutros. O PBX pode complementar esses cartões, mas não cria presença na fila.
 - **NPX PARCIAL:** os estados dos analistas foram coletados, mas algumas métricas auxiliares de fila estão indisponíveis e aparecem como “—”.
 - **Status NPX não confirmado:** não há uma leitura operacional válida e recente.
 

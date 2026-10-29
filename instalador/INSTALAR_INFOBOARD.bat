@@ -83,7 +83,7 @@ cls
 echo ===============================================================================
 echo                    !C_CYAN!!C_BOLD!INFOBRASIL - INSTALADOR DO INFOBOARD TV!C_RESET!
 echo ===============================================================================
-echo !C_GRAY!  Versao: 1.2.6 ^| Pacote local de distribuicao!C_RESET!
+echo !C_GRAY!  Versao: 1.2.7 ^| Pacote local de distribuicao!C_RESET!
 echo.
 echo !C_BOLD!Etapas do Assistente de Instalacao:!C_RESET!
 echo   !C_CYAN![ 1/6 ]!C_RESET! Verificacao e Preparacao do Node.js LTS

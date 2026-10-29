@@ -1,5 +1,9 @@
 # Historico de versoes do InfoBoard
 
+## 1.2.7 - 29/10/2026
+
+- Exibe na fila somente analistas presentes na Beatriz; o PBX complementa o estado de um cartão existente, sem criar presença nem contagem online por conta própria.
+
 ## 1.2.6 - 28/10/2026
 
 - Preserva as quebras de linha Windows nos BATs baixados do GitHub, mantendo o atualizador publicado identico ao arquivo validado localmente.
